@@ -1,0 +1,15 @@
+# Nixpacks configuration for Railway deployment
+
+[phases.setup]
+nixPkgs = ["nodejs_18", "openssl_1_1", "libressl"]
+
+[phases.build]
+cmds = [
+  "npm install -g pnpm",
+  "pnpm install --frozen-lockfile", 
+  "prisma generate",
+  "pnpm run build"
+]
+
+[start]
+cmd = "prisma generate && prisma migrate deploy && node .next/standalone/server.js"
