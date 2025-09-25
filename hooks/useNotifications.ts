@@ -1,25 +1,25 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { notificationService, NotificationOptions } from '@/lib/services/notification-service'
+import { browserNotificationService, NotificationOptions } from '@/lib/services/browser-notification-service'
 
 export function useNotifications() {
   const [permission, setPermission] = useState<NotificationPermission>('default')
   const [isSupported, setIsSupported] = useState(false)
 
   useEffect(() => {
-    setIsSupported(notificationService.isSupported())
-    setPermission(notificationService.getPermissionStatus())
+    setIsSupported(browserNotificationService.isSupported())
+    setPermission(browserNotificationService.getPermissionStatus())
   }, [])
 
   const requestPermission = useCallback(async () => {
-    const newPermission = await notificationService.requestPermission()
+    const newPermission = await browserNotificationService.requestPermission()
     setPermission(newPermission)
     return newPermission
   }, [])
 
   const showNotification = useCallback(async (options: NotificationOptions) => {
-    return notificationService.showNotification(options)
+    return browserNotificationService.showNotification(options)
   }, [])
 
   const showEmergencyAlert = useCallback(async (alertData: {
@@ -28,14 +28,14 @@ export function useNotifications() {
     location: string
     severity: 'low' | 'medium' | 'high' | 'critical'
   }) => {
-    return notificationService.showEmergencyAlert(alertData)
+    return browserNotificationService.showEmergencyAlert(alertData)
   }, [])
 
   const showSystemNotification = useCallback(async (
     message: string, 
     type: 'info' | 'success' | 'warning' | 'error' = 'info'
   ) => {
-    return notificationService.showSystemNotification(message, type)
+    return browserNotificationService.showSystemNotification(message, type)
   }, [])
 
   return {

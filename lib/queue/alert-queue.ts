@@ -164,13 +164,21 @@ class AlertQueue {
         where: { id: contactId }
       })
       
-      if (!contact || !contact.active) {
-        throw new Error('Contact not found or inactive')
+      if (!contact || !contact.active || !contact.phone) {
+        throw new Error('Contact not found, inactive, or missing phone number')
       }
 
       // Send notification via appropriate channel
       const result = await this.notificationService.sendNotification({
-        contact,
+        contact: {
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone, // Now TypeScript knows this is not null
+          email: contact.email,
+          whatsapp: contact.whatsapp,
+          notificationChannels: Array.isArray(contact.notificationChannels) ? contact.notificationChannels as string[] : [],
+          active: contact.active
+        },
         channel,
         templateData,
         alertJobId
