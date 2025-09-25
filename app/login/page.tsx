@@ -113,61 +113,40 @@ export default function LoginPage() {
       <div className="relative z-10 min-h-screen flex items-center justify-center px-4">
         <div className="w-full max-w-md">
           {/* Hero Section */}
-          <div className="text-center mb-8 space-y-4">
-            <div className="inline-flex items-center space-x-3 mb-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shadow-lg">
-                <Shield className="h-8 w-8" />
+          <div className="text-center mb-12 space-y-6">
+            {/* Clean Logo and Title */}
+            <div className="space-y-4">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shadow-2xl mx-auto">
+                <Shield className="h-10 w-10" />
               </div>
-              <div className="text-left">
-                <h1 className="text-3xl font-bold text-white">Emergency Alert</h1>
-                <p className="text-slate-300 text-lg">Command Center</p>
+              <div className="space-y-2">
+                <h1 className="text-4xl font-bold text-white tracking-tight">Emergency Alert</h1>
+                <p className="text-xl text-slate-300 font-light">Command Center</p>
               </div>
             </div>
             
-            <div className="space-y-3">
-              <h2 className="text-xl font-semibold text-white">Secure Access Required</h2>
-              <p className="text-slate-300 text-sm leading-relaxed">
-                This system provides critical emergency alerts for earthquakes and tsunamis. 
-                Access is restricted to authorized personnel only.
+            {/* Simplified Description */}
+            <div className="max-w-md mx-auto">
+              <p className="text-slate-300 text-base leading-relaxed">
+                Secure access portal for authorized emergency response personnel
               </p>
             </div>
 
-            {/* Feature highlights */}
-            <div className="grid grid-cols-3 gap-4 mt-6">
-              <div className="text-center space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center mx-auto">
-                  <AlertTriangle className="h-5 w-5" />
-                </div>
-                <p className="text-xs text-slate-400">Real-time Alerts</p>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mx-auto">
-                  <Smartphone className="h-5 w-5" />
-                </div>
-                <p className="text-xs text-slate-400">SMS Notifications</p>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center mx-auto">
-                  <Zap className="h-5 w-5" />
-                </div>
-                <p className="text-xs text-slate-400">Instant Response</p>
-              </div>
+            {/* Status Badge */}
+            <div className="inline-flex items-center space-x-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-2">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-300 text-sm font-medium">System Online</span>
             </div>
           </div>
 
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 p-8 space-y-8 animate-fadeIn">
           {currentStep === 'phone' ? (
             <>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shadow-lg">
-                  <Shield className="h-7 w-7" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-semibold text-slate-900">Emergency Alert Command Center</h1>
-                  <p className="mt-2 text-sm text-slate-600">
-                    Enter your verified operator phone number to receive a secure verification code.
-                  </p>
-                </div>
+              <div className="text-center space-y-3">
+                <h2 className="text-2xl font-semibold text-slate-900">Phone Verification</h2>
+                <p className="text-sm text-slate-600">
+                  Enter your authorized phone number to receive a verification code
+                </p>
               </div>
 
               <PhoneNumberForm
@@ -188,13 +167,11 @@ export default function LoginPage() {
             </>
           ) : (
             <>
-              <div className="flex flex-col items-center text-center space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shadow-lg">
-                  <Shield className="h-7 w-7" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-semibold text-slate-900">Emergency Alert Command Center</h1>
-                </div>
+              <div className="text-center space-y-3">
+                <h2 className="text-2xl font-semibold text-slate-900">Enter Verification Code</h2>
+                <p className="text-sm text-slate-600">
+                  We've sent a 6-digit code to your phone
+                </p>
               </div>
 
               <OTPVerificationForm
