@@ -20,11 +20,19 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Allow public access to homepage, login page, and API routes
+        // Allow public access to homepage, login page, public pages, and API routes
         if (pathname === '/' ||
             pathname.startsWith('/login') || 
             pathname.startsWith('/api/auth') || 
-            pathname === '/api/health') {
+            pathname === '/api/health' ||
+            pathname === '/privacy' ||
+            pathname === '/terms' ||
+            pathname === '/security-policy' ||
+            pathname === '/compliance' ||
+            pathname === '/contact' ||
+            pathname === '/about' ||
+            pathname === '/help' ||
+            pathname === '/status') {
           return true
         }
 

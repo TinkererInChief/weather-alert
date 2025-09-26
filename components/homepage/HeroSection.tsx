@@ -6,6 +6,38 @@ import Link from 'next/link'
 export default function HeroSection() {
   return (
     <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 overflow-hidden">
+      {/* Top Navigation */}
+      <nav className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shadow-lg">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Emergency Alert</h3>
+              <p className="text-xs text-slate-300">Command Center</p>
+            </div>
+          </div>
+          
+          {/* Login Buttons */}
+          <div className="flex items-center space-x-3">
+            <Link
+              href="/login"
+              className="inline-flex items-center px-4 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-600 transition-colors text-sm font-medium"
+            >
+              Employee Login
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            >
+              Admin Portal
+            </Link>
+          </div>
+        </div>
+      </nav>
+
       {/* Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-20 left-20 w-72 h-72 bg-red-500/10 rounded-full blur-3xl animate-pulse"></div>
@@ -13,20 +45,11 @@ export default function HeroSection() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/5 rounded-full blur-2xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Content */}
           <div className="space-y-8">
-            {/* Logo and Brand */}
-            <div className="flex items-center space-x-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center shadow-lg">
-                <Shield className="h-6 w-6" />
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-white">Emergency Alert</h3>
-                <p className="text-sm text-slate-300">Command Center</p>
-              </div>
-            </div>
+            {/* Removed duplicate logo - now in top nav */}
 
             {/* Main Headline */}
             <div className="space-y-4">
