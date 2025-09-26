@@ -324,7 +324,7 @@ export default function AppLayout({
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
           {/* Logo */}
           <div className="flex h-16 shrink-0 items-center px-6 border-b border-slate-200/60">
-            <Link href="/" className="flex items-center space-x-3 group">
+            <Link href="/dashboard" className="flex items-center space-x-3 group">
               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow">
                 <Shield className="h-5 w-5 text-white" />
               </div>
@@ -432,8 +432,8 @@ export default function AppLayout({
 
             {/* Breadcrumbs */}
             <div className="flex items-center space-x-2 text-sm">
-              <Link href="/" className="text-slate-500 hover:text-slate-700 transition-colors">
-                Home
+              <Link href="/dashboard" className="text-slate-500 hover:text-slate-700 transition-colors">
+                Dashboard
               </Link>
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center space-x-2">

@@ -19,7 +19,7 @@ export default function LoginPage() {
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (sessionStatus === 'authenticated' && session) {
-      router.push('/')
+      router.push('/dashboard')
     }
   }, [session, sessionStatus, router])
 
@@ -80,7 +80,7 @@ export default function LoginPage() {
   const handleOTPSuccess = async () => {
     try {
       // Redirect to dashboard on successful authentication
-      window.location.href = '/'
+      window.location.href = '/dashboard'
     } catch (error) {
       console.error('Authentication redirect failed:', error)
     }
@@ -140,6 +140,7 @@ export default function LoginPage() {
           </div>
 
           <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 p-8 space-y-8 animate-fadeIn">
+          <div className="min-h-[440px] flex flex-col">
           {currentStep === 'phone' ? (
             <>
               <div className="text-center space-y-3">
@@ -195,7 +196,7 @@ export default function LoginPage() {
               </div>
             </>
           )}
-
+          </div>
           </div>
 
           {/* Footer */}
