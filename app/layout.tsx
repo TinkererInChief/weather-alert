@@ -2,6 +2,8 @@ import React from 'react'
 import './globals.css'
 import type { Metadata } from 'next'
 import { SessionWrapper } from '@/components/providers/SessionWrapper'
+ 
+ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Emergency Alert System',
