@@ -157,7 +157,7 @@ export default function LoginPage() {
               <div className="space-y-3">
                 <p className="text-xs text-slate-500 text-center">
                   For access assistance contact your administrator at
-                  <span className="font-medium text-slate-600"> security@yourdomain.com</span>.
+                  <span className="font-medium text-slate-600"> admin@yourdomain.com</span>.
                 </p>
 
                 <div className="text-center text-xs text-slate-400">

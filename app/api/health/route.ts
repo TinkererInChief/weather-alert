@@ -1,74 +1,219 @@
 import { checkDatabaseConnection } from '@/lib/prisma'
+import { Redis } from '@upstash/redis'
 
-// Ultra-minimal health endpoint - Railway ignores RAILWAY_HEALTHCHECK_PATH
+// Lazy-loaded Redis client for health checks
+function getRedisClient() {
+  const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL
+  const redisToken = process.env.REDIS_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+
+  if (!redisUrl) {
+    throw new Error('Redis URL not configured')
+  }
+
+  return new Redis({
+    url: redisUrl,
+    token: redisToken,
+  })
+}
+
+// Ultra-minimal health endpoint - Railway health checks
 export async function HEAD() {
   return new Response(null, { status: 200 })
 }
 
 export async function GET(request: Request) {
+  const startTime = Date.now()
+  
   try {
     const url = new URL(request.url)
+    const detailed = url.searchParams.get('detailed') === 'true'
     const checkDb = url.searchParams.get('db') === 'true'
     
-    // Basic health check - always return OK for Railway healthcheck
-    const response: any = {
-      status: 'healthy', // Changed to match our UI expectations
+    // Basic health information
+    const basicHealth = {
+      status: 'healthy',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'unknown',
-      uptime: process.uptime(),
+      uptime: Math.floor(process.uptime()),
       nodeVersion: process.version,
       service: 'Emergency Alert System',
-      services: {
-        database: 'healthy',
-        sms: 'healthy',
-        email: process.env.SENDGRID_API_KEY ? 'healthy' : 'warning',
-        whatsapp: 'healthy',
-        voice: 'healthy'
-      }
+      version: process.env.npm_package_version || 'unknown',
+      responseTime: 0, // Will be calculated at the end
     }
     
-    // Only check database if explicitly requested and not during build
-    if (checkDb && process.env.NODE_ENV !== 'production') {
-      try {
-        const dbConnected = await checkDatabaseConnection()
-        response.database = {
-          connected: dbConnected,
-          url: process.env.DATABASE_URL ? 'configured' : 'missing'
+    // If not detailed check, return basic health quickly
+    if (!detailed) {
+      basicHealth.responseTime = Date.now() - startTime
+      return Response.json(basicHealth, { 
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
-      } catch (dbError) {
-        // Database check failed, but still return healthy service
-        response.database = {
-          connected: false,
-          error: 'Database check failed',
-          note: 'Service remains healthy'
-        }
-      }
-    } else if (checkDb) {
-      response.database = {
-        status: 'Database checks disabled in production for faster health checks'
-      }
+      })
+    }
+
+    // Detailed health checks
+    const healthChecks = {
+      database: await checkDatabaseHealth(checkDb),
+      redis: await checkRedisHealth(),
+      services: await checkExternalServicesHealth(),
+      system: await checkSystemHealth(),
+    }
+
+    // Determine overall status
+    const allHealthy = 
+      (healthChecks.database.status === 'healthy' || healthChecks.database.status === 'warning') &&
+      (healthChecks.redis.status === 'healthy' || healthChecks.redis.status === 'warning') &&
+      (healthChecks.system.status === 'healthy' || healthChecks.system.status === 'warning') &&
+      Object.values(healthChecks.services).every(service => 
+        service.status === 'healthy' || service.status === 'warning'
+      )
+
+    const response = {
+      ...basicHealth,
+      status: allHealthy ? 'healthy' : 'degraded',
+      checks: healthChecks,
+      responseTime: Date.now() - startTime,
     }
     
     return Response.json(response, { 
-      status: 200,
+      status: allHealthy ? 200 : 503,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
         'Expires': '0'
       }
     })
+    
   } catch (error) {
     console.error('Health check error:', error)
-    // Even if there's an error, return 200 for Railway healthcheck
-    return Response.json(
-      { 
-        status: 'ok', // Changed from 'error' to 'ok'
-        timestamp: new Date().toISOString(),
-        service: 'Emergency Alert System',
-        note: 'Basic health check passed, detailed checks may have issues'
-      }, 
-      { status: 200 } // Changed from 500 to 200
-    )
+    
+    return Response.json({
+      status: 'error',
+      timestamp: new Date().toISOString(),
+      service: 'Emergency Alert System',
+      error: error instanceof Error ? error.message : 'Health check failed',
+      responseTime: Date.now() - startTime,
+    }, { 
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
+  }
+}
+
+async function checkDatabaseHealth(forceCheck: boolean = false) {
+  try {
+    if (!forceCheck && process.env.NODE_ENV === 'production') {
+      return {
+        status: 'healthy',
+        message: 'Database checks disabled in production for performance',
+        configured: !!process.env.DATABASE_URL
+      }
+    }
+
+    const connected = await checkDatabaseConnection()
+    return {
+      status: connected ? 'healthy' : 'unhealthy',
+      connected,
+      configured: !!process.env.DATABASE_URL,
+      message: connected ? 'Database connection successful' : 'Database connection failed'
+    }
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      connected: false,
+      error: error instanceof Error ? error.message : 'Database check failed',
+      message: 'Database health check failed'
+    }
+  }
+}
+
+async function checkRedisHealth() {
+  try {
+    const redis = getRedisClient()
+    const testKey = `health:check:${Date.now()}`
+    await redis.set(testKey, 'test', { ex: 10 }) // Expire in 10 seconds
+    const result = await redis.get(testKey)
+    await redis.del(testKey)
+    
+    return {
+      status: result === 'test' ? 'healthy' : 'unhealthy',
+      connected: true,
+      message: result === 'test' ? 'Redis connection successful' : 'Redis test failed'
+    }
+  } catch (error) {
+    return {
+      status: 'unhealthy',
+      connected: false,
+      error: error instanceof Error ? error.message : 'Redis check failed',
+      message: 'Redis health check failed'
+    }
+  }
+}
+
+async function checkExternalServicesHealth() {
+  const services = {
+    twilio: {
+      status: (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) ? 'healthy' : 'warning',
+      configured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
+      message: 'SMS, WhatsApp, and Voice services'
+    },
+    sendgrid: {
+      status: process.env.SENDGRID_API_KEY ? 'healthy' : 'warning',
+      configured: !!process.env.SENDGRID_API_KEY,
+      message: 'Email notification service'
+    },
+    usgs: {
+      status: 'healthy', // USGS is a public API
+      configured: true,
+      message: 'Earthquake data feed'
+    },
+    noaa: {
+      status: 'healthy', // NOAA is a public API
+      configured: true,
+      message: 'Tsunami alert feed'
+    }
+  }
+
+  return services
+}
+
+async function checkSystemHealth() {
+  const memUsage = process.memoryUsage()
+  const cpuUsage = process.cpuUsage()
+  
+  // Convert bytes to megabytes
+  const memoryMB = {
+    rss: Math.round(memUsage.rss / 1024 / 1024),
+    heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+    heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+    external: Math.round(memUsage.external / 1024 / 1024)
+  }
+
+  // Memory health assessment
+  const heapUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100
+  const memoryStatus = heapUsagePercent > 90 ? 'unhealthy' : heapUsagePercent > 70 ? 'warning' : 'healthy'
+
+  return {
+    status: memoryStatus,
+    memory: {
+      ...memoryMB,
+      heapUsagePercent: Math.round(heapUsagePercent)
+    },
+    cpu: {
+      user: Math.round(cpuUsage.user / 1000), // Convert to milliseconds
+      system: Math.round(cpuUsage.system / 1000)
+    },
+    uptime: Math.floor(process.uptime()),
+    platform: process.platform,
+    arch: process.arch,
+    nodeVersion: process.version
   }
 }
 

@@ -14,6 +14,8 @@ COPY package.json pnpm-lock.yaml* ./
 RUN corepack enable pnpm && pnpm i --frozen-lockfile
 
 FROM base AS builder
+# Skip strict secrets validation during build; runtime validation happens in runner
+ENV SKIP_SECRETS_VALIDATION=true
 WORKDIR /app
 # Ensure OpenSSL is available during prisma generate and Next build
 RUN apt-get update \
