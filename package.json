@@ -32,8 +32,6 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/xml2js": "^0.4.14",
-    "@upstash/ratelimit": "^2.0.6",
-    "@upstash/redis": "^1.35.4",
     "autoprefixer": "^10.0.1",
     "axios": "^1.6.0",
     "bull": "^4.12.0",
