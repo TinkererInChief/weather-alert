@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Shield, AlertTriangle, Smartphone, Zap, Loader2 } from 'lucide-react'
@@ -22,7 +19,7 @@ export default function LoginPage() {
   // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (sessionStatus === 'authenticated' && session) {
-      router.push('/dashboard')
+      router.push('/')
     }
   }, [session, sessionStatus, router])
 
@@ -83,7 +80,7 @@ export default function LoginPage() {
   const handleOTPSuccess = async () => {
     try {
       // Redirect to dashboard on successful authentication
-      window.location.href = '/dashboard'
+      window.location.href = '/'
     } catch (error) {
       console.error('Authentication redirect failed:', error)
     }

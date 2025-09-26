@@ -6,8 +6,6 @@ const nextConfig = {
     // Temporarily disabled due to styling warnings - can be re-enabled after cleanup
     ignoreDuringBuilds: true,
   },
-  // Force all pages to be server-side rendered or dynamic
-  trailingSlash: false,
   webpack: (config) => {
     // Fix for Prisma in production
     config.externals.push({

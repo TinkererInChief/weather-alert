@@ -1,9 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic'
 import { Activity, CheckCircle, XCircle, AlertTriangle, Clock, Wifi, Database, Globe, Phone, Mail, MessageSquare, MessageCircle } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 

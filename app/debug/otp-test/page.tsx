@@ -2,9 +2,6 @@
 
 import { useState } from 'react'
 
-// Force dynamic rendering for this page
-export const dynamic = 'force-dynamic'
-
 export default function OTPTestPage() {
   const [phone, setPhone] = useState('+919910490077')
   const [code, setCode] = useState('')

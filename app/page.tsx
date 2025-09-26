@@ -1,17 +1,15 @@
-import HeroSection from '@/components/home/HeroSection'
-import BenefitsSection from '@/components/home/BenefitsSection'
-import FeaturesSection from '@/components/home/FeaturesSection'
-import UseCasesSection from '@/components/home/UseCasesSection'
-import TrustSection from '@/components/home/TrustSection'
-import PricingTeaser from '@/components/home/PricingTeaser'
-import CTASection from '@/components/home/CTASection'
-import HomeFooter from '@/components/home/HomeFooter'
-import HomeRedirect from '@/components/home/HomeRedirect'
+import HeroSection from '@/components/homepage/HeroSection'
+import BenefitsSection from '@/components/homepage/BenefitsSection'
+import FeaturesSection from '@/components/homepage/FeaturesSection'
+import UseCasesSection from '@/components/homepage/UseCasesSection'
+import TrustSection from '@/components/homepage/TrustSection'
+import PricingTeaser from '@/components/homepage/PricingTeaser'
+import CTASection from '@/components/homepage/CTASection'
+import HomeFooter from '@/components/homepage/HomeFooter'
 
 export default function HomePage() {
   return (
-    <>
-      <HomeRedirect />
+    <div className="min-h-screen bg-white">
       <HeroSection />
       <BenefitsSection />
       <FeaturesSection />
@@ -20,6 +18,6 @@ export default function HomePage() {
       <PricingTeaser />
       <CTASection />
       <HomeFooter />
-    </>
+    </div>
   )
 }
