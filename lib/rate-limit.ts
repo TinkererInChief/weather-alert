@@ -1,96 +1,119 @@
-import { Ratelimit } from '@upstash/ratelimit'
-import { Redis } from '@upstash/redis'
+import type Redis from 'ioredis'
+import RedisConnection from '@/lib/queue/redis-connection'
 
-// Lazy-loaded Redis instance for rate limiting
-function getRedisClient(): Redis {
-  const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL
-  const redisToken = process.env.REDIS_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+// Get shared ioredis client
+function getRedis(): Redis {
+  return RedisConnection.getInstance()
+}
 
-  // For builds or when Redis is not configured, create a mock
-  if (!redisUrl || process.env.NODE_ENV === 'test') {
-    console.warn('Redis not configured, using in-memory fallback')
-    // Return a mock Redis client for development
-    return {
-      set: async () => 'OK',
-      get: async () => null,
-      del: async () => 1,
-      incr: async () => 1,
-      expire: async () => true,
-    } as any as Redis
+// Parse window strings like '1 h', '1 m', '30 s' to milliseconds
+function parseWindowToMs(window: string): number {
+  const trimmed = window.trim().toLowerCase()
+  const match = trimmed.match(/^(\d+)\s*(s|m|h|d)$/)
+  if (!match) throw new Error(`Invalid window: ${window}`)
+  const value = Number(match[1])
+  const unit = match[2]
+  switch (unit) {
+    case 's': return value * 1000
+    case 'm': return value * 60 * 1000
+    case 'h': return value * 60 * 60 * 1000
+    case 'd': return value * 24 * 60 * 60 * 1000
+    default: throw new Error(`Invalid window unit: ${unit}`)
   }
+}
 
-  return new Redis({
-    url: redisUrl,
-    token: redisToken,
-  })
+// Minimal limiter interface (compatible with how we use it in this codebase)
+type RateLimiter = {
+  limit: (identifier: string) => Promise<{
+    success: boolean
+    limit: number
+    remaining: number
+    reset: number // epoch ms
+  }>
+}
+
+function createSlidingWindowLimiter(options: { limit: number; window: string; prefix: string }): RateLimiter {
+  const redis = getRedis()
+  const windowMs = parseWindowToMs(options.window)
+  const windowSec = Math.ceil(windowMs / 1000)
+  const prefix = options.prefix
+
+  return {
+    async limit(identifier: string) {
+      const now = Date.now()
+      const key = `${prefix}:${identifier}`
+
+      const pipeline = (redis as any).multi()
+      // Remove old entries
+      pipeline.zremrangebyscore(key, 0, now - windowMs)
+      // Add current timestamp as score and member (unique member via now + random)
+      const member = `${now}-${Math.random().toString(36).slice(2, 8)}`
+      pipeline.zadd(key, now, member)
+      // Count
+      pipeline.zcard(key)
+      // Set TTL
+      pipeline.expire(key, windowSec)
+      // Get TTL
+      pipeline.ttl(key)
+
+      const results = await pipeline.exec()
+      // results: [zremrangebyscore, zadd, zcard, expire, ttl]
+      const count = Number(results?.[2]?.[1] ?? 0)
+      const ttlSec = Number(results?.[4]?.[1] ?? windowSec)
+      const allowed = count <= options.limit
+      const remaining = Math.max(0, options.limit - count)
+      const reset = Date.now() + (ttlSec > 0 ? ttlSec * 1000 : windowMs)
+
+      return {
+        success: allowed,
+        limit: options.limit,
+        remaining,
+        reset,
+      }
+    },
+  }
 }
 
 // Lazy initialization of rate limiters
-let _rateLimiters: any = null
+let _rateLimiters: null | {
+  otpRequest: RateLimiter
+  otpVerify: RateLimiter
+  login: RateLimiter
+  api: RateLimiter
+  alert: RateLimiter
+} = null
 
 function getRateLimiters() {
   if (!_rateLimiters) {
-    const redis = getRedisClient()
-    
     _rateLimiters = {
-      otpRequest: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(3, '1 h'), // 3 requests per hour per phone
-        analytics: true,
-        prefix: 'ratelimit:otp:request',
-      }),
-      
-      otpVerify: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(10, '1 h'), // 10 attempts per hour per phone  
-        analytics: true,
-        prefix: 'ratelimit:otp:verify',
-      }),
-      
-      login: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(10, '1 h'), // 10 login attempts per hour per IP
-        analytics: true,
-        prefix: 'ratelimit:login:ip',
-      }),
-      
-      api: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(100, '1 m'), // 100 requests per minute per IP
-        analytics: true,
-        prefix: 'ratelimit:api:general',
-      }),
-      
-      alert: new Ratelimit({
-        redis,
-        limiter: Ratelimit.slidingWindow(50, '1 m'), // 50 alert requests per minute
-        analytics: true,
-        prefix: 'ratelimit:alert',
-      })
+      otpRequest: createSlidingWindowLimiter({ limit: 3, window: '1 h', prefix: 'ratelimit:otp:request' }),
+      otpVerify: createSlidingWindowLimiter({ limit: 10, window: '1 h', prefix: 'ratelimit:otp:verify' }),
+      login: createSlidingWindowLimiter({ limit: 10, window: '1 h', prefix: 'ratelimit:login:ip' }),
+      api: createSlidingWindowLimiter({ limit: 100, window: '1 m', prefix: 'ratelimit:api:general' }),
+      alert: createSlidingWindowLimiter({ limit: 50, window: '1 m', prefix: 'ratelimit:alert' }),
     }
   }
-  
   return _rateLimiters
 }
 
 // Export functions that return the appropriate rate limiter
-export function getOtpRequestRateLimit(): Ratelimit {
+export function getOtpRequestRateLimit() {
   return getRateLimiters().otpRequest
 }
 
-export function getOtpVerifyRateLimit(): Ratelimit {
+export function getOtpVerifyRateLimit() {
   return getRateLimiters().otpVerify
 }
 
-export function getLoginRateLimit(): Ratelimit {
+export function getLoginRateLimit() {
   return getRateLimiters().login
 }
 
-export function getApiRateLimit(): Ratelimit {
+export function getApiRateLimit() {
   return getRateLimiters().api
 }
 
-export function getAlertRateLimit(): Ratelimit {
+export function getAlertRateLimit() {
   return getRateLimiters().alert
 }
 
@@ -122,17 +145,16 @@ export interface RateLimitResult {
 }
 
 export async function checkRateLimit(
-  ratelimit: Ratelimit, 
+  ratelimit: ReturnType<typeof getOtpRequestRateLimit>, 
   identifier: string
 ): Promise<RateLimitResult> {
   const result = await ratelimit.limit(identifier)
-  
   return {
     success: result.success,
     limit: result.limit,
     remaining: result.remaining,
     reset: new Date(result.reset),
-    blocked: !result.success
+    blocked: !result.success,
   }
 }
 
@@ -161,17 +183,17 @@ export class FailureTracker {
   }
 
   private getRedis(): Redis {
-    return getRedisClient()
+    return getRedis()
   }
 
   async recordFailure(identifier: string): Promise<number> {
     const key = `${this.prefix}:${identifier}`
     const redis = this.getRedis()
-    const count = await redis.incr(key)
+    const count = await (redis as any).incr(key)
     
     // Set expiry to 1 hour for failure tracking
     if (count === 1) {
-      await redis.expire(key, 3600)
+      await (redis as any).expire(key, 3600)
     }
     
     return count
@@ -180,14 +202,14 @@ export class FailureTracker {
   async getFailureCount(identifier: string): Promise<number> {
     const key = `${this.prefix}:${identifier}`
     const redis = this.getRedis()
-    const count = await redis.get(key)
+    const count = await (redis as any).get(key)
     return parseInt(count as string) || 0
   }
 
   async clearFailures(identifier: string): Promise<void> {
     const key = `${this.prefix}:${identifier}`
     const redis = this.getRedis()
-    await redis.del(key)
+    await (redis as any).del(key)
   }
 }
 

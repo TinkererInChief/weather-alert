@@ -1,19 +1,10 @@
 import { checkDatabaseConnection } from '@/lib/prisma'
-import { Redis } from '@upstash/redis'
+import RedisConnection from '@/lib/queue/redis-connection'
+import type Redis from 'ioredis'
 
-// Lazy-loaded Redis client for health checks
-function getRedisClient() {
-  const redisUrl = process.env.REDIS_URL || process.env.UPSTASH_REDIS_REST_URL
-  const redisToken = process.env.REDIS_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
-
-  if (!redisUrl) {
-    throw new Error('Redis URL not configured')
-  }
-
-  return new Redis({
-    url: redisUrl,
-    token: redisToken,
-  })
+// Lazy getter for ioredis client (Railway Redis)
+function getRedisClient(): Redis {
+  return RedisConnection.getInstance()
 }
 
 // Ultra-minimal health endpoint - Railway health checks
@@ -137,11 +128,14 @@ async function checkDatabaseHealth(forceCheck: boolean = false) {
 async function checkRedisHealth() {
   try {
     const redis = getRedisClient()
+    // Connect lazily if needed
+    try { await (redis as any).connect?.() } catch { /* ignore if already connecting */ }
+
     const testKey = `health:check:${Date.now()}`
-    await redis.set(testKey, 'test', { ex: 10 }) // Expire in 10 seconds
-    const result = await redis.get(testKey)
-    await redis.del(testKey)
-    
+    await (redis as any).set(testKey, 'test', 'EX', 10) // 10s TTL
+    const result = await (redis as any).get(testKey)
+    await (redis as any).del(testKey)
+
     return {
       status: result === 'test' ? 'healthy' : 'unhealthy',
       connected: true,
