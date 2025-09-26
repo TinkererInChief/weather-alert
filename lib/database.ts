@@ -236,13 +236,94 @@ class Database {
         LIMIT ${limit}
       `
 
-      // For now, return basic logs with simulated notification details
-      // TODO: Implement proper notification tracking in the database
-      return logs.map((log: AlertLogRow) => {
-        // Parse error message to extract notification details if available
-        const notifications = this.parseNotificationDetails(log.errorMessage || '')
-        
-        return {
+      // Build detailed notifications using DeliveryLog anchored by AlertJob.metadata->>sourceId
+      const results: any[] = []
+
+      for (const log of logs) {
+        // Fetch delivery logs for alert jobs created for this earthquakeId
+        const deliveries = await prisma.$queryRaw<Array<{
+          id: string
+          contactId: string
+          contactName: string
+          phone: string | null
+          email: string | null
+          whatsapp: string | null
+          channel: string
+          status: string
+          providerMessageId: string | null
+          errorMessage: string | null
+          createdAt: Date
+        }>>`
+          WITH aj AS (
+            SELECT id FROM "alert_jobs"
+            WHERE metadata ->> 'sourceId' = ${log.earthquakeId}
+            ORDER BY "createdAt" DESC
+            LIMIT 5
+          )
+          SELECT dl.id,
+                 dl."contactId",
+                 c.name AS "contactName",
+                 c.phone,
+                 c.email,
+                 c.whatsapp,
+                 dl.channel,
+                 dl.status,
+                 dl."providerMessageId",
+                 dl."errorMessage",
+                 dl."createdAt"
+          FROM "delivery_logs" dl
+          JOIN aj ON dl."alertJobId" = aj.id
+          JOIN "contacts" c ON c.id = dl."contactId"
+          ORDER BY dl."createdAt" DESC
+        `
+
+        // Group deliveries by contact
+        const byContact: Record<string, {
+          contactId: string
+          contactName: string
+          contactPhone?: string
+          contactEmail?: string
+          contactWhatsapp?: string
+          channels: Array<{
+            channel: 'sms' | 'email' | 'whatsapp' | 'voice'
+            success: boolean
+            messageId?: string
+            error?: string
+            timestamp: string
+          }>
+          totalChannels: number
+          successfulChannels: number
+        }> = {}
+
+        for (const d of deliveries) {
+          const key = d.contactId
+          if (!byContact[key]) {
+            byContact[key] = {
+              contactId: d.contactId,
+              contactName: d.contactName,
+              contactPhone: d.phone ?? undefined,
+              contactEmail: d.email ?? undefined,
+              contactWhatsapp: d.whatsapp ?? undefined,
+              channels: [],
+              totalChannels: 0,
+              successfulChannels: 0,
+            }
+          }
+          const success = ['sent', 'delivered', 'queued', 'completed'].includes(d.status)
+          byContact[key].channels.push({
+            channel: d.channel as any,
+            success,
+            messageId: d.providerMessageId ?? undefined,
+            error: d.errorMessage ?? undefined,
+            timestamp: d.createdAt.toISOString(),
+          })
+          byContact[key].totalChannels += 1
+          if (success) byContact[key].successfulChannels += 1
+        }
+
+        const notifications = Object.values(byContact)
+
+        results.push({
           id: log.id,
           earthquakeId: log.earthquakeId,
           magnitude: log.magnitude,
@@ -251,9 +332,11 @@ class Database {
           contactsNotified: log.contactsNotified,
           success: log.success,
           errorMessage: log.errorMessage ?? undefined,
-          notifications
-        }
-      })
+          notifications,
+        })
+      }
+
+      return results
     } catch (error) {
       console.error('Error fetching detailed alert logs:', error)
       return []

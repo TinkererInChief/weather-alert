@@ -38,31 +38,71 @@ export default function SystemStatusPage() {
 
   const fetchSystemStatus = async () => {
     try {
-      // Mock data - in production, this would call real APIs
-      const mockStatus: SystemStatus = {
-        overall: 'healthy',
-        uptime: '45 days, 12 hours',
+      setLoading(true)
+      const [healthRes, statsRes] = await Promise.all([
+        fetch('/api/health?detailed=true', { cache: 'no-store' }),
+        fetch('/api/stats', { cache: 'no-store' })
+      ])
+
+      const health = await healthRes.json()
+      const statsJson = await statsRes.json()
+
+      const overall: SystemStatus['overall'] = health.status === 'healthy' ? 'healthy' : health.status === 'degraded' ? 'warning' : 'critical'
+
+      const dbStatus = health.checks?.database?.status || 'warning'
+      const services = health.checks?.services || {}
+
+      const mapStatus = (s: string | undefined): 'healthy' | 'warning' | 'critical' => {
+        if (s === 'healthy') return 'healthy'
+        if (s === 'warning') return 'warning'
+        return 'critical'
+      }
+
+      const sysStatus: SystemStatus = {
+        overall,
+        uptime: `${Math.max(0, Number(health.uptime) || 0)}s`,
         lastCheck: new Date().toISOString(),
         services: {
-          database: { status: 'healthy', latency: '12ms', message: 'All database operations normal' },
-          usgs: { status: 'healthy', latency: '245ms', message: 'USGS API responding normally' },
-          sms: { status: 'healthy', latency: '1.2s', message: 'Twilio SMS service operational' },
-          email: { status: 'warning', latency: '2.1s', message: 'SendGrid experiencing minor delays' },
-          whatsapp: { status: 'healthy', latency: '1.8s', message: 'WhatsApp Business API operational' },
-          voice: { status: 'healthy', latency: '1.5s', message: 'Twilio Voice service operational' }
+          database: {
+            status: mapStatus(dbStatus),
+            latency: `${health.responseTime || 0}ms`,
+            message: health.checks?.database?.message || 'Database check'
+          },
+          usgs: {
+            status: mapStatus(services.usgs?.status),
+            latency: '-',
+            message: services.usgs?.message || 'USGS API'
+          },
+          sms: {
+            status: mapStatus(services.twilio?.status),
+            latency: '-',
+            message: services.twilio?.message || 'Twilio SMS service'
+          },
+          email: {
+            status: mapStatus(services.sendgrid?.status),
+            latency: '-',
+            message: services.sendgrid?.message || 'SendGrid email service'
+          },
+          whatsapp: {
+            status: mapStatus(services.twilio?.status),
+            latency: '-',
+            message: 'WhatsApp via Twilio'
+          },
+          voice: {
+            status: mapStatus(services.twilio?.status),
+            latency: '-',
+            message: 'Twilio Voice service'
+          }
         },
         stats: {
-          totalAlerts: 127,
-          successRate: '98.4%',
-          avgResponseTime: '1.2s',
-          activeContacts: 12
+          totalAlerts: statsJson?.data?.stats?.totalAlerts ?? 0,
+          successRate: typeof statsJson?.data?.stats?.successRate === 'string' ? statsJson.data.stats.successRate + '%' : `${statsJson?.data?.stats?.successRate ?? 0}%`,
+          avgResponseTime: `${health.responseTime || 0}ms`,
+          activeContacts: statsJson?.data?.stats?.activeContacts ?? 0
         }
       }
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      setStatus(mockStatus)
+      setStatus(sysStatus)
       setLastUpdate(new Date())
     } catch (error) {
       console.error('Failed to fetch system status:', error)

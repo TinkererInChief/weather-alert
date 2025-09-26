@@ -74,11 +74,76 @@ export default function AppLayout({
   // Notification Center Component
   const NotificationCenter = () => {
     const [isOpen, setIsOpen] = useState(false)
-    const [notifications, setNotifications] = useState([
-      { id: 1, type: 'alert', message: 'M5.2 earthquake detected near Los Angeles', time: '2 min ago', unread: true },
-      { id: 2, type: 'system', message: 'SMS service operational', time: '5 min ago', unread: true },
-      { id: 3, type: 'success', message: 'Alert sent to 12 contacts successfully', time: '10 min ago', unread: false },
-    ])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    type NotificationItem = {
+      id: string | number
+      type: 'alert' | 'system' | 'success'
+      message: string
+      time: string
+      unread: boolean
+    }
+    const [notifications, setNotifications] = useState<NotificationItem[]>([])
+
+    const loadNotifications = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await fetch('/api/notifications', { cache: 'no-store' })
+        const data = await res.json()
+        if (data.success) {
+          setNotifications(data.data.notifications)
+        } else {
+          setError(data.error || 'Failed to load notifications')
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load notifications')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const markAllAsRead = async () => {
+      try {
+        setLoading(true)
+        const res = await fetch('/api/notifications/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ all: true })
+        })
+        const data = await res.json()
+        if (!data.success) throw new Error(data.error || 'Failed to mark as read')
+        // Optimistically update
+        setNotifications((prev) => prev.map(n => ({ ...n, unread: false })))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to mark as read')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const markOneAsRead = async (id: string | number) => {
+      try {
+        const strId = String(id)
+        if (!strId.startsWith('delivery-')) return
+        const res = await fetch('/api/notifications/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids: [strId] })
+        })
+        const data = await res.json()
+        if (!data.success) throw new Error(data.error || 'Failed to mark as read')
+        setNotifications((prev) => prev.map(n => n.id === id ? { ...n, unread: false } : n))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to mark as read')
+      }
+    }
+
+    useEffect(() => {
+      loadNotifications()
+      const interval = setInterval(loadNotifications, 60000)
+      return () => clearInterval(interval)
+    }, [])
 
     const unreadCount = notifications.filter(n => n.unread).length
 
@@ -102,12 +167,37 @@ export default function AppLayout({
             <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200/60 z-40 animate-scaleIn">
               <div className="p-4 border-b border-slate-200/60 flex items-center justify-between">
                 <h3 className="font-semibold text-slate-900">Notifications</h3>
-                <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={loadNotifications}
+                    title="Refresh"
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <Clock className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={markAllAsRead}
+                    title="Mark all as read"
+                    className="text-slate-400 hover:text-slate-600 text-xs px-2 py-1 border border-slate-200 rounded"
+                  >
+                    Mark all
+                  </button>
+                  <button onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
                   <X className="h-4 w-4" />
-                </button>
+                  </button>
+                </div>
               </div>
               <div className="max-h-96 overflow-y-auto">
-                {notifications.map((notification) => (
+                {loading && (
+                  <div className="p-4 text-sm text-slate-500">Loading...</div>
+                )}
+                {error && (
+                  <div className="p-4 text-sm text-red-600">{error}</div>
+                )}
+                {!loading && !error && notifications.length === 0 && (
+                  <div className="p-4 text-sm text-slate-500">No notifications</div>
+                )}
+                {!loading && !error && notifications.map((notification) => (
                   <div 
                     key={notification.id} 
                     className={`p-4 border-b border-slate-100 hover:bg-slate-50 transition-colors ${
@@ -127,8 +217,17 @@ export default function AppLayout({
                         <p className="text-sm text-slate-900">{notification.message}</p>
                         <p className="text-xs text-slate-500 mt-1">{notification.time}</p>
                       </div>
-                      {notification.unread && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      {notification.unread && typeof notification.id === 'string' && (notification.id as string).startsWith('delivery-') && (
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => markOneAsRead(notification.id)}
+                            className="text-xs text-blue-600 hover:text-blue-700 px-2 py-0.5 border border-blue-100 rounded"
+                            title="Mark as read"
+                          >
+                            Mark
+                          </button>
+                          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                        </div>
                       )}
                     </div>
                   </div>

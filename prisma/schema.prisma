@@ -253,12 +253,13 @@ model DeliveryLog {
   errorMessage      String?
   sentAt            DateTime?
   deliveredAt       DateTime?
+  readAt            DateTime?
   createdAt         DateTime  @default(now())
-  
+
   // Relationships
   alertJob          AlertJob  @relation(fields: [alertJobId], references: [id], onDelete: Cascade)
   contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  
+
   @@map("delivery_logs")
 }
 

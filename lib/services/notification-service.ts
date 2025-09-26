@@ -2,6 +2,7 @@ import { SMSService } from '../sms-service'
 import { voiceService, VoiceAlertType } from '../voice-service'
 import { WhatsAppService } from './whatsapp-service'
 import { EmailService } from './email-service'
+import { prisma } from '../prisma'
 
 export interface NotificationRequest {
   contact: {
@@ -43,6 +44,38 @@ export class NotificationService {
     this.emailService = new EmailService()
   }
 
+  // Persist per-channel delivery log
+  private async recordDeliveryLog(entry: {
+    alertJobId?: string
+    contactId?: string
+    channel: 'sms' | 'email' | 'whatsapp' | 'voice'
+    provider: string
+    status: string
+    providerMessageId?: string
+    errorMessage?: string
+    sentAt?: Date
+  }): Promise<void> {
+    try {
+      if (!entry.alertJobId || !entry.contactId) return
+
+      await prisma.deliveryLog.create({
+        data: {
+          alertJobId: entry.alertJobId,
+          contactId: entry.contactId,
+          channel: entry.channel,
+          provider: entry.provider,
+          status: entry.status,
+          providerMessageId: entry.providerMessageId || null,
+          errorMessage: entry.errorMessage || null,
+          sentAt: entry.sentAt || new Date(),
+        }
+      })
+    } catch (err) {
+      // Do not throw from logging path; just warn
+      console.warn('⚠️ Failed to record delivery log:', err)
+    }
+  }
+ 
   /**
    * Get preferred notification channels for a contact based on severity
    */
@@ -86,16 +119,16 @@ export class NotificationService {
     try {
       switch (channel) {
         case 'sms':
-          return await this.sendSMSNotification(contact, templateData)
+          return await this.sendSMSNotification(contact, templateData, request.alertJobId)
         
         case 'whatsapp':
-          return await this.sendWhatsAppNotification(contact, templateData)
+          return await this.sendWhatsAppNotification(contact, templateData, request.alertJobId)
         
         case 'voice':
-          return await this.sendVoiceNotification(contact, templateData)
+          return await this.sendVoiceNotification(contact, templateData, request.alertJobId)
         
         case 'email':
-          return await this.sendEmailNotification(contact, templateData)
+          return await this.sendEmailNotification(contact, templateData, request.alertJobId)
         
         default:
           return {
@@ -114,7 +147,7 @@ export class NotificationService {
   /**
    * Send SMS notification
    */
-  private async sendSMSNotification(contact: any, templateData: any): Promise<NotificationResult> {
+  private async sendSMSNotification(contact: any, templateData: any, alertJobId?: string): Promise<NotificationResult> {
     if (!contact.phone) {
       return {
         success: false,
@@ -125,18 +158,32 @@ export class NotificationService {
     const message = this.formatSMSMessage(templateData)
     const result = await this.smsService.sendSMS(contact.phone, message)
 
-    return {
+    const response: NotificationResult = {
       success: result.success,
       messageId: result.messageId,
       error: result.error,
       provider: 'twilio-sms'
     }
+
+    // Record delivery log if an alert job is present
+    await this.recordDeliveryLog({
+      alertJobId,
+      contactId: contact.id,
+      channel: 'sms',
+      provider: 'twilio',
+      status: result.success ? 'sent' : 'failed',
+      providerMessageId: result.messageId,
+      errorMessage: result.error,
+      sentAt: new Date()
+    })
+
+    return response
   }
 
   /**
    * Send WhatsApp notification
    */
-  private async sendWhatsAppNotification(contact: any, templateData: any): Promise<NotificationResult> {
+  private async sendWhatsAppNotification(contact: any, templateData: any, alertJobId?: string): Promise<NotificationResult> {
     const whatsappNumber = contact.whatsapp || contact.phone
     
     if (!whatsappNumber) {
@@ -149,18 +196,31 @@ export class NotificationService {
     const message = this.formatWhatsAppMessage(templateData)
     const result = await this.whatsappService.sendMessage(whatsappNumber, message)
 
-    return {
+    const response: NotificationResult = {
       success: result.success,
       messageId: result.messageId,
       error: result.error,
       provider: result.provider
     }
+
+    await this.recordDeliveryLog({
+      alertJobId,
+      contactId: contact.id,
+      channel: 'whatsapp',
+      provider: 'twilio',
+      status: result.success ? 'sent' : 'failed',
+      providerMessageId: result.messageId,
+      errorMessage: result.error,
+      sentAt: new Date()
+    })
+
+    return response
   }
 
   /**
    * Send voice notification
    */
-  private async sendVoiceNotification(contact: any, templateData: any): Promise<NotificationResult> {
+  private async sendVoiceNotification(contact: any, templateData: any, alertJobId?: string): Promise<NotificationResult> {
     if (!contact.phone) {
       return {
         success: false,
@@ -178,18 +238,31 @@ export class NotificationService {
       contact.name
     )
 
-    return {
+    const response: NotificationResult = {
       success: result.success,
       messageId: result.callSid,
       error: result.errorMessage,
       provider: 'twilio-voice'
     }
+
+    await this.recordDeliveryLog({
+      alertJobId,
+      contactId: contact.id,
+      channel: 'voice',
+      provider: 'twilio',
+      status: result.success ? 'queued' : 'failed',
+      providerMessageId: result.callSid,
+      errorMessage: result.errorMessage,
+      sentAt: new Date()
+    })
+
+    return response
   }
 
   /**
    * Send email notification
    */
-  private async sendEmailNotification(contact: any, templateData: any): Promise<NotificationResult> {
+  private async sendEmailNotification(contact: any, templateData: any, alertJobId?: string): Promise<NotificationResult> {
     if (!contact.email) {
       return {
         success: false,
@@ -206,12 +279,25 @@ export class NotificationService {
       textContent
     })
 
-    return {
+    const response: NotificationResult = {
       success: result.success,
       messageId: result.messageId,
       error: result.error,
       provider: result.provider || 'email'
     }
+
+    await this.recordDeliveryLog({
+      alertJobId,
+      contactId: contact.id,
+      channel: 'email',
+      provider: 'sendgrid',
+      status: result.success ? 'sent' : 'failed',
+      providerMessageId: result.messageId,
+      errorMessage: result.error,
+      sentAt: new Date()
+    })
+
+    return response
   }
 
   /**

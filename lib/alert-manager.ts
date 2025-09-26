@@ -5,6 +5,7 @@ import { EarthquakeFeature } from '@/types/earthquake'
 import { TsunamiService, TsunamiAlertLevel } from './tsunami-service'
 import { voiceService, VoiceAlertType } from './voice-service'
 import { NotificationService } from './services/notification-service'
+import { prisma } from './prisma'
 
 export class AlertManager {
   private earthquakeService: EarthquakeService
@@ -298,6 +299,24 @@ Emergency Alert System`
   ): Promise<{ totalSuccessful: number; errorSummary?: string }> {
     console.log(`📢 Sending multi-channel alerts (severity: ${severity}) to ${contacts.length} contacts`)
 
+    // Create an AlertJob to anchor DeliveryLog rows
+    const alertJob = await prisma.alertJob.create({
+      data: {
+        type: 'earthquake',
+        eventType: 'earthquake',
+        severity,
+        priority: 1,
+        targetingSnapshot: { contacts: contacts.length },
+        status: 'processing',
+        scheduledFor: new Date(),
+        startedAt: new Date(),
+        metadata: {
+          sourceId: earthquake.id,
+          title: earthquake.properties.title,
+        }
+      }
+    })
+
     const channelStats = {
       sms: { successful: 0, failed: 0 },
       email: { successful: 0, failed: 0 },
@@ -337,7 +356,7 @@ Emergency Alert System`
             contact,
             channel: channel as 'sms' | 'email' | 'whatsapp' | 'voice',
             templateData,
-            alertJobId: `alert-${earthquake.id}-${Date.now()}`
+            alertJobId: alertJob.id
           })
 
           if (result.success) {
@@ -364,6 +383,25 @@ Emergency Alert System`
                 `Email(${channelStats.email.successful}/${channelStats.email.successful + channelStats.email.failed}), ` +
                 `WhatsApp(${channelStats.whatsapp.successful}/${channelStats.whatsapp.successful + channelStats.whatsapp.failed}), ` +
                 `Voice(${channelStats.voice.successful}/${channelStats.voice.successful + channelStats.voice.failed})`)
+
+    // Update AlertJob status summary
+    try {
+      await prisma.alertJob.update({
+        where: { id: alertJob.id },
+        data: {
+          status: totalSuccessful > 0 && totalFailed === 0 ? 'completed' : (totalSuccessful > 0 ? 'completed' : 'failed'),
+          completedAt: new Date(),
+          errorMessage: errors.length > 0 ? errors.slice(0, 5).join('; ') : null,
+          metadata: {
+            ...(alertJob as any).metadata,
+            channelStats,
+            totals: { totalSuccessful, totalFailed }
+          }
+        }
+      })
+    } catch (e) {
+      console.warn('⚠️ Failed to update AlertJob summary:', e)
+    }
 
     return {
       totalSuccessful,
