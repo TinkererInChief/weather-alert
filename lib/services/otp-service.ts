@@ -1,11 +1,7 @@
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { SMSService } from '@/lib/sms-service'
-
-const OTP_LENGTH = Number(process.env.OTP_LENGTH ?? 6)
-const OTP_EXPIRY_MINUTES = Number(process.env.OTP_EXPIRY_MINUTES ?? 5)
-const OTP_MAX_ATTEMPTS = Number(process.env.OTP_MAX_ATTEMPTS ?? 5)
-const OTP_SECRET = process.env.OTP_SECRET ?? process.env.NEXTAUTH_SECRET ?? ''
+import { getSecret, getSecretNumber } from '@/lib/secrets'
 
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60_000)
@@ -28,10 +24,29 @@ export class OtpService {
     this.smsService = new SMSService()
   }
 
+  // Lazy getters so values are resolved at runtime, not at module import
+  private get otpLength() {
+    return getSecretNumber('OTP_LENGTH', 6)
+  }
+
+  private get otpExpiryMinutes() {
+    return getSecretNumber('OTP_EXPIRY_MINUTES', 5)
+  }
+
+  private get otpMaxAttempts() {
+    return getSecretNumber('OTP_MAX_ATTEMPTS', 5)
+  }
+
+  private get otpSecret() {
+    const primary = getSecret('OTP_SECRET', '')
+    if (primary) return primary
+    return getSecret('NEXTAUTH_SECRET', '')
+  }
+
   private generateCode() {
     const digits: string[] = []
 
-    while (digits.length < OTP_LENGTH) {
+    while (digits.length < this.otpLength) {
       const randomDigit = crypto.randomInt(0, 10)
       digits.push(String(randomDigit))
     }
@@ -55,11 +70,12 @@ export class OtpService {
   }
 
   private hashToken(phone: string, code: string) {
-    if (!OTP_SECRET) {
+    const secret = this.otpSecret
+    if (!secret) {
       throw new Error('OTP secret not configured. Set OTP_SECRET or NEXTAUTH_SECRET.')
     }
 
-    return crypto.createHash('sha256').update(`${phone}:${code}:${OTP_SECRET}`).digest('hex')
+    return crypto.createHash('sha256').update(`${phone}:${code}:${secret}`).digest('hex')
   }
 
   async sendOtp(params: { phone: string }) {
@@ -68,7 +84,7 @@ export class OtpService {
 
     const code = this.generateCode()
     const tokenHash = this.hashToken(formattedPhone, code)
-    const expiresAt = addMinutes(new Date(), OTP_EXPIRY_MINUTES)
+    const expiresAt = addMinutes(new Date(), this.otpExpiryMinutes)
 
     await prisma.$transaction([
       prisma.smsOtp.updateMany({
@@ -89,7 +105,7 @@ export class OtpService {
       })
     ])
 
-    const message = `Use ${code} to access the Emergency Alert Command Center. This code expires in ${OTP_EXPIRY_MINUTES} minutes.`
+    const message = `Use ${code} to access the Emergency Alert Command Center. This code expires in ${this.otpExpiryMinutes} minutes.`
     const result = await this.smsService.sendSMS(formattedPhone, message)
 
     if (!result.success) {
@@ -127,7 +143,7 @@ export class OtpService {
       throw new Error('Enter the most recent code we sent to your phone.')
     }
 
-    if (otpRecord.attempts >= OTP_MAX_ATTEMPTS) {
+    if (otpRecord.attempts >= this.otpMaxAttempts) {
       await prisma.smsOtp.update({
         where: { id: otpRecord.id },
         data: { consumedAt: new Date() }
