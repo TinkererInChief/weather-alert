@@ -1,4 +1,4 @@
-import { checkDatabaseConnection } from '@/lib/prisma'
+import { checkDatabaseConnection, prisma } from '@/lib/prisma'
 import RedisConnection from '@/lib/queue/redis-connection'
 import type Redis from 'ioredis'
 
@@ -100,25 +100,24 @@ export async function GET(request: Request) {
 
 async function checkDatabaseHealth(forceCheck: boolean = false) {
   try {
-    if (!forceCheck && process.env.NODE_ENV === 'production') {
-      return {
-        status: 'healthy',
-        message: 'Database checks disabled in production for performance',
-        configured: !!process.env.DATABASE_URL
-      }
-    }
+    // Always perform a lightweight ping so we can surface latency
+    const start = Date.now()
+    await prisma.$queryRaw`SELECT 1`
+    const ms = Date.now() - start
 
-    const connected = await checkDatabaseConnection()
     return {
-      status: connected ? 'healthy' : 'unhealthy',
-      connected,
+      status: 'healthy',
+      connected: true,
       configured: !!process.env.DATABASE_URL,
-      message: connected ? 'Database connection successful' : 'Database connection failed'
+      latencyMs: ms,
+      message: 'Database ping successful'
     }
   } catch (error) {
     return {
       status: 'unhealthy',
       connected: false,
+      configured: !!process.env.DATABASE_URL,
+      latencyMs: null,
       error: error instanceof Error ? error.message : 'Database check failed',
       message: 'Database health check failed'
     }
@@ -131,6 +130,12 @@ async function checkRedisHealth() {
     // Connect lazily if needed
     try { await (redis as any).connect?.() } catch { /* ignore if already connecting */ }
 
+    // Measure PING latency
+    const pingStart = Date.now()
+    const pong = await (redis as any).ping?.()
+    const pingMs = Date.now() - pingStart
+
+    // Also verify basic read/write
     const testKey = `health:check:${Date.now()}`
     await (redis as any).set(testKey, 'test', 'EX', 10) // 10s TTL
     const result = await (redis as any).get(testKey)
@@ -139,43 +144,119 @@ async function checkRedisHealth() {
     return {
       status: result === 'test' ? 'healthy' : 'unhealthy',
       connected: true,
-      message: result === 'test' ? 'Redis connection successful' : 'Redis test failed'
+      latencyMs: pingMs,
+      endpoint: RedisConnection.getCurrentEndpoint(),
+      message: result === 'test' ? `Redis PING=${pingMs}ms, ${pong || 'PONG'}` : 'Redis test failed'
     }
   } catch (error) {
     return {
       status: 'unhealthy',
       connected: false,
+      latencyMs: null,
       error: error instanceof Error ? error.message : 'Redis check failed',
+      endpoint: RedisConnection.getCurrentEndpoint(),
       message: 'Redis health check failed'
     }
   }
 }
 
 async function checkExternalServicesHealth() {
-  const services = {
-    twilio: {
-      status: (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) ? 'healthy' : 'warning',
-      configured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN),
-      message: 'SMS, WhatsApp, and Voice services'
-    },
-    sendgrid: {
-      status: process.env.SENDGRID_API_KEY ? 'healthy' : 'warning',
-      configured: !!process.env.SENDGRID_API_KEY,
-      message: 'Email notification service'
-    },
-    usgs: {
-      status: 'healthy', // USGS is a public API
-      configured: true,
-      message: 'Earthquake data feed'
-    },
-    noaa: {
-      status: 'healthy', // NOAA is a public API
-      configured: true,
-      message: 'Tsunami alert feed'
+  // Helper: fetch with timeout and measure latency
+  const fetchWithTimeout = async (url: string, init: RequestInit = {}, timeoutMs = 5000) => {
+    const controller = new AbortController()
+    const id = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const res = await fetch(url, { ...init, signal: controller.signal, cache: 'no-store' })
+      return res
+    } finally {
+      clearTimeout(id)
     }
   }
 
-  return services
+  const time = async <T,>(fn: () => Promise<T>) => {
+    const start = Date.now()
+    try {
+      const value = await fn()
+      return { ok: true as const, ms: Date.now() - start, value }
+    } catch (error) {
+      return { ok: false as const, ms: Date.now() - start, error: error as Error }
+    }
+  }
+
+  const twilioConfigured = !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
+  const sendgridConfigured = !!process.env.SENDGRID_API_KEY
+
+  const usgsUrl = process.env.USGS_API_URL || 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&limit=1'
+  const noaaUrl = process.env.NOAA_TSUNAMI_URL || 'https://www.tsunami.gov/events/xml/atom.xml'
+
+  const [twilioRes, sendgridRes, usgsRes, noaaRes] = await Promise.all([
+    (async () => {
+      if (!twilioConfigured) {
+        return { status: 'warning', latencyMs: null, configured: false, message: 'Twilio not configured' }
+      }
+      const sid = process.env.TWILIO_ACCOUNT_SID as string
+      const token = process.env.TWILIO_AUTH_TOKEN as string
+      const auth = Buffer.from(`${sid}:${token}`).toString('base64')
+      const result = await time(async () =>
+        fetchWithTimeout(`https://api.twilio.com/2010-04-01/Accounts/${encodeURIComponent(sid)}.json`, {
+          headers: {
+            Authorization: `Basic ${auth}`,
+          }
+        }, 5000)
+      )
+      if (!result.ok) {
+        return { status: 'critical', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'Twilio request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'critical', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'Twilio reachable' : `Twilio status ${ resp.status }` }
+    })(),
+
+    (async () => {
+      if (!sendgridConfigured) {
+        return { status: 'warning', latencyMs: null, configured: false, message: 'SendGrid not configured' }
+      }
+      const key = process.env.SENDGRID_API_KEY as string
+      const result = await time(async () =>
+        fetchWithTimeout('https://api.sendgrid.com/v3/user/profile', {
+          headers: { Authorization: `Bearer ${key}` }
+        }, 5000)
+      )
+      if (!result.ok) {
+        return { status: 'critical', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'SendGrid request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'critical', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'SendGrid reachable' : `SendGrid status ${ resp.status }` }
+    })(),
+
+    (async () => {
+      const result = await time(async () => fetchWithTimeout(usgsUrl, {}, 5000))
+      if (!result.ok) {
+        return { status: 'critical', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'USGS request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'critical', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'USGS reachable' : `USGS status ${ resp.status }` }
+    })(),
+
+    (async () => {
+      const result = await time(async () => fetchWithTimeout(noaaUrl, {}, 5000))
+      if (!result.ok) {
+        return { status: 'critical', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'NOAA request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'critical', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'NOAA reachable' : `NOAA status ${ resp.status }` }
+    })(),
+  ])
+
+  return {
+    twilio: twilioRes,
+    sendgrid: sendgridRes,
+    usgs: usgsRes,
+    noaa: noaaRes,
+  }
 }
 
 async function checkSystemHealth() {

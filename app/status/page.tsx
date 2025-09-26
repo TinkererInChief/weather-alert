@@ -4,17 +4,20 @@ import { useState, useEffect } from 'react'
 import { Activity, CheckCircle, XCircle, AlertTriangle, Clock, Wifi, Database, Globe, Phone, Mail, MessageSquare, MessageCircle } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 
+type Tile = { status: 'healthy' | 'warning' | 'critical'; latency: string; message: string; code?: number; error?: string }
+
 interface SystemStatus {
   overall: 'healthy' | 'warning' | 'critical'
   uptime: string
   lastCheck: string
   services: {
-    database: { status: 'healthy' | 'warning' | 'critical', latency: string, message: string }
-    usgs: { status: 'healthy' | 'warning' | 'critical', latency: string, message: string }
-    sms: { status: 'healthy' | 'warning' | 'critical', latency: string, message: string }
-    email: { status: 'healthy' | 'warning' | 'critical', latency: string, message: string }
-    whatsapp: { status: 'healthy' | 'warning' | 'critical', latency: string, message: string }
-    voice: { status: 'healthy' | 'warning' | 'critical', latency: string, message: string }
+    database: Tile
+    redis: Tile
+    usgs: Tile
+    sms: Tile
+    email: Tile
+    whatsapp: Tile
+    voice: Tile
   }
   stats: {
     totalAlerts: number
@@ -28,6 +31,9 @@ export default function SystemStatusPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+
+  const formatLatency = (ms: unknown) =>
+    typeof ms === 'number' ? `${Math.max(0, Math.round(ms))}ms` : '-'
 
   useEffect(() => {
     fetchSystemStatus()
@@ -51,6 +57,7 @@ export default function SystemStatusPage() {
 
       const dbStatus = health.checks?.database?.status || 'warning'
       const services = health.checks?.services || {}
+      const redis = health.checks?.redis || {}
 
       const mapStatus = (s: string | undefined): 'healthy' | 'warning' | 'critical' => {
         if (s === 'healthy') return 'healthy'
@@ -65,33 +72,50 @@ export default function SystemStatusPage() {
         services: {
           database: {
             status: mapStatus(dbStatus),
-            latency: `${health.responseTime || 0}ms`,
+            latency: formatLatency(health.checks?.database?.latencyMs),
             message: health.checks?.database?.message || 'Database check'
+          },
+          redis: {
+            status: mapStatus(redis?.status),
+            latency: formatLatency(redis?.latencyMs),
+            message: redis?.message || 'Redis check',
+            code: undefined,
+            error: redis?.error
           },
           usgs: {
             status: mapStatus(services.usgs?.status),
-            latency: '-',
-            message: services.usgs?.message || 'USGS API'
+            latency: formatLatency(services.usgs?.latencyMs),
+            message: services.usgs?.message || 'USGS API',
+            code: services.usgs?.statusCode,
+            error: services.usgs?.error
           },
           sms: {
             status: mapStatus(services.twilio?.status),
-            latency: '-',
-            message: services.twilio?.message || 'Twilio SMS service'
+            latency: formatLatency(services.twilio?.latencyMs),
+            message: services.twilio?.message || 'Twilio SMS service',
+            code: services.twilio?.statusCode,
+            error: services.twilio?.error
           },
           email: {
             status: mapStatus(services.sendgrid?.status),
-            latency: '-',
-            message: services.sendgrid?.message || 'SendGrid email service'
+            latency: formatLatency(services.sendgrid?.latencyMs),
+            message: services.sendgrid?.message || 'SendGrid email service',
+            code: services.sendgrid?.statusCode,
+            error: services.sendgrid?.error
           },
           whatsapp: {
             status: mapStatus(services.twilio?.status),
-            latency: '-',
-            message: 'WhatsApp via Twilio'
+            latency: formatLatency(services.twilio?.latencyMs),
+            message: 'WhatsApp via Twilio',
+            code: services.twilio?.statusCode,
+            error: services.twilio?.error
           },
           voice: {
             status: mapStatus(services.twilio?.status),
-            latency: '-',
-            message: 'Twilio Voice service'
+            latency: formatLatency(services.twilio?.latencyMs),
+            message: 'Twilio Voice service',
+            code: services.twilio?.statusCode,
+            error: services.twilio?.error
           }
         },
         stats: {
@@ -233,6 +257,7 @@ export default function SystemStatusPage() {
               <div
                 key={service}
                 className={`p-4 rounded-xl border-2 ${getStatusColor(details.status)} transition-all duration-200`}
+                title={`${details.message}${details.latency ? ` • Latency: ${details.latency}` : ''}`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center space-x-2">
@@ -244,6 +269,12 @@ export default function SystemStatusPage() {
                   {getStatusIcon(details.status)}
                 </div>
                 <p className="text-sm text-slate-600 mb-1">{details.message}</p>
+                {('code' in details || 'error' in details) && (
+                  <p className="text-xs text-slate-500 mb-1">
+                    {('code' in details && details.code) ? `HTTP ${details.code}` : ''}
+                    {('error' in details && details.error) ? `${('code' in details && details.code) ? ' • ' : ''}${details.error}` : ''}
+                  </p>
+                )}
                 <p className="text-xs text-slate-500">Latency: {details.latency}</p>
               </div>
             ))}
