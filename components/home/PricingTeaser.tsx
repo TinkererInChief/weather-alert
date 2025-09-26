@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, Building, Enterprise, ArrowRight } from 'lucide-react'
+import { Users, Building, Building2, ArrowRight } from 'lucide-react'
 
 const plans = [
   {
@@ -20,7 +20,7 @@ const plans = [
     popular: true
   },
   {
-    icon: Enterprise,
+    icon: Building2,
     name: 'Enterprise',
     description: 'Full-scale solution for large organizations with complex requirements',
     contacts: 'Unlimited contacts',

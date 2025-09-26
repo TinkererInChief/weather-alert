@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic'
+
 function formatTimeAgo(date: Date): string {
   const now = new Date().getTime()
   const diffMs = now - date.getTime()

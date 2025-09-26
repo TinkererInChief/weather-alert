@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 interface TestResults {
   summary: {
     totalContacts: number

@@ -1,6 +1,9 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 import { Users, Plus, Edit, Trash2, Phone, Mail, MessageCircle, ArrowLeft } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 

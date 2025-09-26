@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 import { Mail, Phone, MapPin, Send, CheckCircle } from 'lucide-react'
 import HomeFooter from '@/components/home/HomeFooter'
 
@@ -57,7 +60,7 @@ export default function ContactPage() {
   }
 
   return (
-    <>
+    <div suppressHydrationWarning>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
         {/* Header */}
         <div className="bg-gradient-to-r from-slate-900 to-blue-900 py-20">
@@ -262,6 +265,6 @@ export default function ContactPage() {
         </div>
       </div>
       <HomeFooter />
-    </>
+    </div>
   )
 }

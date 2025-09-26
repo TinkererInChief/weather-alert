@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Shield, AlertTriangle, Smartphone, Zap, Loader2 } from 'lucide-react'
