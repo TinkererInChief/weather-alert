@@ -20,14 +20,15 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Allow access to login page and API routes
-        if (pathname.startsWith('/login') || 
+        // Allow public access to homepage, login page, and API routes
+        if (pathname === '/' ||
+            pathname.startsWith('/login') || 
             pathname.startsWith('/api/auth') || 
             pathname === '/api/health') {
           return true
         }
 
-        // Require authentication for all other routes
+        // Require authentication for all other routes (dashboard, admin pages, etc.)
         return !!token
       },
     },
