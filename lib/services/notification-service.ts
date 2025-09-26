@@ -3,6 +3,7 @@ import { voiceService, VoiceAlertType } from '../voice-service'
 import { WhatsAppService } from './whatsapp-service'
 import { EmailService } from './email-service'
 import { prisma } from '../prisma'
+import { z } from 'zod'
 
 export interface NotificationRequest {
   contact: {
@@ -37,6 +38,10 @@ export class NotificationService {
   private smsService: SMSService
   private whatsappService: WhatsAppService
   private emailService: EmailService
+  private settingsCache: { value: {
+    notifications: Record<'sms'|'email'|'whatsapp'|'voice', { enabled: boolean; priority: number }>
+    alertLevels: Record<'low'|'medium'|'high'|'critical', { channels: Array<'sms'|'email'|'whatsapp'|'voice'> }>
+  }; expiresAt: number } | null = null
 
   constructor() {
     this.smsService = new SMSService()
@@ -79,35 +84,100 @@ export class NotificationService {
   /**
    * Get preferred notification channels for a contact based on severity
    */
-  getPreferredChannels(contact: any, severity: number): string[] {
-    const channels: string[] = []
-    
-    // Always include SMS if phone number is available
-    if (contact.phone) {
-      channels.push('sms')
+  async getPreferredChannels(contact: any, severity: number): Promise<Array<'sms'|'email'|'whatsapp'|'voice'>> {
+    type Channel = 'sms'|'email'|'whatsapp'|'voice'
+
+    const loadSettings = async () => {
+      const now = Date.now()
+      if (this.settingsCache && this.settingsCache.expiresAt > now) return this.settingsCache.value
+
+      // Partial schema to avoid circular imports
+      const PartialSchema = z.object({
+        notifications: z.object({
+          sms: z.object({ enabled: z.boolean(), priority: z.number() }),
+          email: z.object({ enabled: z.boolean(), priority: z.number() }),
+          whatsapp: z.object({ enabled: z.boolean(), priority: z.number() }),
+          voice: z.object({ enabled: z.boolean(), priority: z.number() }),
+        }),
+        alertLevels: z.object({
+          low: z.object({ channels: z.array(z.enum(['sms','email','whatsapp','voice'])) }),
+          medium: z.object({ channels: z.array(z.enum(['sms','email','whatsapp','voice'])) }),
+          high: z.object({ channels: z.array(z.enum(['sms','email','whatsapp','voice'])) }),
+          critical: z.object({ channels: z.array(z.enum(['sms','email','whatsapp','voice'])) }),
+        })
+      })
+
+      try {
+        const row = await prisma.systemSettings.findUnique({ where: { id: 'global' }, select: { settings: true } })
+        const parsed = PartialSchema.safeParse(row?.settings)
+        const value = parsed.success ? parsed.data : {
+          notifications: {
+            sms: { enabled: true, priority: 1 },
+            email: { enabled: true, priority: 3 },
+            whatsapp: { enabled: true, priority: 2 },
+            voice: { enabled: true, priority: 4 },
+          },
+          alertLevels: {
+            low: { channels: ['sms','email'] as Channel[] },
+            medium: { channels: ['sms','email','whatsapp'] as Channel[] },
+            high: { channels: ['sms','email','whatsapp','voice'] as Channel[] },
+            critical: { channels: ['sms','email','whatsapp','voice'] as Channel[] },
+          },
+        }
+        this.settingsCache = { value, expiresAt: now + 60_000 }
+        return value
+      } catch {
+        // Fallback defaults if DB access fails
+        return {
+          notifications: {
+            sms: { enabled: true, priority: 1 },
+            email: { enabled: true, priority: 3 },
+            whatsapp: { enabled: true, priority: 2 },
+            voice: { enabled: true, priority: 4 },
+          },
+          alertLevels: {
+            low: { channels: ['sms','email'] as Channel[] },
+            medium: { channels: ['sms','email','whatsapp'] as Channel[] },
+            high: { channels: ['sms','email','whatsapp','voice'] as Channel[] },
+            critical: { channels: ['sms','email','whatsapp','voice'] as Channel[] },
+          },
+        }
+      }
     }
 
-    // Add WhatsApp if available and contact has WhatsApp number
-    if (contact.whatsapp) {
-      channels.push('whatsapp')
+    const settings = await loadSettings()
+
+    // Map numeric severity to labeled level
+    const level: 'low'|'medium'|'high'|'critical' = severity >= 5 ? 'critical' : severity === 4 ? 'high' : severity === 3 ? 'medium' : 'low'
+    const allowedByLevel = new Set<Channel>(settings.alertLevels[level].channels)
+
+    // Is channel enabled globally
+    const enabled = (ch: Channel) => settings.notifications[ch]?.enabled !== false
+
+    // Contact availability
+    const available: Channel[] = []
+    if (contact.phone) available.push('sms')
+    if (contact.whatsapp) available.push('whatsapp')
+    if (contact.email) available.push('email')
+    if (contact.phone) available.push('voice')
+
+    // Intersection: level-allowed ∩ enabled ∩ available
+    let selected = available.filter((ch) => allowedByLevel.has(ch) && enabled(ch)) as Channel[]
+
+    // Respect contact preferences, if present
+    if (contact.notificationChannels && Array.isArray(contact.notificationChannels) && contact.notificationChannels.length > 0) {
+      const preferred = new Set<string>(contact.notificationChannels)
+      selected = selected.filter((ch) => preferred.has(ch))
     }
 
-    // Add email if available
-    if (contact.email) {
-      channels.push('email')
-    }
+    // Sort by configured priority (ascending)
+    selected.sort((a, b) => {
+      const pa = settings.notifications[a]?.priority ?? 999
+      const pb = settings.notifications[b]?.priority ?? 999
+      return pa - pb
+    })
 
-    // Add voice calls for high severity alerts (4-5) and if phone is available
-    if (severity >= 4 && contact.phone) {
-      channels.push('voice')
-    }
-
-    // Respect contact's notification channel preferences if set
-    if (contact.notificationChannels && contact.notificationChannels.length > 0) {
-      return channels.filter(channel => contact.notificationChannels.includes(channel))
-    }
-
-    return channels
+    return selected
   }
 
   /**

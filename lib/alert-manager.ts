@@ -328,8 +328,8 @@ Emergency Alert System`
 
     // Process each contact
     for (const contact of contacts) {
-      // Get preferred channels based on severity
-      const preferredChannels = this.notificationService.getPreferredChannels(contact, severity)
+      // Get preferred channels based on severity (async; respects settings + priorities)
+      const preferredChannels = await this.notificationService.getPreferredChannels(contact, severity)
       console.log(`📋 Contact ${contact.name}: using channels [${preferredChannels.join(', ')}]`)
 
       // Create template data
