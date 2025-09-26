@@ -1,5 +1,10 @@
 import winston from 'winston'
 
+// In managed environments like Railway, writing to the filesystem is not guaranteed.
+// Default to console logging in production and make file logging opt-in.
+const ENABLE_FILE_LOGS = process.env.ENABLE_FILE_LOGS === 'true' || process.env.NODE_ENV === 'development'
+const LOG_DIR = process.env.LOG_DIR || (process.env.NODE_ENV === 'production' ? '/tmp/logs' : 'logs')
+
 // Define log levels with priorities
 const logLevels = {
   error: 0,
@@ -61,6 +66,37 @@ const consoleFormat = winston.format.combine(
   })
 )
 
+// Prepare transports based on environment
+const baseTransports: winston.transport[] = [
+  // Console transport is always enabled
+  new winston.transports.Console({
+    format: process.env.NODE_ENV === 'production' ? structuredFormat : consoleFormat,
+  })
+]
+
+if (ENABLE_FILE_LOGS) {
+  baseTransports.push(
+    // File transport for errors
+    new winston.transports.File({
+      filename: `${LOG_DIR}/error.log`,
+      level: 'error',
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+    }),
+  )
+}
+
+if (ENABLE_FILE_LOGS && process.env.NODE_ENV === 'production') {
+  baseTransports.push(
+    // File transport for all logs (prod only when explicitly enabled)
+    new winston.transports.File({
+      filename: `${LOG_DIR}/combined.log`,
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+    })
+  )
+}
+
 // Create the logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
@@ -70,39 +106,17 @@ const logger = winston.createLogger({
     service: 'emergency-alert-system',
     version: process.env.npm_package_version || '1.0.0',
   },
-  transports: [
-    // Console transport
-    new winston.transports.Console({
-      format: process.env.NODE_ENV === 'production' ? structuredFormat : consoleFormat,
-    }),
-    
-    // File transport for errors (always enabled)
-    new winston.transports.File({
-      filename: 'logs/error.log',
-      level: 'error',
-      maxsize: 5242880, // 5MB
-      maxFiles: 5,
-    }),
-    
-    // File transport for all logs (only in production)
-    ...(process.env.NODE_ENV === 'production' ? [
-      new winston.transports.File({
-        filename: 'logs/combined.log',
-        maxsize: 5242880, // 5MB
-        maxFiles: 5,
-      })
-    ] : []),
-  ],
+  transports: baseTransports,
   
   // Handle uncaught exceptions
-  exceptionHandlers: [
-    new winston.transports.File({ filename: 'logs/exceptions.log' })
-  ],
+  exceptionHandlers: ENABLE_FILE_LOGS
+    ? [new winston.transports.File({ filename: `${LOG_DIR}/exceptions.log` })]
+    : [new winston.transports.Console({ format: structuredFormat })],
   
   // Handle unhandled promise rejections
-  rejectionHandlers: [
-    new winston.transports.File({ filename: 'logs/rejections.log' })
-  ],
+  rejectionHandlers: ENABLE_FILE_LOGS
+    ? [new winston.transports.File({ filename: `${LOG_DIR}/rejections.log` })]
+    : [new winston.transports.Console({ format: structuredFormat })],
 })
 
 // Security and audit logging
@@ -273,14 +287,18 @@ export function withPerformanceLogging<T extends (...args: any[]) => Promise<any
   }) as T
 }
 
-// Create logs directory if it doesn't exist (for file transports)
-if (typeof window === 'undefined') {
+// Create logs directory if it doesn't exist (only when file logs enabled)
+if (ENABLE_FILE_LOGS && typeof window === 'undefined') {
   import('fs').then(fs => {
-    if (!fs.existsSync('logs')) {
-      fs.mkdirSync('logs', { recursive: true })
+    try {
+      if (!fs.existsSync(LOG_DIR)) {
+        fs.mkdirSync(LOG_DIR, { recursive: true })
+      }
+    } catch {
+      // Ignore errors creating logs directory
     }
   }).catch(() => {
-    // Ignore errors creating logs directory
+    // Ignore dynamic import errors
   })
 }
 
