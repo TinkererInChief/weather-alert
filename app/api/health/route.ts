@@ -29,6 +29,20 @@ export async function GET(request: Request) {
       nodeVersion: process.version,
       service: 'Emergency Alert System',
       version: process.env.npm_package_version || 'unknown',
+      build: {
+        commit: process.env.NEXT_PUBLIC_BUILD_SHA 
+          || process.env.VERCEL_GIT_COMMIT_SHA 
+          || process.env.RAILWAY_GIT_COMMIT_SHA 
+          || process.env.SOURCE_COMMIT 
+          || process.env.GITHUB_SHA 
+          || null,
+        short: (process.env.NEXT_PUBLIC_BUILD_SHA 
+          || process.env.VERCEL_GIT_COMMIT_SHA 
+          || process.env.RAILWAY_GIT_COMMIT_SHA 
+          || process.env.SOURCE_COMMIT 
+          || process.env.GITHUB_SHA 
+          || '').slice(0, 7) || null,
+      },
       responseTime: 0, // Will be calculated at the end
     }
     

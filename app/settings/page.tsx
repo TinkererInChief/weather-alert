@@ -36,6 +36,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
+  const [meta, setMeta] = useState<{ updatedAt: string; updatedBy: string | null } | null>(null)
 
   useEffect(() => {
     loadSettings()
@@ -43,36 +44,12 @@ export default function SettingsPage() {
 
   const loadSettings = async () => {
     try {
-      // Mock settings - in production, load from API
-      const mockSettings: SystemSettings = {
-        monitoring: {
-          earthquakeMonitoring: true,
-          tsunamiMonitoring: true,
-          checkInterval: 60, // seconds
-          magnitudeThreshold: 4.0
-        },
-        notifications: {
-          sms: { enabled: true, priority: 1 },
-          email: { enabled: true, priority: 3 },
-          whatsapp: { enabled: true, priority: 2 },
-          voice: { enabled: true, priority: 4 }
-        },
-        alertLevels: {
-          low: { magnitude: 4.0, channels: ['sms', 'email'] },
-          medium: { magnitude: 5.0, channels: ['sms', 'email', 'whatsapp'] },
-          high: { magnitude: 6.0, channels: ['sms', 'email', 'whatsapp', 'voice'] },
-          critical: { magnitude: 7.0, channels: ['sms', 'email', 'whatsapp', 'voice'] }
-        },
-        system: {
-          timezone: 'Asia/Kolkata',
-          language: 'en',
-          logLevel: 'info',
-          retentionDays: 90
-        }
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 500))
-      setSettings(mockSettings)
+      setLoading(true)
+      const res = await fetch('/api/settings', { cache: 'no-store' })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to load settings')
+      setSettings(json.data.settings as SystemSettings)
+      if (json.data.meta) setMeta(json.data.meta as { updatedAt: string; updatedBy: string | null })
     } catch (error) {
       console.error('Failed to load settings:', error)
     } finally {
@@ -85,13 +62,21 @@ export default function SettingsPage() {
 
     setSaving(true)
     try {
-      // Mock save - in production, send to API
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) throw new Error(json.error || 'Failed to save settings')
+
+      setSettings(json.data.settings as SystemSettings)
+      if (json.data.meta) setMeta(json.data.meta as { updatedAt: string; updatedBy: string | null })
       setSaveMessage('Settings saved successfully!')
       setTimeout(() => setSaveMessage(null), 3000)
     } catch (error) {
-      setSaveMessage('Failed to save settings. Please try again.')
-      setTimeout(() => setSaveMessage(null), 3000)
+      setSaveMessage(error instanceof Error ? error.message : 'Failed to save settings')
+      setTimeout(() => setSaveMessage(null), 4000)
     } finally {
       setSaving(false)
     }
@@ -136,6 +121,15 @@ export default function SettingsPage() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-slate-600">Configure system behavior and notification preferences</p>
+            <p className="text-xs text-slate-500 mt-1">
+              {meta ? (
+                <>
+                  Last saved: {new Date(meta.updatedAt).toLocaleString()} by {meta.updatedBy || 'system'}
+                </>
+              ) : (
+                'Last saved: Not available'
+              )}
+            </p>
           </div>
           <div className="flex items-center space-x-4">
             {saveMessage && (

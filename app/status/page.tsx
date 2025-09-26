@@ -51,6 +51,10 @@ export default function SystemStatusPage() {
       ])
 
       const health = await healthRes.json()
+      // Stash build short sha on window for badge access
+      if (typeof window !== 'undefined') {
+        ;(window as any).__healthBuildShort = health?.build?.short || null
+      }
       const statsJson = await statsRes.json()
 
       const overall: SystemStatus['overall'] = health.status === 'healthy' ? 'healthy' : health.status === 'degraded' ? 'warning' : 'critical'
@@ -197,13 +201,22 @@ export default function SystemStatusPage() {
               </p>
             </div>
           </div>
-          <button
-            onClick={fetchSystemStatus}
-            className="btn btn-secondary flex items-center gap-2"
-          >
-            <Activity className="h-4 w-4" />
-            Refresh Status
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Build badge */}
+            <span className="text-xs text-slate-500 border border-slate-200 rounded-md px-2 py-1" title="Build commit">
+              Build: {(() => {
+                const v = (typeof window !== 'undefined' ? (window as any).__healthBuildShort : undefined) || '-'
+                return v || '-'
+              })()}
+            </span>
+            <button
+              onClick={fetchSystemStatus}
+              className="btn btn-secondary flex items-center gap-2"
+            >
+              <Activity className="h-4 w-4" />
+              Refresh Status
+            </button>
+          </div>
         </div>
 
         {/* Key Metrics */}

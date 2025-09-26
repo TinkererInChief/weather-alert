@@ -335,3 +335,13 @@ model BulkCallJob {
   
   @@map("bulk_call_jobs")
 }
+
+// System-wide settings stored as a single JSON document
+model SystemSettings {
+  id        String   @id @default("global")
+  settings  Json     @default("{}")
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("system_settings")
+}

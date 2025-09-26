@@ -250,17 +250,32 @@ export default function AppLayout({
     const [status, setStatus] = useState<'healthy' | 'warning' | 'critical'>('healthy')
     
     useEffect(() => {
-      // Simulate checking system status
+      const normalize = (s: unknown): 'healthy' | 'warning' | 'critical' => {
+        switch (s) {
+          case 'healthy':
+            return 'healthy'
+          case 'degraded':
+          case 'warning':
+            return 'warning'
+          case 'critical':
+          case 'error':
+          case 'unhealthy':
+            return 'critical'
+          default:
+            return 'warning'
+        }
+      }
+
       const checkStatus = async () => {
         try {
-          const response = await fetch('/api/health')
+          const response = await fetch('/api/health', { cache: 'no-store' })
           const data = await response.json()
-          setStatus(data.status || 'healthy')
+          setStatus(normalize((data as any)?.status))
         } catch {
           setStatus('warning')
         }
       }
-      
+
       checkStatus()
       const interval = setInterval(checkStatus, 60000) // Check every minute
       return () => clearInterval(interval)
@@ -280,7 +295,6 @@ export default function AppLayout({
         case 'healthy': return 'System Active'
         case 'warning': return 'System Warning'
         case 'critical': return 'System Critical'
-        default: return 'System Unknown'
       }
     }
 
