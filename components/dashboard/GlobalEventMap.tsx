@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
-import Map, { Marker, Popup, NavigationControl, ScaleControl } from 'react-map-gl'
+import { useState, useCallback } from 'react'
+import { Map, Marker, Popup, NavigationControl, ScaleControl } from 'react-map-gl/mapbox'
 import { MapPin, Layers } from 'lucide-react'
 import 'mapbox-gl/dist/mapbox-gl.css'
 

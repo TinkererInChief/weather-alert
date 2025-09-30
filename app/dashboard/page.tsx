@@ -31,7 +31,6 @@ import GlobalEventMap from '@/components/dashboard/GlobalEventMap'
 import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
 import KeyMetricsWidget from '@/components/dashboard/KeyMetricsWidget'
 import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
-import SmartAlertPrioritization from '@/components/dashboard/SmartAlertPrioritization'
 import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
 import EventTimelinePlayback from '@/components/dashboard/EventTimelinePlayback'
 import { TrendingUp, Zap } from 'lucide-react'
@@ -818,21 +817,6 @@ export default function Dashboard() {
         {/* Phase 1: Key Metrics Dashboard */}
         <KeyMetricsWidget metrics={keyMetrics} />
 
-        {/* Phase 2: Smart Alert Prioritization */}
-        {prioritizedAlerts.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Priority Alerts</h2>
-            <SmartAlertPrioritization
-              alerts={prioritizedAlerts}
-              onSendAlert={(id) => {
-                logOperation(`Emergency alert initiated for event ${id}`, 'info')
-              }}
-              onViewDetails={(id) => {
-                window.location.href = `/alerts#${id}`
-              }}
-            />
-          </div>
-        )}
 
         {/* Phase 1: Global Event Map + Real-Time Feed */}
         <div className="grid gap-6 lg:grid-cols-3">
