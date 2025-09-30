@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { MapPin, Layers, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
+import { useState, useMemo, useCallback } from 'react'
+import Map, { Marker, Popup, NavigationControl, ScaleControl } from 'react-map-gl'
+import { MapPin, Layers } from 'lucide-react'
+import 'mapbox-gl/dist/mapbox-gl.css'
 
 type EventMarker = {
   id: string
@@ -22,10 +24,15 @@ type GlobalEventMapProps = {
 }
 
 export default function GlobalEventMap({ events, contacts = [], height = '500px' }: GlobalEventMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null)
   const [selectedEvent, setSelectedEvent] = useState<EventMarker | null>(null)
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets')
-  const [showHeatmap, setShowHeatmap] = useState(false)
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets')
+  const [viewState, setViewState] = useState({
+    longitude: 0,
+    latitude: 20,
+    zoom: 1.5
+  })
+
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
   const getMagnitudeColor = (magnitude: number) => {
     if (magnitude >= 7) return '#dc2626' // red-600
@@ -54,7 +61,40 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
 
   const getEventSize = (event: EventMarker) => {
     const magnitude = event.magnitude || event.severity || 4
-    return Math.max(20, magnitude * 5)
+    return Math.max(8, magnitude * 2.5)
+  }
+
+  const getMapboxStyle = useCallback((style: 'streets' | 'satellite' | 'dark') => {
+    switch (style) {
+      case 'satellite':
+        return 'mapbox://styles/mapbox/satellite-streets-v12'
+      case 'dark':
+        return 'mapbox://styles/mapbox/dark-v11'
+      default:
+        return 'mapbox://styles/mapbox/streets-v12'
+    }
+  }, [])
+
+  if (!mapboxToken) {
+    return (
+      <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height }}>
+        <div className="flex flex-col items-center justify-center h-full">
+          <MapPin className="h-12 w-12 text-slate-300 mb-4" />
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">Mapbox Token Missing</h3>
+          <p className="text-sm text-slate-600 max-w-md">
+            Please add your Mapbox access token to <code className="px-2 py-1 bg-slate-100 rounded text-xs">NEXT_PUBLIC_MAPBOX_TOKEN</code> in your environment variables.
+          </p>
+          <a
+            href="https://account.mapbox.com/access-tokens/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+          >
+            Get Mapbox Token →
+          </a>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -62,20 +102,16 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       {/* Map Controls */}
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <button
-          onClick={() => setMapStyle(mapStyle === 'streets' ? 'satellite' : 'streets')}
+          onClick={() => {
+            const styles: Array<'streets' | 'satellite' | 'dark'> = ['streets', 'satellite', 'dark']
+            const currentIndex = styles.indexOf(mapStyle)
+            const nextIndex = (currentIndex + 1) % styles.length
+            setMapStyle(styles[nextIndex])
+          }}
           className="p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors"
-          title="Toggle map style"
+          title={`Current: ${mapStyle} (click to cycle)`}
         >
           <Layers className="h-4 w-4 text-slate-700" />
-        </button>
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`p-2 rounded-lg shadow-lg border border-slate-200 transition-colors ${
-            showHeatmap ? 'bg-blue-500 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'
-          }`}
-          title="Toggle heatmap"
-        >
-          <MapPin className="h-4 w-4" />
         </button>
       </div>
 
@@ -117,142 +153,113 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
         </div>
       </div>
 
-      {/* Map Container */}
-      <div 
-        ref={mapRef}
-        className="relative w-full bg-slate-100"
-        style={{ height }}
+      {/* Mapbox Container */}
+      <Map
+        {...viewState}
+        onMove={(evt) => setViewState(evt.viewState)}
+        mapboxAccessToken={mapboxToken}
+        mapStyle={getMapboxStyle(mapStyle)}
+        style={{ width: '100%', height }}
+        attributionControl={false}
       >
-        {/* Simplified map visualization using CSS */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-slate-50 to-green-50">
-          <svg className="w-full h-full">
-            {/* Grid lines for map effect */}
-            <defs>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#e2e8f0" strokeWidth="0.5" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
+        {/* Navigation Controls */}
+        <NavigationControl position="bottom-right" />
+        <ScaleControl />
 
-            {/* Event markers */}
-            {events.map((event, idx) => {
-              // Distribute events across the map (simplified positioning)
-              const x = ((event.lng + 180) / 360) * 100
-              const y = ((90 - event.lat) / 180) * 100
-              const size = getEventSize(event)
-              const color = getEventColor(event)
-
-              return (
-                <g key={event.id}>
-                  {/* Pulse effect */}
-                  <circle
-                    cx={`${x}%`}
-                    cy={`${y}%`}
-                    r={size}
-                    fill={color}
-                    opacity="0.2"
-                    className="animate-ping"
-                  />
-                  {/* Main marker */}
-                  <circle
-                    cx={`${x}%`}
-                    cy={`${y}%`}
-                    r={size / 2}
-                    fill={color}
-                    stroke="white"
-                    strokeWidth="2"
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => setSelectedEvent(event)}
-                  />
-                  {/* Label */}
-                  <text
-                    x={`${x}%`}
-                    y={`${y}%`}
-                    dy="-20"
-                    textAnchor="middle"
-                    className="text-xs font-semibold fill-slate-900 pointer-events-none"
-                  >
-                    M{event.magnitude?.toFixed(1) || event.severity}
-                  </text>
-                </g>
-              )
-            })}
-
-            {/* Contact markers (smaller blue dots) */}
-            {contacts.map((contact, idx) => {
-              const x = ((contact.longitude + 180) / 360) * 100
-              const y = ((90 - contact.latitude) / 180) * 100
-
-              return (
-                <circle
-                  key={`contact-${idx}`}
-                  cx={`${x}%`}
-                  cy={`${y}%`}
-                  r="3"
-                  fill="#3b82f6"
-                  opacity="0.6"
-                />
-              )
-            })}
-          </svg>
-        </div>
-
-        {/* Pro tip for real implementation */}
-        <div className="absolute bottom-2 right-2 text-xs text-slate-400 bg-white/80 px-2 py-1 rounded">
-          Pro: Use Mapbox GL for production
-        </div>
-      </div>
-
-      {/* Event Details Popup */}
-      {selectedEvent && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-white rounded-xl shadow-2xl border border-slate-200 p-4 min-w-[300px]">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="font-semibold text-slate-900">{selectedEvent.title}</h3>
-              <p className="text-xs text-slate-500 mt-1">
-                {new Date(selectedEvent.timestamp).toLocaleString()}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedEvent(null)}
-              className="text-slate-400 hover:text-slate-600"
+        {/* Event Markers */}
+        {events.map((event) => {
+          const size = getEventSize(event)
+          const color = getEventColor(event)
+          
+          return (
+            <Marker
+              key={event.id}
+              longitude={event.lng}
+              latitude={event.lat}
+              anchor="center"
+              onClick={(e) => {
+                e.originalEvent.stopPropagation()
+                setSelectedEvent(event)
+              }}
             >
-              ✕
-            </button>
-          </div>
+              <div className="relative cursor-pointer group">
+                {/* Pulse effect */}
+                <div
+                  className="absolute inset-0 rounded-full animate-ping"
+                  style={{
+                    backgroundColor: color,
+                    opacity: 0.3,
+                    width: size * 2,
+                    height: size * 2,
+                    left: '50%',
+                    top: '50%',
+                    transform: 'translate(-50%, -50%)'
+                  }}
+                />
+                {/* Main marker */}
+                <div
+                  className="relative rounded-full border-2 border-white shadow-lg group-hover:scale-110 transition-transform"
+                  style={{
+                    backgroundColor: color,
+                    width: size,
+                    height: size
+                  }}
+                />
+                {/* Magnitude label */}
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white px-2 py-0.5 rounded shadow-md text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+                  M{event.magnitude?.toFixed(1) || event.severity}
+                </div>
+              </div>
+            </Marker>
+          )
+        })}
 
-          <div className="space-y-2">
-            {selectedEvent.magnitude && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Magnitude</span>
-                <span className="font-semibold text-slate-900">{selectedEvent.magnitude.toFixed(1)}</span>
+        {/* Contact Markers */}
+        {contacts.map((contact, idx) => (
+          <Marker
+            key={`contact-${idx}`}
+            longitude={contact.longitude}
+            latitude={contact.latitude}
+            anchor="center"
+          >
+            <div
+              className="w-2 h-2 rounded-full bg-blue-500 opacity-60"
+              title={contact.name}
+            />
+          </Marker>
+        ))}
+
+        {/* Popup for selected event */}
+        {selectedEvent && (
+          <Popup
+            longitude={selectedEvent.lng}
+            latitude={selectedEvent.lat}
+            anchor="top"
+            onClose={() => setSelectedEvent(null)}
+            closeButton={true}
+            closeOnClick={false}
+            className="event-popup"
+          >
+            <div className="p-2 min-w-[250px]">
+              <h3 className="font-semibold text-slate-900 mb-1">{selectedEvent.title}</h3>
+              <div className="space-y-1 text-xs text-slate-600">
+                <p>
+                  <span className="font-medium">Magnitude:</span> {selectedEvent.magnitude?.toFixed(1) || 'N/A'}
+                </p>
+                <p>
+                  <span className="font-medium">Time:</span>{' '}
+                  {new Date(selectedEvent.timestamp).toLocaleString()}
+                </p>
+                {selectedEvent.contactsAffected !== undefined && (
+                  <p>
+                    <span className="font-medium">Contacts Notified:</span> {selectedEvent.contactsAffected}
+                  </p>
+                )}
               </div>
-            )}
-            {selectedEvent.severity && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Severity</span>
-                <span className="font-semibold text-slate-900">Level {selectedEvent.severity}</span>
-              </div>
-            )}
-            {selectedEvent.contactsAffected !== undefined && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-600">Contacts Affected</span>
-                <span className="font-semibold text-blue-600">{selectedEvent.contactsAffected}</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-slate-600">Location</span>
-              <span className="font-mono text-xs text-slate-700">
-                {selectedEvent.lat.toFixed(2)}, {selectedEvent.lng.toFixed(2)}
-              </span>
             </div>
-          </div>
-
-          <button className="mt-4 w-full py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors">
-            View Full Details
-          </button>
-        </div>
-      )}
+          </Popup>
+        )}
+      </Map>
     </div>
   )
 }
