@@ -34,6 +34,11 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
 
+  // Debug: Log token status (remove in production)
+  if (typeof window !== 'undefined') {
+    console.log('Mapbox Token Status:', mapboxToken ? 'Present ✅' : 'Missing ❌')
+  }
+
   const getMagnitudeColor = (magnitude: number) => {
     if (magnitude >= 7) return '#dc2626' // red-600
     if (magnitude >= 6) return '#ea580c' // orange-600
