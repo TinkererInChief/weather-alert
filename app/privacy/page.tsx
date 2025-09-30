@@ -1,39 +1,24 @@
+'use client'
+
 import { Shield } from 'lucide-react'
 import Link from 'next/link'
+import { getStaticDateString } from '@/lib/date-utils'
+import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
+import PublicPageHeader from '@/components/public/PublicPageHeader'
+import PublicPageContent, { ContentSection, SectionTitle, Card, GradientCard } from '@/components/public/PublicPageContent'
 
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center">
-                <Shield className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="font-bold">Emergency Alert</h3>
-                <p className="text-xs text-slate-300">Command Center</p>
-              </div>
-            </Link>
-            <Link href="/" className="text-slate-300 hover:text-white transition-colors">
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-      </header>
+      <WorkInProgressBanner />
+      <PublicPageHeader 
+        title="Privacy Policy"
+        subtitle={`How we collect, use, and protect your personal information. Last updated: ${getStaticDateString()}`}
+      />
+      
+      <PublicPageContent maxWidth="4xl">
 
-      {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="prose prose-slate max-w-none">
-          <h1 className="text-4xl font-bold text-slate-900 mb-8">Privacy Policy</h1>
-          
-          <p className="text-lg text-slate-600 mb-8">
-            Last updated: {new Date().toLocaleDateString()}
-          </p>
-
-          <div className="space-y-8">
+          <div className="space-y-12">
             <section>
               <h2 className="text-2xl font-semibold text-slate-900 mb-4">1. Information We Collect</h2>
               <p className="text-slate-700 mb-4">
@@ -126,8 +111,7 @@ export default function PrivacyPolicyPage() {
               </div>
             </section>
           </div>
-        </div>
-      </main>
+      </PublicPageContent>
     </div>
   )
 }

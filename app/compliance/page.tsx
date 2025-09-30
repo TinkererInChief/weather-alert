@@ -1,5 +1,8 @@
 import { Shield, CheckCircle, FileText, Award } from 'lucide-react'
 import Link from 'next/link'
+import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
+import PublicPageHeader from '@/components/public/PublicPageHeader'
+import PublicPageContent, { ContentSection, SectionTitle, Card, GradientCard } from '@/components/public/PublicPageContent'
 
 export default function CompliancePage() {
   const certifications = [
@@ -35,59 +38,39 @@ export default function CompliancePage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
-      <header className="bg-slate-900 text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center">
-                <Shield className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="font-bold">Emergency Alert</h3>
-                <p className="text-xs text-slate-300">Command Center</p>
-              </div>
-            </Link>
-            <Link href="/" className="text-slate-300 hover:text-white transition-colors">
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-      </header>
+      <WorkInProgressBanner />
+      <PublicPageHeader 
+        title="Compliance & Certifications"
+        subtitle="We maintain the highest standards of compliance and security to protect your data and ensure regulatory adherence."
+      />
+      
+      <PublicPageContent maxWidth="6xl">
 
-      {/* Content */}
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="prose prose-slate max-w-none">
-          <h1 className="text-4xl font-bold text-slate-900 mb-8">Compliance & Certifications</h1>
-          
-          <p className="text-lg text-slate-600 mb-12">
-            Emergency Alert Command Center maintains the highest standards of compliance and security 
-            to protect your data and ensure regulatory adherence.
-          </p>
-
-          {/* Certifications Grid */}
-          <div className="grid md:grid-cols-2 gap-6 mb-12">
-            {certifications.map((cert, index) => (
-              <div key={index} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-start space-x-4">
-                  <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${cert.color}`}>
-                    <cert.icon className="h-6 w-6" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-slate-900">{cert.name}</h3>
-                      <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
-                        {cert.status}
-                      </span>
+          <ContentSection>
+            <SectionTitle>Current Certifications</SectionTitle>
+            <div className="grid md:grid-cols-2 gap-6">
+              {certifications.map((cert, index) => (
+                <Card key={index} className="p-6 hover:scale-[1.02] transition-all duration-300">
+                  <div className="flex items-start space-x-4">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${cert.color} shadow-lg`}>
+                      <cert.icon className="h-7 w-7" />
                     </div>
-                    <p className="text-slate-600 text-sm">{cert.description}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-lg font-semibold text-slate-900 tracking-tight">{cert.name}</h3>
+                        <span className="bg-green-100 text-green-800 text-xs font-medium px-3 py-1 rounded-full">
+                          {cert.status}
+                        </span>
+                      </div>
+                      <p className="text-slate-600 font-light leading-relaxed">{cert.description}</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          </ContentSection>
 
-          <div className="space-y-8">
+          <div className="space-y-12">
             <section>
               <h2 className="text-2xl font-semibold text-slate-900 mb-4">SOC 2 Type II Compliance</h2>
               <p className="text-slate-700 mb-4">
@@ -220,8 +203,7 @@ export default function CompliancePage() {
               </div>
             </section>
           </div>
-        </div>
-      </main>
+      </PublicPageContent>
     </div>
   )
 }

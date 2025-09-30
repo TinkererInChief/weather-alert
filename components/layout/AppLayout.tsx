@@ -56,15 +56,15 @@ export default function AppLayout({
   const isLoadingUser = status === 'loading'
 
   const navigation = [
-    { name: 'Dashboard', href: '/', icon: Home, current: pathname === '/' },
-    { name: 'Earthquake Monitoring', href: '/alerts', icon: AlertTriangle, current: pathname === '/alerts' },
-    { name: 'Tsunami Monitoring', href: '/tsunami', icon: Waves, current: pathname === '/tsunami' },
-    { name: 'Contacts', href: '/contacts', icon: Users, current: pathname === '/contacts' },
-    { name: 'System Status', href: '/status', icon: Activity, current: pathname === '/status' },
+    { name: 'Dashboard', href: '/dashboard', icon: Home, current: pathname === '/dashboard' },
+    { name: 'Earthquake Monitoring', href: '/dashboard/alerts', icon: AlertTriangle, current: pathname === '/dashboard/alerts' },
+    { name: 'Tsunami Monitoring', href: '/dashboard/tsunami', icon: Waves, current: pathname === '/dashboard/tsunami' },
+    { name: 'Contacts', href: '/dashboard/contacts', icon: Users, current: pathname === '/dashboard/contacts' },
+    { name: 'System Status', href: '/dashboard/status', icon: Activity, current: pathname === '/dashboard/status' },
   ]
 
   const adminNavigation = effectiveUser.role === 'admin' ? [
-    { name: 'Settings', href: '/settings', icon: Settings, current: pathname === '/settings' },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' },
   ] : []
 
   const handleSignOut = async () => {
@@ -299,7 +299,7 @@ export default function AppLayout({
     }
 
     return (
-      <Link href="/status" className="flex items-center space-x-2 hover:bg-slate-100 px-2 py-1 rounded-lg transition-colors">
+      <Link href="/dashboard/status" className="flex items-center space-x-2 hover:bg-slate-100 px-2 py-1 rounded-lg transition-colors">
         <div className={`w-2 h-2 rounded-full ${getStatusColor()} ${status === 'healthy' ? 'animate-pulse' : ''}`} />
         <span className="text-xs text-slate-600 font-medium">{getStatusText()}</span>
       </Link>
@@ -324,7 +324,7 @@ export default function AppLayout({
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
           {/* Logo */}
           <div className="flex h-16 shrink-0 items-center px-6 border-b border-slate-200/60">
-            <Link href="/" className="flex items-center space-x-3 group">
+            <Link href="/dashboard" className="flex items-center space-x-3 group">
               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow">
                 <Shield className="h-5 w-5 text-white" />
               </div>
@@ -432,8 +432,8 @@ export default function AppLayout({
 
             {/* Breadcrumbs */}
             <div className="flex items-center space-x-2 text-sm">
-              <Link href="/" className="text-slate-500 hover:text-slate-700 transition-colors">
-                Home
+              <Link href="/dashboard" className="text-slate-500 hover:text-slate-700 transition-colors">
+                Dashboard
               </Link>
               {breadcrumbs.map((crumb, index) => (
                 <div key={index} className="flex items-center space-x-2">

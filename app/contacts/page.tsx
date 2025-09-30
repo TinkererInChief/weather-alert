@@ -15,6 +15,15 @@ type Contact = {
 }
 
 export default function ContactsPage() {
+  // Temporary redirect to the new dashboard Contacts page to avoid duplicate UIs
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        window.location.replace('/dashboard/contacts')
+      }
+    } catch {}
+  }, [])
+
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddForm, setShowAddForm] = useState(false)

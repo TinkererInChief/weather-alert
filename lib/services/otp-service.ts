@@ -129,56 +129,50 @@ export class OtpService {
     const formattedPhone = this.formatPhone(params.phone)
     this.validatePhone(formattedPhone)
 
-    const otpRecord = await prisma.smsOtp.findFirst({
+    // Fetch a small window of recent, unconsumed OTPs to guard against
+    // accidental duplicate sends (e.g., double-clicks or network retries)
+    const recentOtps = await prisma.smsOtp.findMany({
       where: {
         phone: formattedPhone,
-        consumedAt: null
+        consumedAt: null,
+        expires: { gt: new Date() }
       },
-      orderBy: {
-        createdAt: 'desc'
-      }
+      orderBy: { createdAt: 'desc' },
+      take: 3
     })
 
-    if (!otpRecord) {
+    if (recentOtps.length === 0) {
       throw new Error('Enter the most recent code we sent to your phone.')
     }
 
-    if (otpRecord.attempts >= this.otpMaxAttempts) {
+    // Progressive lockout check is based on the latest OTP record
+    const latest = recentOtps[0]
+    if (latest.attempts >= this.otpMaxAttempts) {
       await prisma.smsOtp.update({
-        where: { id: otpRecord.id },
+        where: { id: latest.id },
         data: { consumedAt: new Date() }
       })
       throw new Error('Too many incorrect attempts. Request a new code.')
     }
 
-    if (otpRecord.expires < new Date()) {
-      await prisma.smsOtp.update({
-        where: { id: otpRecord.id },
-        data: { consumedAt: new Date() }
-      })
-      throw new Error('That code has expired. Request a new one to continue.')
-    }
-
     const tokenHash = this.hashToken(formattedPhone, params.code.trim())
 
+    // Try to find a matching OTP among the recent, valid ones
+    const matching = recentOtps.find((r) => r.tokenHash === tokenHash)
 
-
-    if (tokenHash !== otpRecord.tokenHash) {
+    if (!matching) {
+      // Count the attempt against the latest OTP for throttling
       await prisma.smsOtp.update({
-        where: { id: otpRecord.id },
-        data: {
-          attempts: { increment: 1 }
-        }
+        where: { id: latest.id },
+        data: { attempts: { increment: 1 } }
       })
-
       throw new Error('Incorrect code. Check your SMS inbox and try again.')
     }
 
+    // Consume the matched OTP
     await prisma.smsOtp.update({
-      where: { id: otpRecord.id },
-      data: {
-        consumedAt: new Date()
-      }
+      where: { id: matching.id },
+      data: { consumedAt: new Date() }
     })
 
     return {

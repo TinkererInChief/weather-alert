@@ -45,7 +45,7 @@ export default function HeroSection() {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/5 rounded-full blur-2xl"></div>
       </div>
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left Column - Content */}
           <div className="space-y-8">
@@ -57,7 +57,7 @@ export default function HeroSection() {
                 Protect Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">Workforce</span> with Real-Time Emergency Alerts
               </h1>
               <p className="text-xl text-slate-300 leading-relaxed max-w-2xl">
-                Enterprise-grade earthquake and tsunami monitoring with instant multi-channel notifications to keep your employees safe when it matters most.
+                Enterprise-grade <span className="text-red-300 font-semibold">earthquake</span> and <span className="text-cyan-300 font-semibold">tsunami</span> monitoring with instant multi-channel notifications to keep your employees safe when it matters most.
               </p>
             </div>
 
@@ -70,7 +70,7 @@ export default function HeroSection() {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
-                href="#contact"
+                href="/contact"
                 className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 hover:-translate-y-0.5 transition-all duration-200"
               >
                 Request Demo

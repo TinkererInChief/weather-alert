@@ -1,10 +1,42 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Activity, CheckCircle, XCircle, AlertTriangle, Clock, Wifi, Database, Globe, Phone, Mail, MessageSquare, MessageCircle } from 'lucide-react'
-import AppLayout from '@/components/layout/AppLayout'
+import { Activity, CheckCircle, XCircle, AlertTriangle, Clock, Wifi, Database, Globe, Phone, Mail, MessageSquare, MessageCircle, Shield } from 'lucide-react'
+import RangeSwitcher from '@/components/status/RangeSwitcher'
+import LatencyChart from '@/components/status/LatencyChart'
+import StatusTimeline, { TimelinePoint } from '@/components/status/StatusTimeline'
+import HeroMetrics from '@/components/status/HeroMetrics'
+import IncidentTimeline from '@/components/status/IncidentTimeline'
+import TrendIndicator from '@/components/status/TrendIndicator'
+import Link from 'next/link'
+import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
+import { formatTime } from '@/lib/date-utils'
 
 type Tile = { status: 'healthy' | 'warning' | 'critical'; latency: string; message: string; code?: number; error?: string }
+
+type HistoryPoint = {
+  time: number
+  latency?: number
+  latencyP50?: number
+  latencyP95?: number
+  latencyP99?: number
+}
+
+type SystemEvent = {
+  id: string
+  service?: string
+  eventType: string
+  severity: string
+  message: string
+  createdAt: string
+}
+
+type HeroMetricsData = {
+  uptimePercent: number
+  mttrMinutes: number
+  incidentsResolved: number
+  avgResponseTimeMs: number
+}
 
 interface SystemStatus {
   overall: 'healthy' | 'warning' | 'critical'
@@ -14,6 +46,7 @@ interface SystemStatus {
     database: Tile
     redis: Tile
     usgs: Tile
+    noaa: Tile
     sms: Tile
     email: Tile
     whatsapp: Tile
@@ -26,11 +59,15 @@ interface SystemStatus {
     activeContacts: number
   }
 }
-
 export default function SystemStatusPage() {
   const [status, setStatus] = useState<SystemStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [range, setRange] = useState<'60m' | '24h' | '7d'>('60m')
+  const [latencyHistory, setLatencyHistory] = useState<Partial<Record<'database' | 'redis' | 'sms' | 'email' | 'whatsapp' | 'voice' | 'usgs' | 'noaa', HistoryPoint[]>>>({})
+  const [uptimeTimeline, setUptimeTimeline] = useState<Partial<Record<'database' | 'redis' | 'sms' | 'email' | 'whatsapp' | 'voice' | 'usgs' | 'noaa', TimelinePoint[]>>>({})
+  const [events, setEvents] = useState<SystemEvent[]>([])
+  const [heroMetrics, setHeroMetrics] = useState<HeroMetricsData | null>(null)
 
   const formatLatency = (ms: unknown) =>
     typeof ms === 'number' ? `${Math.max(0, Math.round(ms))}ms` : '-'
@@ -40,6 +77,103 @@ export default function SystemStatusPage() {
     // Auto-refresh every 30 seconds
     const interval = setInterval(fetchSystemStatus, 30000)
     return () => clearInterval(interval)
+  }, [])
+
+  // Fetch history + uptime for selected range
+  useEffect(() => {
+    let active = true
+    const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa'
+    const load = async () => {
+      try {
+        const [histRes, upRes] = await Promise.all([
+          fetch(`/api/health/history?range=${range}&services=${servicesParam}`, { cache: 'no-store' }),
+          fetch(`/api/health/uptime?range=${range}&services=${servicesParam}`, { cache: 'no-store' }),
+        ])
+        const hist: any = await histRes.json()
+        const up: any = await upRes.json()
+        if (!active) return
+        if (hist?.series) {
+          const mapSeries = (key: keyof typeof latencyHistory) => {
+            const arr = (hist.series[key] as Array<{ time: number; latencyAvg?: number; latencyP50?: number; latencyP95?: number; latencyP99?: number }> | undefined) || []
+            return arr.map(p => ({
+              time: Number(p.time),
+              latency: typeof p.latencyAvg === 'number' ? p.latencyAvg : undefined,
+              latencyP50: typeof p.latencyP50 === 'number' ? p.latencyP50 : undefined,
+              latencyP95: typeof p.latencyP95 === 'number' ? p.latencyP95 : undefined,
+              latencyP99: typeof p.latencyP99 === 'number' ? p.latencyP99 : undefined
+            }))
+          }
+          setLatencyHistory({
+            database: mapSeries('database'),
+            redis: mapSeries('redis'),
+            sms: mapSeries('sms'),
+            email: mapSeries('email'),
+            whatsapp: mapSeries('whatsapp'),
+            voice: mapSeries('voice'),
+            usgs: mapSeries('usgs'),
+            noaa: mapSeries('noaa'),
+          })
+        }
+        if (up?.timeline) {
+          const tl = (key: keyof typeof uptimeTimeline) => (up.timeline[key] as TimelinePoint[] | undefined) || []
+          setUptimeTimeline({
+            database: tl('database'),
+            redis: tl('redis'),
+            sms: tl('sms'),
+            email: tl('email'),
+            whatsapp: tl('whatsapp'),
+            voice: tl('voice'),
+            usgs: tl('usgs'),
+            noaa: tl('noaa'),
+          })
+        }
+      } catch (e) {
+        console.error('Failed to load history/uptime', e)
+      }
+    }
+    load()
+    const id = setInterval(load, 30000)
+    return () => { active = false; clearInterval(id) }
+  }, [range])
+
+  // Fetch recent events
+  useEffect(() => {
+    let active = true
+    const loadEvents = async () => {
+      try {
+        const res = await fetch('/api/health/events?limit=10', { cache: 'no-store' })
+        const data = await res.json()
+        if (active && data?.events) {
+          setEvents(data.events)
+        }
+      } catch (e) {
+        console.error('Failed to load health events', e)
+      }
+    }
+
+    loadEvents()
+    const id = setInterval(loadEvents, 30000)
+    return () => { active = false; clearInterval(id) }
+  }, [])
+
+  // Fetch hero metrics
+  useEffect(() => {
+    let active = true
+    const loadMetrics = async () => {
+      try {
+        const res = await fetch('/api/health/metrics?period=30d', { cache: 'no-store' })
+        const data = await res.json()
+        if (active && data) {
+          setHeroMetrics(data)
+        }
+      } catch (e) {
+        console.error('Failed to load hero metrics', e)
+      }
+    }
+
+    loadMetrics()
+    const id = setInterval(loadMetrics, 60000)
+    return () => { active = false; clearInterval(id) }
   }, [])
 
   const fetchSystemStatus = async () => {
@@ -57,7 +191,12 @@ export default function SystemStatusPage() {
       }
       const statsJson = await statsRes.json()
 
-      const overall: SystemStatus['overall'] = health.status === 'healthy' ? 'healthy' : health.status === 'degraded' ? 'warning' : 'critical'
+      const overall: SystemStatus['overall'] =
+        health.status === 'healthy'
+          ? 'healthy'
+          : (health.status === 'degraded' || health.status === 'warning' || health.status === 'unknown')
+          ? 'warning'
+          : 'critical'
 
       const dbStatus = health.checks?.database?.status || 'warning'
       const services = health.checks?.services || {}
@@ -65,9 +204,11 @@ export default function SystemStatusPage() {
 
       const mapStatus = (s: string | undefined): 'healthy' | 'warning' | 'critical' => {
         if (s === 'healthy') return 'healthy'
-        if (s === 'warning') return 'warning'
+        if (s === 'warning' || s === 'degraded' || s === 'unknown') return 'warning'
         return 'critical'
       }
+      const usgs = services.usgs || {}
+      const noaa = services.noaa || {}
 
       const sysStatus: SystemStatus = {
         overall,
@@ -87,11 +228,18 @@ export default function SystemStatusPage() {
             error: redis?.error
           },
           usgs: {
-            status: mapStatus(services.usgs?.status),
-            latency: formatLatency(services.usgs?.latencyMs),
-            message: services.usgs?.message || 'USGS API',
-            code: services.usgs?.statusCode,
-            error: services.usgs?.error
+            status: mapStatus(usgs?.status),
+            latency: formatLatency(usgs?.latencyMs),
+            message: usgs?.message || 'USGS API',
+            code: usgs?.statusCode,
+            error: usgs?.error
+          },
+          noaa: {
+            status: mapStatus(noaa?.status),
+            latency: formatLatency(noaa?.latencyMs),
+            message: noaa?.message || 'NOAA Tsunami',
+            code: noaa?.statusCode,
+            error: noaa?.error
           },
           sms: {
             status: mapStatus(services.twilio?.status),
@@ -171,25 +319,78 @@ export default function SystemStatusPage() {
 
   if (loading) {
     return (
-      <AppLayout title="System Status">
-        <div className="animate-pulse space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className="h-24 loading-shimmer rounded-xl"></div>
-            ))}
+      <div className="min-h-screen bg-white">
+        <WorkInProgressBanner />
+        <header className="bg-slate-900 text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex items-center justify-between">
+              <Link href="/" className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center">
+                  <Shield className="h-4 w-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold">Emergency Alert</h3>
+                  <p className="text-xs text-slate-300">Command Center</p>
+                </div>
+              </Link>
+              <Link href="/" className="text-slate-300 hover:text-white transition-colors">
+                ← Back to Home
+              </Link>
+            </div>
           </div>
-          <div className="h-64 loading-shimmer rounded-xl"></div>
-        </div>
-      </AppLayout>
+        </header>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="animate-pulse space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-24 bg-slate-200 rounded-xl"></div>
+              ))}
+            </div>
+            <div className="h-64 bg-slate-200 rounded-xl"></div>
+          </div>
+        </main>
+      </div>
     )
   }
 
   return (
-    <AppLayout 
-      title="System Status" 
-      breadcrumbs={[{ label: 'System Status' }]}
-    >
-      <div className="space-y-8">
+    <div className="min-h-screen bg-white">
+      <WorkInProgressBanner />
+      <header className="bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-600 text-white flex items-center justify-center">
+                <Shield className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-bold">Emergency Alert</h3>
+                <p className="text-xs text-slate-300">Command Center</p>
+              </div>
+            </Link>
+            <Link href="/" className="text-slate-300 hover:text-white transition-colors">
+              ← Back to Home
+            </Link>
+          </div>
+        </div>
+      </header>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-slate-900 mb-4">System Status</h1>
+          <p className="text-xl text-slate-600">Real-time status of all emergency alert services</p>
+        </div>
+        <div className="space-y-8">
+        
+        {/* Hero Metrics */}
+        {heroMetrics && (
+          <HeroMetrics
+            uptimePercent={heroMetrics.uptimePercent}
+            mttrMinutes={heroMetrics.mttrMinutes}
+            incidentsResolved={heroMetrics.incidentsResolved}
+            avgResponseTimeMs={heroMetrics.avgResponseTimeMs}
+          />
+        )}
+
         {/* Status Overview */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -197,7 +398,7 @@ export default function SystemStatusPage() {
             <div>
               <h2 className="text-xl font-semibold text-slate-900">System Operational</h2>
               <p className="text-sm text-slate-600">
-                Last updated: {lastUpdate.toLocaleTimeString()}
+                Last updated: {formatTime(lastUpdate)}
               </p>
             </div>
           </div>
@@ -294,36 +495,69 @@ export default function SystemStatusPage() {
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Service Latency (Selected Range) */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-slate-900 mb-6">Recent System Activity</h3>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg border border-green-200">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-900">System health check completed</p>
-                <p className="text-xs text-slate-500">2 minutes ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <Activity className="h-5 w-5 text-blue-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-900">USGS earthquake data synchronized</p>
-                <p className="text-xs text-slate-500">5 minutes ago</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-slate-900">Email service experiencing minor delays</p>
-                <p className="text-xs text-slate-500">12 minutes ago</p>
-              </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Service Latency</h3>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">Auto-refresh every 30s</span>
+              <RangeSwitcher value={range} onChange={setRange} />
             </div>
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {([
+              { key: 'database', name: 'Database', color: '#3b82f6' },
+              { key: 'redis', name: 'Redis', color: '#06b6d4' },
+              { key: 'sms', name: 'SMS', color: '#10b981' },
+              { key: 'email', name: 'Email', color: '#8b5cf6' },
+              { key: 'whatsapp', name: 'WhatsApp', color: '#22c55e' },
+              { key: 'voice', name: 'Voice', color: '#f59e0b' },
+              { key: 'usgs', name: 'USGS API', color: '#64748b' },
+              { key: 'noaa', name: 'NOAA Tsunami', color: '#ef4444' },
+            ] as Array<{ key: keyof typeof latencyHistory; name: string; color: string }> )
+              .filter(cfg => (latencyHistory[cfg.key]?.length ?? 0) > 0)
+              .map(cfg => (
+                <LatencyChart key={cfg.key as string} title={cfg.name} points={latencyHistory[cfg.key] as HistoryPoint[]} color={cfg.color} />
+              ))}
+          </div>
         </div>
-      </div>
-    </AppLayout>
+
+        {/* Service Uptime Timeline */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">Service Uptime Timeline</h3>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-500">Range: {range}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {([
+              { key: 'database', name: 'Database' },
+              { key: 'redis', name: 'Redis' },
+              { key: 'sms', name: 'SMS' },
+              { key: 'email', name: 'Email' },
+              { key: 'whatsapp', name: 'WhatsApp' },
+              { key: 'voice', name: 'Voice' },
+              { key: 'usgs', name: 'USGS API' },
+              { key: 'noaa', name: 'NOAA Tsunami' },
+            ] as Array<{ key: keyof typeof uptimeTimeline; name: string }> )
+              .filter(cfg => (uptimeTimeline[cfg.key]?.length ?? 0) > 0)
+              .map(cfg => (
+                <StatusTimeline key={cfg.key as string} title={cfg.name} points={uptimeTimeline[cfg.key] as TimelinePoint[]} />
+              ))}
+          </div>
+        </div>
+
+        {/* Recent System Events */}
+        <div className="card">
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-slate-900">Recent System Events</h3>
+            <p className="text-sm text-slate-500 mt-1">Real-time status changes and incidents</p>
+          </div>
+          <IncidentTimeline events={events} />
+        </div>
+        </div>
+      </main>
+    </div>
   )
 }

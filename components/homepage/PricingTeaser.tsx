@@ -28,7 +28,7 @@ const pricingTiers = [
       'Delivery tracking & analytics',
       'Priority support'
     ],
-    cta: 'Most Popular',
+    cta: 'Get Started',
     popular: true
   },
   {
@@ -71,7 +71,7 @@ export default function PricingTeaser() {
               {tier.popular && (
                 <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                   <span className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
-                    Most Popular
+                    Get Started
                   </span>
                 </div>
               )}
@@ -93,13 +93,17 @@ export default function PricingTeaser() {
                 ))}
               </ul>
 
-              <button className={`w-full py-4 px-6 rounded-2xl font-semibold transition-all duration-200 ${
-                tier.popular
-                  ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
-                  : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
-              }`}>
+              <Link
+                href="/contact"
+                className={`w-full inline-flex items-center justify-center py-4 px-6 rounded-2xl font-semibold transition-all duration-200 ${
+                  tier.popular
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5'
+                    : 'bg-slate-100 text-slate-900 hover:bg-slate-200'
+                }`}
+              >
                 {tier.cta}
-              </button>
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
             </div>
           ))}
         </div>
@@ -114,17 +118,11 @@ export default function PricingTeaser() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="#contact"
+              href="/contact"
               className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
             >
               Contact Sales
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-            <Link
-              href="#contact"
-              className="inline-flex items-center justify-center px-8 py-4 bg-slate-100 text-slate-900 font-semibold rounded-2xl hover:bg-slate-200 transition-all duration-200"
-            >
-              View Full Pricing
             </Link>
           </div>
         </div>

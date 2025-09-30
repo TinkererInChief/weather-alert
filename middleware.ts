@@ -5,13 +5,7 @@ export default withAuth(
   function middleware(request) {
     const { pathname } = request.nextUrl
 
-    // Handle health check endpoint
-    if (pathname === '/api/health') {
-      if (request.method === 'HEAD') {
-        return new Response(null, { status: 200 })
-      }
-      return NextResponse.json({ status: 'ok', ts: Date.now() }, { status: 200 })
-    }
+    // Do not intercept /api/health; let the real route handlers respond
 
     return NextResponse.next()
   },
@@ -24,7 +18,7 @@ export default withAuth(
         if (pathname === '/' ||
             pathname.startsWith('/login') || 
             pathname.startsWith('/api/auth') || 
-            pathname === '/api/health' ||
+            pathname.startsWith('/api/health') ||
             pathname === '/privacy' ||
             pathname === '/terms' ||
             pathname === '/security-policy' ||
@@ -32,7 +26,9 @@ export default withAuth(
             pathname === '/contact' ||
             pathname === '/about' ||
             pathname === '/help' ||
-            pathname === '/status') {
+            pathname === '/status' ||
+            pathname === '/docs' ||
+            pathname === '/data-sources') {
           return true
         }
 

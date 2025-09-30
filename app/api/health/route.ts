@@ -1,6 +1,7 @@
 import { checkDatabaseConnection, prisma } from '@/lib/prisma'
 import RedisConnection from '@/lib/queue/redis-connection'
 import type Redis from 'ioredis'
+// Avoid direct enum type imports to prevent build issues on some environments
 
 // Lazy getter for ioredis client (Railway Redis)
 function getRedisClient(): Redis {
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const detailed = url.searchParams.get('detailed') === 'true'
     const checkDb = url.searchParams.get('db') === 'true'
+    const recordSnapshots = url.searchParams.get('record') === 'true' || process.env.HEALTH_RECORD_SNAPSHOTS === 'true'
     
     // Basic health information
     const basicHealth = {
@@ -67,24 +69,39 @@ export async function GET(request: Request) {
       system: await checkSystemHealth(),
     }
 
-    // Determine overall status
-    const allHealthy = 
-      (healthChecks.database.status === 'healthy' || healthChecks.database.status === 'warning') &&
-      (healthChecks.redis.status === 'healthy' || healthChecks.redis.status === 'warning') &&
-      (healthChecks.system.status === 'healthy' || healthChecks.system.status === 'warning') &&
-      Object.values(healthChecks.services).every(service => 
-        service.status === 'healthy' || service.status === 'warning'
-      )
+    // Determine overall status: healthy/warning/critical based on component health
+    const allStatuses = [
+      healthChecks.database.status,
+      healthChecks.redis.status,
+      healthChecks.system.status,
+      ...Object.values(healthChecks.services).map(s => s.status)
+    ]
+    
+    const hasCritical = allStatuses.some(s => s === 'unhealthy' || s === 'critical')
+    const hasWarning = allStatuses.some(s => s === 'warning' || s === 'degraded')
+    const allHealthy = allStatuses.every(s => s === 'healthy')
+
+    const overallStatus = hasCritical ? 'critical' : hasWarning ? 'warning' : allHealthy ? 'healthy' : 'warning'
 
     const response = {
       ...basicHealth,
-      status: allHealthy ? 'healthy' : 'degraded',
+      status: overallStatus,
       checks: healthChecks,
       responseTime: Date.now() - startTime,
     }
+    // Optionally persist snapshots for time-series charts
+    if (recordSnapshots) {
+      try {
+        await persistHealthSnapshots(healthChecks)
+        await trackHealthEvents(healthChecks, overallStatus)
+      } catch (e) {
+        // Do not fail the health endpoint if persistence fails
+        console.error('Persist health snapshots failed:', e)
+      }
+    }
     
     return Response.json(response, { 
-      status: allHealthy ? 200 : 503,
+      status: overallStatus === 'healthy' ? 200 : overallStatus === 'warning' ? 200 : 503,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
@@ -310,4 +327,117 @@ async function checkSystemHealth() {
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const runtime = 'nodejs'
+
+type HealthStatusThin = 'healthy' | 'warning' | 'critical'
+
+function mapToHealthStatus(value: unknown): HealthStatusThin {
+  const s = String(value || '').toLowerCase()
+  if (s === 'healthy' || s === 'ok') return 'healthy'
+  if (s === 'warning' || s === 'degraded' || s === 'unknown') return 'warning'
+  // critical, error, unhealthy, empty
+  return 'critical'
+}
+
+async function persistHealthSnapshots(checks: any) {
+  const now = new Date()
+  const db = checks?.database || {}
+  const redis = checks?.redis || {}
+  const svc = checks?.services || {}
+
+  const records: Array<{ service: string; status: HealthStatusThin; latencyMs?: number | null; error?: string | null; createdAt: Date }> = []
+
+  const push = (service: string, src: any) => {
+    records.push({
+      service,
+      status: mapToHealthStatus(src?.status),
+      latencyMs: typeof src?.latencyMs === 'number' ? Math.round(src.latencyMs) : null,
+      error: (src?.error as string | undefined) || null,
+      createdAt: now,
+    })
+  }
+
+  push('database', db)
+  push('redis', redis)
+  push('sms', svc.twilio)
+  push('email', svc.sendgrid)
+  push('usgs', svc.usgs)
+  push('noaa', svc.noaa)
+  // Derive WhatsApp and Voice from Twilio as well
+  push('whatsapp', svc.twilio)
+  push('voice', svc.twilio)
+
+  // Cast to any to avoid enum typing issues at build time
+  await (prisma as any).healthSnapshot.createMany({ data: records as any })
+}
+
+// Track health events for the status page timeline
+// Uses a simple in-memory cache to track previous status per service
+const previousServiceStatus = new Map<string, string>()
+
+async function trackHealthEvents(checks: any, overallStatus: string) {
+  const events: Array<{
+    service?: string
+    eventType: string
+    severity: string
+    message: string
+    oldStatus?: string
+    newStatus?: string
+    metadata: any
+    createdAt: Date
+  }> = []
+  
+  const now = new Date()
+  
+  // Track overall status changes
+  const prevOverall = previousServiceStatus.get('_overall')
+  if (prevOverall && prevOverall !== overallStatus) {
+    events.push({
+      eventType: 'status_change',
+      severity: overallStatus === 'critical' ? 'critical' : overallStatus === 'warning' ? 'warning' : 'healthy',
+      message: `Overall system status changed from ${prevOverall} to ${overallStatus}`,
+      oldStatus: prevOverall,
+      newStatus: overallStatus,
+      metadata: {},
+      createdAt: now,
+    })
+  }
+  previousServiceStatus.set('_overall', overallStatus)
+  
+  // Track service-level status changes
+  const serviceChecks: Record<string, any> = {
+    database: checks?.database,
+    redis: checks?.redis,
+    sms: checks?.services?.twilio,
+    email: checks?.services?.sendgrid,
+    usgs: checks?.services?.usgs,
+    noaa: checks?.services?.noaa,
+    whatsapp: checks?.services?.twilio, // Same as SMS
+    voice: checks?.services?.twilio,     // Same as SMS
+  }
+  
+  for (const [serviceName, check] of Object.entries(serviceChecks)) {
+    if (!check) continue
+    const status = mapToHealthStatus(check.status)
+    const prev = previousServiceStatus.get(serviceName)
+    
+    if (prev && prev !== status) {
+      events.push({
+        service: serviceName,
+        eventType: status === 'healthy' ? 'recovery' : status === 'critical' ? 'error' : 'status_change',
+        severity: status,
+        message: `${serviceName.toUpperCase()} changed from ${prev} to ${status}${check.error ? ': ' + check.error : ''}`,
+        oldStatus: prev,
+        newStatus: status,
+        metadata: check.error ? { error: check.error } : {},
+        createdAt: now,
+      })
+    }
+    previousServiceStatus.set(serviceName, status)
+  }
+  
+  // Write events to DB
+  if (events.length > 0) {
+    await (prisma as any).healthEvent.createMany({ data: events as any })
+  }
+}
 

@@ -345,3 +345,71 @@ model SystemSettings {
 
   @@map("system_settings")
 }
+
+// Health monitoring snapshots for time-series charts
+enum HealthService {
+  database
+  redis
+  sms
+  email
+  usgs
+  noaa
+  whatsapp
+  voice
+}
+
+enum HealthStatus {
+  healthy
+  warning
+  critical
+}
+
+model HealthSnapshot {
+  id        String        @id @default(cuid())
+  service   HealthService
+  status    HealthStatus
+  latencyMs Int?
+  error     String?
+  createdAt DateTime      @default(now())
+
+  @@index([service, createdAt])
+  @@map("health_snapshots")
+}
+
+// Health events for status page timeline
+enum HealthEventType {
+  status_change
+  error
+  recovery
+  deploy
+}
+
+model HealthEvent {
+  id          String          @id @default(cuid())
+  service     HealthService?
+  eventType   HealthEventType
+  severity    HealthStatus    @default(warning)
+  message     String
+  oldStatus   HealthStatus?
+  newStatus   HealthStatus?
+  metadata    Json            @default("{}")
+  createdAt   DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([service, createdAt])
+  @@map("health_events")
+}
+
+model MaintenanceWindow {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  startTime        DateTime
+  endTime          DateTime
+  affectedServices String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([startTime, endTime])
+  @@map("maintenance_windows")
+}

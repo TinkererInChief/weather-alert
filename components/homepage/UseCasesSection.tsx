@@ -1,18 +1,19 @@
-import { Building2, Factory, Users2 } from 'lucide-react'
+import { Ship, Factory, Users2 } from 'lucide-react'
+import Link from 'next/link'
 
 const useCases = [
   {
-    icon: Building2,
-    title: 'Corporate Offices',
-    scenario: 'Evacuate 200+ employees across 3 floors in under 2 minutes',
-    description: 'When a 6.2 magnitude earthquake struck downtown, TechCorp\'s emergency system instantly alerted all employees via SMS and voice calls. Floor wardens received additional coordination instructions, enabling a complete evacuation in 90 seconds.',
+    icon: Ship,
+    title: 'Shipping & Maritime Operations',
+    scenario: 'Coordinate alerts for distributed crews across vessels and shore offices',
+    description: 'When a tsunami warning was issued, OceanFleet automatically alerted all active vessels, docked ships, and shore-based operations teams. The system used satellite messaging offshore and SMS/voice on land, delivering role-based instructions to captains, officers, and port coordinators to secure operations within minutes.',
     metrics: [
       { label: 'Response Time', value: '90 seconds' },
-      { label: 'Employees Reached', value: '247/247' },
-      { label: 'Channels Used', value: 'SMS + Voice' }
+      { label: 'Vessels Reached', value: '12/12' },
+      { label: 'Channels Used', value: 'SMS + Satcom + Voice' }
     ],
-    bgColor: 'from-blue-50 to-cyan-50',
-    iconColor: 'from-blue-500 to-cyan-500'
+    bgColor: 'from-sky-50 to-blue-50',
+    iconColor: 'from-sky-500 to-blue-600'
   },
   {
     icon: Factory,
@@ -100,9 +101,13 @@ export default function UseCasesSection() {
             <p className="text-slate-600 mb-6">
               Join hundreds of organizations who trust our system to keep their workforce safe during emergencies.
             </p>
-            <button className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200">
+            <Link
+              href="/contact"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
+              aria-label="Schedule a demo via contact page"
+            >
               Schedule a Demo
-            </button>
+            </Link>
           </div>
         </div>
       </div>
