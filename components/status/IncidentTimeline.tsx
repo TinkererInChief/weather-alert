@@ -28,16 +28,16 @@ export default function IncidentTimeline({ events }: IncidentTimelineProps) {
     )
   }
 
-  const getIcon = (severity: string) => {
-    switch (severity) {
-      case 'critical':
-        return <XCircle className="h-5 w-5 text-red-500" aria-label="Critical" />
-      case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" aria-label="Warning" />
-      case 'healthy':
-        return <CheckCircle className="h-5 w-5 text-green-500" aria-label="Healthy" />
+  const getIcon = (eventType: string) => {
+    switch (eventType) {
+      case 'error':
+        return XCircle
+      case 'recovery':
+        return CheckCircle
+      case 'deploy':
+        return Activity
       default:
-        return <Activity className="h-5 w-5 text-slate-400" aria-label="Info" />
+        return AlertTriangle
     }
   }
 
@@ -64,6 +64,19 @@ export default function IncidentTimeline({ events }: IncidentTimelineProps) {
         return 'bg-blue-100 text-blue-800 border border-blue-200'
       default:
         return 'bg-yellow-100 text-yellow-800'
+    }
+  }
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical':
+        return 'text-red-600'
+      case 'warning':
+        return 'text-yellow-600'
+      case 'healthy':
+        return 'text-green-600'
+      default:
+        return 'text-slate-600'
     }
   }
 

@@ -13,6 +13,8 @@ import TrendIndicator from '@/components/status/TrendIndicator'
 import ServiceDependencyMap from '@/components/status/ServiceDependencyMap'
 import MaintenanceScheduler from '@/components/status/MaintenanceScheduler'
 
+export const dynamic = 'force-dynamic'
+
 // Types for strict mode
 type OverallStatus = 'healthy' | 'warning' | 'critical' | 'degraded' | 'error' | 'unknown'
 
