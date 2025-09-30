@@ -40,7 +40,7 @@ export default function KeyMetricsWidget({ metrics }: KeyMetricsWidgetProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {metrics.map((metric, idx) => {
         const TrendIcon = metric.trend ? getTrendIcon(metric.trend.direction) : null
         const trendColor = metric.trend 
@@ -57,14 +57,11 @@ export default function KeyMetricsWidget({ metrics }: KeyMetricsWidgetProps) {
                 <p className="text-sm font-medium text-slate-600">{metric.label}</p>
               </div>
               {metric.icon && (
-                <div
-                  className="p-2 rounded-lg"
-                  style={{ backgroundColor: metric.color ? `${metric.color}15` : '#f1f5f9' }}
+                <div 
+                  className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center" 
+                  style={{ backgroundColor: `${metric.color}15`, color: metric.color || '#64748b' }}
                 >
-                  <metric.icon 
-                    className="h-5 w-5" 
-                    style={{ color: metric.color || '#64748b' }}
-                  />
+                  <metric.icon className="h-5 w-5" />
                 </div>
               )}
             </div>

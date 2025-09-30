@@ -29,16 +29,9 @@ export async function POST(request: NextRequest) {
       email: { attempted: 0, successful: 0, failed: 0, results: [] as any[] }
     }
 
-    const testMessage = `🧪 **EMERGENCY SYSTEM TEST**
-
-This is a test of all notification channels in the Emergency Alert System.
-
-📅 Test Time: ${new Date().toLocaleString()}
-🔔 All systems are functioning normally.
-
-This is only a test - no emergency action required.
-
-Emergency Alert System`
+    // Use template service for test messages
+    const { TemplateService } = await import('@/lib/services/template-service')
+    const templateService = new TemplateService()
 
     // Test SMS
     if (includeSMS) {
@@ -47,7 +40,22 @@ Emergency Alert System`
       const smsContacts = contacts.filter(c => c.phone)
       
       if (smsContacts.length > 0) {
-        const smsResult = await smsService.sendBulkSMS(smsContacts, testMessage)
+        // Render template for first contact
+        const testContact = smsContacts[0]
+        const rendered = await templateService.renderTemplate({
+          type: 'test',
+          channel: 'sms',
+          language: 'en',
+          data: {
+            systemName: 'Emergency Alert System',
+            timestamp: new Date().toLocaleString(),
+            contactName: testContact.name,
+            status: 'All systems operational',
+            contactId: testContact.id
+          }
+        })
+        
+        const smsResult = await smsService.sendBulkSMS(smsContacts, rendered.content)
         results.sms = {
           attempted: smsResult.totalSent,
           successful: smsResult.successful,
@@ -64,7 +72,21 @@ Emergency Alert System`
       const whatsappContacts = contacts.filter(c => c.whatsapp || c.phone)
       
       if (whatsappContacts.length > 0) {
-        const whatsappResult = await whatsappService.sendBulkWhatsApp(whatsappContacts, testMessage)
+        const testContact = whatsappContacts[0]
+        const rendered = await templateService.renderTemplate({
+          type: 'test',
+          channel: 'whatsapp',
+          language: 'en',
+          data: {
+            systemName: 'Emergency Alert System',
+            timestamp: new Date().toLocaleString(),
+            contactName: testContact.name,
+            status: 'All systems operational',
+            contactId: testContact.id
+          }
+        })
+        
+        const whatsappResult = await whatsappService.sendBulkWhatsApp(whatsappContacts, rendered.content)
         results.whatsapp = {
           attempted: whatsappResult.totalSent,
           successful: whatsappResult.successful,
@@ -83,10 +105,24 @@ Emergency Alert System`
       }))
       
       if (voiceContacts.length > 0) {
+        const testContact = contacts.find(c => c.phone)
+        const rendered = await templateService.renderTemplate({
+          type: 'test',
+          channel: 'voice',
+          language: 'en',
+          data: {
+            systemName: 'Emergency Alert System',
+            timestamp: new Date().toLocaleString(),
+            contactName: testContact?.name || 'User',
+            status: 'All systems operational',
+            contactId: testContact?.id || ''
+          }
+        })
+        
         const voiceResult = await voiceService.makeBulkVoiceCalls(
           voiceContacts,
           VoiceAlertType.TEST,
-          'This is a test call from your Emergency Alert System. All systems are functioning normally. This is only a test.'
+          rendered.content
         )
         results.voice = {
           attempted: voiceResult.totalCalls,
@@ -106,33 +142,25 @@ Emergency Alert System`
       for (const contact of emailContacts) {
         results.email.attempted++
         
+        const rendered = await templateService.renderTemplate({
+          type: 'test',
+          channel: 'email',
+          language: 'en',
+          data: {
+            systemName: 'Emergency Alert System',
+            timestamp: new Date().toLocaleString(),
+            contactName: contact.name,
+            status: 'All systems operational',
+            contactId: contact.id,
+            channelsTested: 'SMS, WhatsApp, Email, Voice'
+          }
+        })
+        
         const emailResult = await emailService.sendEmail({
           to: contact.email!,
-          subject: '🧪 Emergency System Test - All Systems Operational',
-          htmlContent: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background-color: #059669; color: white; padding: 20px; text-align: center;">
-                <h1 style="margin: 0;">🧪 Emergency System Test</h1>
-              </div>
-              <div style="padding: 20px;">
-                <h2>System Test Notification</h2>
-                <p>Hello ${contact.name},</p>
-                <p>This is a test of the Emergency Alert System email notifications.</p>
-                <div style="background-color: #f0f9ff; border-left: 4px solid #0ea5e9; padding: 15px; margin: 20px 0;">
-                  <p><strong>Test Details:</strong></p>
-                  <ul>
-                    <li>Test Time: ${new Date().toLocaleString()}</li>
-                    <li>All systems are functioning normally</li>
-                    <li>This is only a test - no action required</li>
-                  </ul>
-                </div>
-                <p>If you received this message, your email notifications are working correctly.</p>
-                <p>Stay safe!</p>
-                <p><em>Emergency Alert System</em></p>
-              </div>
-            </div>
-          `,
-          textContent: testMessage
+          subject: rendered.subject || '🧪 System Test - Emergency Alert System',
+          htmlContent: rendered.html!,
+          textContent: rendered.content
         })
 
         if (emailResult.success) {

@@ -17,24 +17,28 @@ export async function POST() {
       })
     }
 
-    const testMessage = `🧪 *WhatsApp Test Alert*
-
-This is a test message from your Emergency Alert System.
-
-📊 *Test Details:*
-• Service: WhatsApp via Twilio
-• Contact: ${testContact.name}
-• Time: ${new Date().toLocaleString()}
-
-✅ If you received this message, WhatsApp integration is working correctly!
-
-🔔 This is a test - no emergency action required.`
+    // Use template service
+    const { TemplateService } = await import('@/lib/services/template-service')
+    const templateService = new TemplateService()
+    
+    const rendered = await templateService.renderTemplate({
+      type: 'test',
+      channel: 'whatsapp',
+      language: 'en',
+      data: {
+        systemName: 'Emergency Alert System',
+        timestamp: new Date().toLocaleString(),
+        contactName: testContact.name,
+        status: 'All systems operational',
+        contactId: testContact.id
+      }
+    })
 
     console.log(`🧪 Testing WhatsApp service to ${testContact.name}...`)
     
     const result = await whatsappService.sendMessage(
       testContact.whatsapp || testContact.phone!,
-      testMessage
+      rendered.content
     )
     
     return NextResponse.json({

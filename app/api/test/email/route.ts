@@ -17,76 +17,31 @@ export async function POST() {
       })
     }
 
-    const testSubject = '🧪 Emergency Alert System - Email Test'
-    const testHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
-          <h1 style="margin: 0; font-size: 24px;">🧪 Email Test Alert</h1>
-        </div>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px;">
-          <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-            This is a test message from your <strong>Emergency Alert System</strong>.
-          </p>
-          
-          <div style="background: white; padding: 15px; border-radius: 8px; border-left: 4px solid #28a745;">
-            <h3 style="color: #28a745; margin-top: 0;">📊 Test Details</h3>
-            <ul style="color: #666; line-height: 1.6;">
-              <li><strong>Service:</strong> Email via SendGrid</li>
-              <li><strong>Contact:</strong> ${testContact.name}</li>
-              <li><strong>Email:</strong> ${testContact.email}</li>
-              <li><strong>Time:</strong> ${new Date().toLocaleString()}</li>
-            </ul>
-          </div>
-          
-          <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-top: 15px;">
-            <p style="color: #155724; margin: 0; font-weight: bold;">
-              ✅ If you received this email, your email integration is working correctly!
-            </p>
-          </div>
-          
-          <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-            <p style="color: #856404; margin: 0;">
-              🔔 <strong>This is a test</strong> - no emergency action required.
-            </p>
-          </div>
-          
-          <hr style="margin: 20px 0; border: none; border-top: 1px solid #dee2e6;">
-          
-          <p style="color: #6c757d; font-size: 14px; margin: 0;">
-            <strong>Emergency Alert System</strong><br>
-            Multi-Channel Notification Platform<br>
-            Powered by Next.js, Twilio & SendGrid
-          </p>
-        </div>
-      </div>
-    `
+    // Use template service
+    const { TemplateService } = await import('@/lib/services/template-service')
+    const templateService = new TemplateService()
     
-    const testText = `🧪 EMAIL TEST ALERT
-
-This is a test message from your Emergency Alert System.
-
-📊 Test Details:
-• Service: Email via SendGrid  
-• Contact: ${testContact.name}
-• Email: ${testContact.email}
-• Time: ${new Date().toLocaleString()}
-
-✅ If you received this email, your email integration is working correctly!
-
-🔔 This is a test - no emergency action required.
-
----
-Emergency Alert System
-Multi-Channel Notification Platform`
+    const rendered = await templateService.renderTemplate({
+      type: 'test',
+      channel: 'email',
+      language: 'en',
+      data: {
+        systemName: 'Emergency Alert System',
+        timestamp: new Date().toLocaleString(),
+        contactName: testContact.name,
+        status: 'All systems operational',
+        contactId: testContact.id,
+        channelsTested: 'Email'
+      }
+    })
 
     console.log(`🧪 Testing Email service to ${testContact.name} (${testContact.email})...`)
     
     const result = await emailService.sendEmail({
       to: testContact.email!,
-      subject: testSubject,
-      html: testHtml,
-      text: testText
+      subject: rendered.subject || '🧪 System Test - Emergency Alert System',
+      htmlContent: rendered.html!,
+      textContent: rendered.content
     })
     
     return NextResponse.json({

@@ -165,14 +165,36 @@ export class AlertManager {
       }
     }
 
-    const testMessage = `🧪 Test Alert - Emergency Alert System is working! Time: ${new Date().toLocaleString()}`
-    
     try {
-      const result = await this.smsService.sendBulkSMS(contacts, testMessage)
+      // Use template service for test messages
+      const { TemplateService } = await import('./services/template-service')
+      const templateService = new TemplateService()
+      
+      const results = []
+      
+      for (const contact of contacts.slice(0, 1)) { // Test with first contact only
+        const rendered = await templateService.renderTemplate({
+          type: 'test',
+          channel: 'sms',
+          language: 'en',
+          data: {
+            systemName: 'Emergency Alert System',
+            timestamp: new Date().toLocaleString(),
+            contactName: contact.name,
+            status: 'Operational',
+            contactId: contact.id
+          }
+        })
+        
+        const result = await this.smsService.sendSMS(contact.phone!, rendered.content)
+        results.push(result)
+      }
+      
+      const successful = results.filter(r => r.success).length
       
       return {
-        success: result.successful > 0,
-        message: `Test sent to ${result.successful}/${result.totalSent} contacts. ${result.failed} failed.`
+        success: successful > 0,
+        message: `Test sent to ${successful}/${results.length} contacts.`
       }
     } catch (error) {
       return {
@@ -256,6 +278,49 @@ Emergency Alert System`
   }
 
   /**
+   * Get local emergency number by country code
+   */
+  private getEmergencyNumber(country: string): string {
+    const emergencyNumbers: Record<string, string> = {
+      'US': '911',
+      'CA': '911',
+      'UK': '999',
+      'GB': '999',
+      'EU': '112',
+      'DE': '112',
+      'FR': '112',
+      'IT': '112',
+      'ES': '112',
+      'AU': '000',
+      'NZ': '111',
+      'IN': '112',
+      'JP': '110',
+      'CN': '120',
+      'KR': '112',
+      'SG': '999',
+      'MY': '999',
+      'PH': '911',
+      'TH': '191',
+      'ID': '112',
+      'VN': '113',
+      'BR': '190',
+      'MX': '911',
+      'AR': '911',
+      'CL': '133',
+      'ZA': '10111',
+      'EG': '122',
+      'SA': '999',
+      'AE': '999',
+      'IL': '100',
+      'TR': '112',
+      'RU': '112',
+      'UA': '112'
+    }
+    
+    return emergencyNumbers[country.toUpperCase()] || '911'
+  }
+
+  /**
    * Get guidance text for tsunami threat level
    */
   private getTsunamiGuidance(level: TsunamiAlertLevel): string {
@@ -332,20 +397,39 @@ Emergency Alert System`
       const preferredChannels = await this.notificationService.getPreferredChannels(contact, severity)
       console.log(`📋 Contact ${contact.name}: using channels [${preferredChannels.join(', ')}]`)
 
-      // Create template data
+      // Create template data with enhanced variables
       const templateData = {
         type: 'earthquake',
         severity: severity,
         data: {
+          // Contact information
+          contactName: contact.name,
+          contactId: contact.id,
+          
+          // Earthquake details
           magnitude: earthquake.properties.mag,
           location: earthquake.properties.place,
-          depth: earthquake.geometry?.coordinates?.[2] || 0,
+          depth: Math.round(earthquake.geometry?.coordinates?.[2] || 0),
           timestamp: new Date(earthquake.properties.time).toLocaleString(),
           time: new Date(earthquake.properties.time).toISOString(),
+          title: earthquake.properties.title || `M${earthquake.properties.mag} - ${earthquake.properties.place}`,
+          
+          // Tsunami information
           tsunamiLevel: tsunamiThreat.level,
-          tsunamiConfidence: tsunamiThreat.confidence,
+          tsunamiConfidence: Math.round((tsunamiThreat.confidence || 0) * 100),
+          tsunamiWarning: tsunamiThreat.level !== 'INFORMATION' 
+            ? `⚠️ ${this.getTsunamiEmoji(tsunamiThreat.level)} TSUNAMI THREAT: ${tsunamiThreat.level}`
+            : '',
+          
+          // Action instructions
           instructions: this.getTsunamiGuidance(tsunamiThreat.level),
-          title: earthquake.properties.title || `M${earthquake.properties.mag} - ${earthquake.properties.place}`
+          
+          // URLs
+          detailsUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/alerts`,
+          preferencesUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/contacts`,
+          
+          // Emergency information
+          emergencyNumber: this.getEmergencyNumber(contact.country || 'US')
         }
       }
 

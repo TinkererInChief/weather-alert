@@ -64,4 +64,4 @@ function mapSeverityToActivitySeverity(severity: string) {
     default:
       return 'info'
   }
-    
+}

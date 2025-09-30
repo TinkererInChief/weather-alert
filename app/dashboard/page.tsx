@@ -26,6 +26,16 @@ import { useSession } from 'next-auth/react'
 import NotificationPermissionBanner from '@/components/notifications/NotificationPermissionBanner'
 import { useNotifications } from '@/hooks/useNotifications'
 
+// Phase 1 & 2 Dashboard Enhancements
+import GlobalEventMap from '@/components/dashboard/GlobalEventMap'
+import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
+import KeyMetricsWidget from '@/components/dashboard/KeyMetricsWidget'
+import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
+import SmartAlertPrioritization from '@/components/dashboard/SmartAlertPrioritization'
+import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
+import EventTimelinePlayback from '@/components/dashboard/EventTimelinePlayback'
+import { TrendingUp, Zap } from 'lucide-react'
+
 type OperationTone = 'success' | 'error' | 'info'
 
 type DashboardStats = {
@@ -598,6 +608,105 @@ export default function Dashboard() {
     ]
   }, [monitoringStatus, tsunamiMonitoring])
 
+  // Transform data for new components
+  const mapEvents = useMemo(() => {
+    return recentAlerts.map(alert => ({
+      id: alert.id,
+      lat: Math.random() * 180 - 90, // TODO: Add real lat/lng to AlertLog
+      lng: Math.random() * 360 - 180,
+      type: 'earthquake' as const,
+      magnitude: alert.magnitude,
+      title: `M${alert.magnitude.toFixed(1)} ${alert.location}`,
+      timestamp: alert.timestamp,
+      contactsAffected: alert.contactsNotified
+    }))
+  }, [recentAlerts])
+
+  const keyMetrics = useMemo(() => [
+    {
+      label: 'Recent Events',
+      value: recentAlerts.length,
+      subtitle: 'Last 7 days',
+      icon: Activity,
+      color: '#3b82f6'
+    },
+    {
+      label: 'Monitoring Status',
+      value: monitoringStatus?.isMonitoring ? 'Active' : 'Paused',
+      subtitle: tsunamiMonitoring ? 'EQ + Tsunami' : 'Earthquake only',
+      icon: Shield,
+      color: monitoringStatus?.isMonitoring ? '#10b981' : '#6b7280'
+    },
+    {
+      label: 'Active Contacts',
+      value: stats?.activeContacts || 0,
+      subtitle: 'Configured recipients',
+      icon: Users,
+      color: '#8b5cf6'
+    },
+    {
+      label: 'Alerts Sent (24h)',
+      value: recentAlerts.filter(a => {
+        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        return new Date(a.timestamp) > dayAgo
+      }).length,
+      subtitle: 'All channels',
+      icon: Zap,
+      color: '#f59e0b'
+    },
+    {
+      label: 'Success Rate',
+      value: stats?.successRate || '0%',
+      subtitle: 'Delivery success',
+      icon: CheckCircle2,
+      color: '#10b981'
+    },
+    {
+      label: 'Last Check',
+      value: recentAlerts.length > 0 ? new Date(recentAlerts[0].timestamp).toLocaleTimeString() : 'Never',
+      subtitle: 'System updated',
+      icon: Clock,
+      color: '#64748b'
+    }
+  ], [stats, recentAlerts, monitoringStatus, tsunamiMonitoring])
+
+  const prioritizedAlerts = useMemo(() => {
+    return recentAlerts
+      .filter(alert => alert.magnitude >= 5.5)
+      .map(alert => ({
+        id: alert.id,
+        type: 'earthquake' as const,
+        magnitude: alert.magnitude,
+        location: alert.location,
+        riskScore: Math.min(100, Math.round(alert.magnitude * 12 + 20)),
+        priority: (alert.magnitude >= 7 ? 'critical' : alert.magnitude >= 6 ? 'high' : alert.magnitude >= 5 ? 'medium' : 'low') as 'critical' | 'high' | 'medium' | 'low',
+        contactsAtRisk: alert.contactsNotified,
+        impactRadius: Math.round(alert.magnitude * 50),
+        factors: {
+          proximity: 85,
+          historicalImpact: 70,
+          populationDensity: 90,
+          timeSensitivity: 95
+        },
+        recommendation: `Immediate notification recommended for ${alert.contactsNotified} contacts in affected region.`
+      }))
+  }, [recentAlerts])
+
+  const playbackEvents = useMemo(() => {
+    return timelineEvents.map(event => ({
+      id: event.id,
+      timestamp: event.timestamp,
+      type: event.type === 'earthquake' ? 'detection' as const : 'detection' as const,
+      title: event.title,
+      description: event.subtitle,
+      severity: event.success ? 'success' as const : 'error' as const,
+      metadata: {
+        type: event.type,
+        status: event.status
+      }
+    }))
+  }, [timelineEvents])
+
   if (loading) {
     return (
       <AuthGuard>
@@ -706,85 +815,35 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-gradient-to-br from-white/95 via-blue-50/80 to-cyan-50/70 p-6 shadow-lg">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Earthquake Monitoring</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                  {monitoringStatus?.isMonitoring ? 'Active' : 'Paused'}
-                </h2>
-                <p className="mt-3 text-sm text-slate-600">
-                  {mostSevereEarthquake
-                    ? `Max magnitude ${mostSevereEarthquake.magnitude.toFixed(1)} event recorded.`
-                    : 'No recorded events in the current monitoring window.'}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-blue-700 shadow-sm">
-                  {stats?.totalAlerts ?? 0} Total Alerts
-                </span>
-                <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-green-700 shadow-sm">
-                  Success Rate {stats?.successRate ?? '—'}
-                </span>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center justify-between text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {recentAlerts.length
-                  ? `Last event ${new Date(recentAlerts[0].timestamp).toLocaleString()}`
-                  : 'Awaiting first event'}
-              </div>
-              <a
-                href="/alerts"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700"
-              >
-                Earthquake history
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
-            </div>
-          </div>
+        {/* Phase 1: Key Metrics Dashboard */}
+        <KeyMetricsWidget metrics={keyMetrics} />
 
-          <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-gradient-to-br from-white/95 via-sky-50/80 to-emerald-50/70 p-6 shadow-lg">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Tsunami Monitoring</p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                  {tsunamiMonitoring ? 'Active' : 'Paused'}
-                </h2>
-                <p className="mt-3 text-sm text-slate-600">
-                  {criticalTsunamiAlert
-                    ? `Active ${criticalTsunamiAlert.threat.level.toUpperCase()} alert near ${criticalTsunamiAlert.location}`
-                    : tsunamiStats?.alertsLast24h
-                      ? `${tsunamiStats.alertsLast24h} advisories processed in the past 24h.`
-                      : 'Monitoring NOAA & PTWC feeds for coastal advisories.'}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-sky-700 shadow-sm">
-                  {tsunamiStats?.totalAlerts ?? 0} Total Advisories
-                </span>
-                <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
-                  {tsunamiStats?.alertsLast7d ?? 0} This Week
-                </span>
-              </div>
-            </div>
-            <div className="mt-5 flex items-center justify-between text-sm text-slate-600">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                {tsunamiLastChecked
-                  ? `Feeds refreshed ${new Date(tsunamiLastChecked).toLocaleString()}`
-                  : 'Awaiting feed synchronisation'}
-              </div>
-              <a
-                href="/tsunami"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-sky-600 hover:text-sky-700"
-              >
-                Tsunami control room
-                <ArrowUpRight className="h-4 w-4" />
-              </a>
-            </div>
+        {/* Phase 2: Smart Alert Prioritization */}
+        {prioritizedAlerts.length > 0 && (
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Priority Alerts</h2>
+            <SmartAlertPrioritization
+              alerts={prioritizedAlerts}
+              onSendAlert={(id) => {
+                logOperation(`Emergency alert initiated for event ${id}`, 'info')
+              }}
+              onViewDetails={(id) => {
+                window.location.href = `/alerts#${id}`
+              }}
+            />
+          </div>
+        )}
+
+        {/* Phase 1: Global Event Map + Real-Time Feed */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <GlobalEventMap
+              events={mapEvents}
+              height="500px"
+            />
+          </div>
+          <div className="h-[500px] overflow-hidden">
+            <RealTimeActivityFeed maxItems={20} autoRefresh={true} refreshInterval={3000} />
           </div>
         </div>
 
@@ -1124,7 +1183,56 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Phase 2: Event Timeline Playback */}
+        {playbackEvents.length > 0 && (
+          <EventTimelinePlayback
+            events={playbackEvents}
+            autoPlay={false}
+          />
+        )}
       </div>
+
+      {/* Phase 2: Quick Action Command Palette (Floating) */}
+      <QuickActionPalette
+        actions={[
+          {
+            id: 'manual-earthquake',
+            label: 'Manual Earthquake Sweep',
+            description: 'Check USGS for new earthquakes',
+            icon: Activity,
+            category: 'monitoring',
+            action: manualCheck
+          },
+          {
+            id: 'manual-tsunami',
+            label: 'Manual Tsunami Sweep',
+            description: 'Check NOAA for new tsunami advisories',
+            icon: Waves,
+            category: 'monitoring',
+            action: manualTsunamiCheck
+          },
+          {
+            id: 'test-sms',
+            label: 'Test SMS Service',
+            description: 'Send test SMS to primary contact',
+            icon: MessageSquare,
+            category: 'alerts',
+            action: testSMSService
+          },
+          {
+            id: 'manage-contacts',
+            label: 'Manage Contacts',
+            description: 'View and edit contact list',
+            icon: Users,
+            category: 'contacts',
+            action: () => window.location.href = '/contacts'
+          }
+        ]}
+        onActionExecute={(id) => {
+          logOperation(`Quick action executed: ${id}`, 'info')
+        }}
+      />
       </AppLayout>
     </AuthGuard>
   )

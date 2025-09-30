@@ -27,26 +27,80 @@ export class TemplateService {
   private initializeDefaultTemplates() {
     // SMS Templates
     this.defaultTemplates.set('earthquake:sms:en', 
-      '🚨 EARTHQUAKE ALERT: M{magnitude} at {location}. {instructions} Time: {timestamp}')
+      '🚨 EARTHQUAKE ALERT\nM{magnitude} @ {location}\nDepth: {depth}km\n{timestamp}\n⚠️ {instructions}')
     
     this.defaultTemplates.set('tsunami:sms:en',
       '🌊 TSUNAMI {alertType}: {waveHeight}m waves expected at {location}. ETA: {eta}. {instructions}')
     
     this.defaultTemplates.set('test:sms:en',
-      '🧪 TEST ALERT: Emergency system test at {timestamp}. This is only a test.')
+      '🧪 TEST ALERT: {systemName} test for {contactName}. Time: {timestamp}. Status: {status}. This is only a test.')
+    
+    this.defaultTemplates.set('test:email:en',
+      `SYSTEM TEST - Emergency Alert System
+
+Hello {contactName},
+
+This is a test of the Emergency Alert System notification channels.
+
+Test Details:
+- Time: {timestamp}
+- System Status: {status}
+- Your Contact ID: {contactId}
+- Channels Tested: {channelsTested}
+
+✅ If you received this message, your contact information is correctly configured.
+
+Reply to this message or visit the dashboard to update your preferences.
+
+---
+Emergency Alert System
+Automated Test - Do not reply`)
+
+    this.defaultTemplates.set('test:email:en:subject',
+      '🧪 System Test - Emergency Alert System')
+    
+    this.defaultTemplates.set('test:whatsapp:en',
+      '🧪 *SYSTEM TEST*\n\n✅ *Status:* {status}\n👤 *Contact:* {contactName}\n🕒 *Time:* {timestamp}\n\nThis is a test of the Emergency Alert System.\n\nReply STOP to unsubscribe from alerts.')
+    
+    this.defaultTemplates.set('test:voice:en',
+      'This is a test message from the Emergency Alert System for {contactName}. The current time is {timestamp}. System status: {status}. All systems are operational. This was only a test.')
 
     // Email Templates (combined)
     this.defaultTemplates.set('earthquake:email:en',
       `EARTHQUAKE ALERT
-      
+
+Hello {contactName},
+
+An earthquake has been detected:
+
+EARTHQUAKE DETAILS
+------------------
 Magnitude: {magnitude}
 Location: {location}
-Depth: {depth}km
+Depth: {depth} km
 Time: {timestamp}
 
+TSUNAMI ASSESSMENT
+------------------
+Threat Level: {tsunamiLevel}
+Confidence: {tsunamiConfidence}%
+
+RECOMMENDED ACTIONS
+------------------
 {instructions}
 
-This alert was generated automatically by the Emergency Alert System.`)
+{tsunamiWarning}
+
+VIEW FULL DETAILS
+Visit the dashboard for real-time updates: {detailsUrl}
+
+EMERGENCY CONTACTS
+Local Emergency: {emergencyNumber}
+
+---
+Emergency Alert System
+Automated notification - Do not reply
+Update preferences at {preferencesUrl}`)
 
     // Email subject templates
     this.defaultTemplates.set('earthquake:email:en:subject',
@@ -70,14 +124,14 @@ Stay tuned for updates and follow official evacuation orders.`)
 
     // WhatsApp Templates
     this.defaultTemplates.set('earthquake:whatsapp:en',
-      '🚨 *EARTHQUAKE ALERT*\n\n📊 Magnitude: {magnitude}\n📍 Location: {location}\n🕒 Time: {timestamp}\n\n⚠️ *Action:* {instructions}')
+      '🚨 *EARTHQUAKE ALERT*\n\n👤 {contactName}\n📊 *Magnitude:* {magnitude}\n📍 *Location:* {location}\n📏 *Depth:* {depth}km\n🕒 *Time:* {timestamp}\n\n⚠️ *IMMEDIATE ACTION:*\n{instructions}\n\n🔗 [View Details]({detailsUrl})\n📞 Emergency: {emergencyNumber}')
 
     this.defaultTemplates.set('tsunami:whatsapp:en',
       '🌊 *TSUNAMI {alertType}*\n\n📍 Location: {location}\n📏 Wave Height: {waveHeight}m\n⏰ ETA: {eta}\n\n🆘 *URGENT:* {instructions}')
 
     // Voice Templates (simple, clear speech)
     this.defaultTemplates.set('earthquake:voice:en',
-      'Emergency earthquake alert. Magnitude {magnitude} earthquake detected at {location}. {instructions}. This is not a test.')
+      'Emergency earthquake alert for {contactName}. A magnitude {magnitude} earthquake occurred at {location}. Depth: {depth} kilometers. {instructions}. The event occurred at {timestamp}. Your local emergency number is {emergencyNumber}. This is not a test.')
 
     this.defaultTemplates.set('tsunami:voice:en',
       'Tsunami {alertType}. {waveHeight} meter waves expected at {location}. Estimated arrival time {eta}. {instructions}. Take action immediately.')
