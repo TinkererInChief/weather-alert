@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { Database, Activity, MessageSquare, Mail, Globe, MessageCircle, Phone, Wifi, AlertCircle } from 'lucide-react'
 
 type ServiceNode = {
@@ -15,7 +16,16 @@ type ServiceDependencyMapProps = {
   services: Record<string, { status: string }>
 }
 
+type NodePosition = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export default function ServiceDependencyMap({ services }: ServiceDependencyMapProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [nodePositions, setNodePositions] = useState<Record<string, NodePosition>>({})
   // Define your service topology
   const nodes: ServiceNode[] = [
     // Layer 0: External data sources
@@ -62,9 +72,55 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
     nodes.filter(n => n.layer === 3),
   ]
 
+  // Calculate node positions after render
+  useEffect(() => {
+    if (!containerRef.current) return
+    
+    const positions: Record<string, NodePosition> = {}
+    const nodeElements = containerRef.current.querySelectorAll('[data-node-id]')
+    
+    nodeElements.forEach((el) => {
+      const nodeId = el.getAttribute('data-node-id')
+      if (nodeId) {
+        const rect = el.getBoundingClientRect()
+        const containerRect = containerRef.current!.getBoundingClientRect()
+        positions[nodeId] = {
+          x: rect.left - containerRect.left + rect.width / 2,
+          y: rect.top - containerRect.top + rect.height / 2,
+          width: rect.width,
+          height: rect.height,
+        }
+      }
+    })
+    
+    setNodePositions(positions)
+  }, [nodes])
+
+  const getConnectionPath = (fromId: string, toId: string) => {
+    const from = nodePositions[fromId]
+    const to = nodePositions[toId]
+    
+    if (!from || !to) return ''
+    
+    // Calculate control points for curved arrow
+    const midX = (from.x + to.x) / 2
+    const curveOffset = 20
+    
+    return `M ${from.x} ${from.y} Q ${midX} ${from.y + curveOffset}, ${to.x} ${to.y}`
+  }
+
+  const getArrowColor = (node: ServiceNode) => {
+    switch (node.status) {
+      case 'healthy': return '#22c55e'
+      case 'warning': return '#eab308'
+      case 'critical': return '#ef4444'
+      default: return '#94a3b8'
+    }
+  }
+
   return (
-    <div className="relative p-8 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
-      <div className="min-w-[800px]">
+    <div ref={containerRef} className="relative p-8 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="min-w-[800px] relative">
         {/* Layer labels */}
         <div className="flex justify-around mb-8 text-xs font-medium text-slate-500">
           <span>External Sources</span>
@@ -73,8 +129,63 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
           <span>Notification Channels</span>
         </div>
 
+        {/* SVG for connection lines - render behind nodes */}
+        <svg 
+          className="absolute inset-0 pointer-events-none" 
+          style={{ zIndex: 0 }}
+          width="100%" 
+          height="100%"
+        >
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="10"
+              refX="9"
+              refY="3"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3, 0 6" fill="#94a3b8" />
+            </marker>
+            {nodes.map((node) => (
+              <marker
+                key={node.id}
+                id={`arrowhead-${node.id}`}
+                markerWidth="10"
+                markerHeight="10"
+                refX="9"
+                refY="3"
+                orient="auto"
+              >
+                <polygon points="0 0, 10 3, 0 6" fill={getArrowColor(node)} />
+              </marker>
+            ))}
+          </defs>
+          
+          {/* Draw dependency arrows */}
+          {nodes.map((node) => 
+            node.dependencies.map((depId) => {
+              const path = getConnectionPath(depId, node.id)
+              if (!path) return null
+              
+              return (
+                <g key={`${depId}-${node.id}`}>
+                  <path
+                    d={path}
+                    fill="none"
+                    stroke={getArrowColor(node)}
+                    strokeWidth="2"
+                    strokeOpacity="0.4"
+                    markerEnd={`url(#arrowhead-${node.id})`}
+                  />
+                </g>
+              )
+            })
+          )}
+        </svg>
+
         {/* Service nodes in layers */}
-        <div className="flex justify-around items-start gap-8">
+        <div className="flex justify-around items-start gap-8 relative z-10">
           {layers.map((layerNodes, layerIdx) => (
             <div key={layerIdx} className="flex flex-col gap-4 items-center">
               {layerNodes.map((node) => {
@@ -82,6 +193,7 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
                 return (
                   <div
                     key={node.id}
+                    data-node-id={node.id}
                     className={`relative group px-4 py-3 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer ${getStatusColor(node.status)}`}
                     role="button"
                     tabIndex={0}
@@ -110,11 +222,6 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
             </div>
           ))}
         </div>
-
-        {/* Connection lines (simplified - you can make these more sophisticated with SVG) */}
-        <svg className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
-          {/* Draw dependency arrows here if needed */}
-        </svg>
 
         {/* Legend */}
         <div className="mt-8 flex items-center justify-center gap-6 text-xs">

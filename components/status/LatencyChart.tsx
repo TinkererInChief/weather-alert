@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 type DataPoint = {
   time: number
@@ -17,6 +17,7 @@ type LatencyChartProps = {
 }
 
 export default function LatencyChart({ title, points, color }: LatencyChartProps) {
+  const [hoveredPoint, setHoveredPoint] = useState<{ index: number; x: number; y: number } | null>(null)
   const { max, hasData, formattedPoints } = useMemo(() => {
     const validPoints = points.filter(p => 
       p.latencyAvg !== undefined || p.latencyP50 !== undefined || p.latencyP95 !== undefined || p.latencyP99 !== undefined
@@ -113,13 +114,26 @@ export default function LatencyChart({ title, points, color }: LatencyChartProps
         </div>
       </div>
 
-      <svg 
-        width={width} 
-        height={height} 
-        className="w-full" 
-        role="img" 
-        aria-label={`${title} latency chart`}
-      >
+      <div className="relative">
+        <svg 
+          width={width} 
+          height={height} 
+          className="w-full" 
+          role="img" 
+          aria-label={`${title} latency chart`}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect()
+            const x = e.clientX - rect.left
+            const y = e.clientY - rect.top
+            
+            // Find closest point
+            const closestIndex = Math.round(((x - padding.left) / chartWidth) * (formattedPoints.length - 1))
+            if (closestIndex >= 0 && closestIndex < formattedPoints.length) {
+              setHoveredPoint({ index: closestIndex, x, y })
+            }
+          }}
+          onMouseLeave={() => setHoveredPoint(null)}
+        >
         {/* Grid lines */}
         {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
           const y = padding.top + chartHeight * (1 - ratio)
@@ -191,7 +205,64 @@ export default function LatencyChart({ title, points, color }: LatencyChartProps
           stroke="#cbd5e1"
           strokeWidth="1"
         />
+
+        {/* Hover indicator */}
+        {hoveredPoint !== null && (
+          <>
+            <line
+              x1={xScale(hoveredPoint.index)}
+              y1={padding.top}
+              x2={xScale(hoveredPoint.index)}
+              y2={height - padding.bottom}
+              stroke={color}
+              strokeWidth="1"
+              strokeDasharray="4,2"
+              opacity="0.5"
+            />
+            <circle
+              cx={xScale(hoveredPoint.index)}
+              cy={yScale(formattedPoints[hoveredPoint.index].latencyAvg || 0)}
+              r="4"
+              fill={color}
+              stroke="white"
+              strokeWidth="2"
+            />
+          </>
+        )}
       </svg>
+
+      {/* Tooltip */}
+      {hoveredPoint !== null && (
+        <div
+          className="absolute z-10 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg shadow-xl pointer-events-none"
+          style={{
+            left: `${hoveredPoint.x}px`,
+            top: `${hoveredPoint.y - 80}px`,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <div className="font-semibold mb-1">
+            {new Date(formattedPoints[hoveredPoint.index].time).toLocaleTimeString()}
+          </div>
+          {formattedPoints[hoveredPoint.index].latencyAvg !== undefined && (
+            <div className="text-slate-300">
+              Avg: <span className="font-semibold">{Math.round(formattedPoints[hoveredPoint.index].latencyAvg!)}ms</span>
+            </div>
+          )}
+          {formattedPoints[hoveredPoint.index].latencyP95 !== undefined && (
+            <div className="text-slate-300">
+              P95: <span className="font-semibold">{Math.round(formattedPoints[hoveredPoint.index].latencyP95!)}ms</span>
+            </div>
+          )}
+          {formattedPoints[hoveredPoint.index].latencyP99 !== undefined && (
+            <div className="text-slate-300">
+              P99: <span className="font-semibold">{Math.round(formattedPoints[hoveredPoint.index].latencyP99!)}ms</span>
+            </div>
+          )}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+        </div>
+      )}
+    </div>
 
       {/* Legend */}
       <div className="flex items-center gap-4 mt-3 text-xs">
