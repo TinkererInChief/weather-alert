@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { 
   AlertTriangle, 
   Play, 
@@ -27,7 +28,18 @@ import NotificationPermissionBanner from '@/components/notifications/Notificatio
 import { useNotifications } from '@/hooks/useNotifications'
 
 // Phase 1 & 2 Dashboard Enhancements
-import GlobalEventMap from '@/components/dashboard/GlobalEventMap'
+// Dynamic import for Leaflet map (requires window object)
+const GlobalEventMap = dynamic(() => import('@/components/dashboard/GlobalEventMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height: '500px' }}>
+      <div className="flex flex-col items-center justify-center h-full">
+        <MapPin className="h-12 w-12 text-slate-300 mb-4 animate-pulse" />
+        <p className="text-sm text-slate-600">Loading map...</p>
+      </div>
+    </div>
+  )
+})
 import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
 import KeyMetricsWidget from '@/components/dashboard/KeyMetricsWidget'
 import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
