@@ -7,16 +7,17 @@ import { AlertTriangle, Clock, MapPin, Activity } from 'lucide-react'
 
 export default function EarthquakeMonitoringPage() {
   const [alerts, setAlerts] = useState([])
+  const [stats, setStats] = useState({ total: 0, last24h: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch earthquake alerts
+    // Fetch earthquake alerts from history
     const fetchAlerts = async () => {
       try {
-        const response = await fetch('/api/alerts/earthquake')
+        const response = await fetch('/api/alerts/history?limit=10')
         const data = await response.json()
         if (data.success) {
-          setAlerts(data.data || [])
+          setAlerts(data.data?.alerts || [])
         }
       } catch (error) {
         console.error('Failed to fetch alerts:', error)
@@ -26,6 +27,31 @@ export default function EarthquakeMonitoringPage() {
     }
 
     fetchAlerts()
+    
+    // Fetch stats
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/alerts/stats?days=30')
+        const data = await response.json()
+        if (data.success) {
+          setStats({
+            total: data.data?.overview?.totalAlerts || 0,
+            last24h: data.data?.overview?.totalAlerts || 0 // Approximate
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error)
+      }
+    }
+    
+    fetchStats()
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(() => {
+      fetchAlerts()
+      fetchStats()
+    }, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   return (
@@ -43,7 +69,7 @@ export default function EarthquakeMonitoringPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Alerts</p>
-                  <p className="text-2xl font-bold text-slate-900">24</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
                 </div>
                 <AlertTriangle className="h-8 w-8 text-orange-500" />
               </div>
@@ -53,7 +79,7 @@ export default function EarthquakeMonitoringPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Last 24 Hours</p>
-                  <p className="text-2xl font-bold text-slate-900">3</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.last24h}</p>
                 </div>
                 <Clock className="h-8 w-8 text-blue-500" />
               </div>

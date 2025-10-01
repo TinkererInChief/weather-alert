@@ -7,16 +7,26 @@ import { Waves, Clock, MapPin, Activity } from 'lucide-react'
 
 export default function TsunamiMonitoringPage() {
   const [alerts, setAlerts] = useState([])
+  const [stats, setStats] = useState({ total: 0, last24h: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Fetch tsunami alerts
     const fetchAlerts = async () => {
       try {
-        const response = await fetch('/api/alerts/tsunami')
+        const response = await fetch('/api/tsunami')
         const data = await response.json()
         if (data.success) {
-          setAlerts(data.data || [])
+          const tsunamiAlerts = data.data?.alerts || data.alerts || []
+          setAlerts(tsunamiAlerts)
+          setStats({
+            total: tsunamiAlerts.length,
+            last24h: tsunamiAlerts.filter((a: any) => {
+              const alertTime = new Date(a.createdAt || a.timestamp)
+              const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+              return alertTime > dayAgo
+            }).length
+          })
         }
       } catch (error) {
         console.error('Failed to fetch alerts:', error)
@@ -26,6 +36,10 @@ export default function TsunamiMonitoringPage() {
     }
 
     fetchAlerts()
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchAlerts, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   return (
@@ -43,7 +57,7 @@ export default function TsunamiMonitoringPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Alerts</p>
-                  <p className="text-2xl font-bold text-slate-900">8</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.total}</p>
                 </div>
                 <Waves className="h-8 w-8 text-blue-500" />
               </div>
@@ -53,7 +67,7 @@ export default function TsunamiMonitoringPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-slate-600">Last 24 Hours</p>
-                  <p className="text-2xl font-bold text-slate-900">1</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.last24h}</p>
                 </div>
                 <Clock className="h-8 w-8 text-blue-500" />
               </div>
