@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { alertManager } from '@/lib/alert-manager'
 import { tsunamiMonitor } from '@/lib/tsunami-monitor'
+import { settingsObserver } from './settings-observer'
 
 // Schema mirrors the UI structure
 export const SystemSettingsSchema = z.object({
@@ -78,8 +79,10 @@ export async function saveSystemSettings(input: unknown, updatedBy?: string): Pr
     create: { id: 'global', settings: parsed, updatedBy },
   })
 
-  // Apply to in-memory services (best-effort)
-  await applySettings(parsed)
+  // Notify all observers of settings change (non-blocking)
+  settingsObserver.notifyChange(parsed).catch(error => {
+    console.error('❌ [Settings] Failed to notify observers:', error)
+  })
 
   return parsed
 }
@@ -126,4 +129,85 @@ export async function applySettings(settings: SystemSettings): Promise<void> {
   } catch (e) {
     console.warn('[settings] Failed to apply tsunami monitoring config', e)
   }
+}
+
+/**
+ * Initialize settings system and subscribe services to changes
+ * Should be called once at application startup
+ */
+export async function initializeSettingsSystem(): Promise<void> {
+  console.log('🔧 [Settings] Initializing settings system...')
+  
+  // Subscribe alert manager to settings changes
+  settingsObserver.subscribe('alertManager', async (newSettings, oldSettings) => {
+    console.log('🔄 [AlertManager] Applying new settings...')
+    
+    const intervalMs = Math.max(10, newSettings.monitoring.checkInterval) * 1000
+    const wasMonitoring = alertManager.getMonitoringStatus().isMonitoring
+    const shouldMonitor = newSettings.monitoring.earthquakeMonitoring
+    
+    // Check if interval changed
+    const intervalChanged = !oldSettings || 
+      oldSettings.monitoring.checkInterval !== newSettings.monitoring.checkInterval
+    
+    if (shouldMonitor) {
+      if (!wasMonitoring || intervalChanged) {
+        alertManager.stopMonitoring()
+        alertManager.startMonitoring(intervalMs)
+        console.log(`✅ [AlertManager] Monitoring ${intervalChanged ? 'restarted' : 'started'} with ${intervalMs/1000}s interval`)
+      }
+    } else if (wasMonitoring) {
+      alertManager.stopMonitoring()
+      console.log('✅ [AlertManager] Monitoring stopped')
+    }
+  })
+  
+  // Subscribe tsunami monitor to settings changes
+  settingsObserver.subscribe('tsunamiMonitor', async (newSettings, oldSettings) => {
+    console.log('🔄 [TsunamiMonitor] Applying new settings...')
+    
+    const minutes = Math.max(1, Math.round(newSettings.monitoring.checkInterval / 60))
+    
+    // Update configuration
+    tsunamiMonitor.updateConfig({
+      checkInterval: minutes,
+      alertThresholds: {
+        minimumMagnitude: newSettings.monitoring.magnitudeThreshold,
+        maximumDepth: 100,
+        coastalProximity: 100,
+      },
+      notificationSettings: {
+        enableSMS: newSettings.notifications.sms.enabled,
+        enableEmail: newSettings.notifications.email.enabled,
+        priorityLevels: tsunamiMonitor.getStatus().config.notificationSettings.priorityLevels,
+      },
+    })
+    
+    const wasMonitoring = tsunamiMonitor.getStatus().isMonitoring
+    const shouldMonitor = newSettings.monitoring.tsunamiMonitoring
+    
+    // Check if interval changed
+    const intervalChanged = !oldSettings || 
+      oldSettings.monitoring.checkInterval !== newSettings.monitoring.checkInterval
+    
+    if (shouldMonitor) {
+      if (!wasMonitoring || intervalChanged) {
+        tsunamiMonitor.stopMonitoring()
+        await tsunamiMonitor.startMonitoring()
+        console.log(`✅ [TsunamiMonitor] Monitoring ${intervalChanged ? 'restarted' : 'started'} with ${minutes}min interval`)
+      }
+    } else if (wasMonitoring) {
+      tsunamiMonitor.stopMonitoring()
+      console.log('✅ [TsunamiMonitor] Monitoring stopped')
+    }
+  })
+  
+  // Load and apply initial settings
+  const currentSettings = await getSystemSettings()
+  await applySettings(currentSettings)
+  
+  // Set current settings in observer
+  await settingsObserver.notifyChange(currentSettings)
+  
+  console.log('✅ [Settings] Settings system initialized')
 }

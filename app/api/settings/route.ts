@@ -3,9 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { getSystemSettings, saveSystemSettings, SystemSettingsSchema } from '@/lib/system-settings'
 import { prisma } from '@/lib/prisma'
+import { initializeApp } from '@/lib/init'
 
 export async function GET() {
   try {
+    // Ensure app is initialized
+    await initializeApp().catch(console.error)
+    
     const session = await getServerSession(authOptions as any)
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     const role = (session as any)?.user?.role || 'viewer'
@@ -29,6 +33,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    // Ensure app is initialized
+    await initializeApp().catch(console.error)
+    
     const session = await getServerSession(authOptions as any)
     if (!session) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     const role = (session as any)?.user?.role || 'viewer'
