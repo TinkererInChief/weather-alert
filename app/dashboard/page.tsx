@@ -173,17 +173,17 @@ export default function Dashboard() {
   const [testingService, setTestingService] = useState(false)
   const [testResult, setTestResult] = useState<string | null>(null)
   const [testingVoice, setTestingVoice] = useState(false)
-  const [voiceResult, setVoiceResult] = useState<string | null>(null)
   const [testingMultiChannel, setTestingMultiChannel] = useState(false)
   const [multiChannelResult, setMultiChannelResult] = useState<string | null>(null)
   const [testingWhatsApp, setTestingWhatsApp] = useState(false)
   const [whatsAppResult, setWhatsAppResult] = useState<string | null>(null)
   const [testingEmail, setTestingEmail] = useState(false)
   const [emailResult, setEmailResult] = useState<string | null>(null)
-
-  const [tsunamiMonitoring, setTsunamiMonitoring] = useState(false)
+  const [voiceResult, setVoiceResult] = useState<string | null>(null)
   const [tsunamiLastChecked, setTsunamiLastChecked] = useState<string | null>(null)
+  const [tsunamiMonitoring, setTsunamiMonitoring] = useState(false)
   const [operations, setOperations] = useState<OperationMessage[]>([])
+  const [timeFilter, setTimeFilter] = useState<'24h' | '7d' | '30d'>('30d')
 
   const logOperation = (content: string, tone: OperationTone = 'info') => {
     setOperations((prev) => [
@@ -194,12 +194,29 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
+      // Calculate time filter
+      const getTimeFilterDate = () => {
+        const now = Date.now()
+        switch (timeFilter) {
+          case '24h':
+            return new Date(now - 24 * 60 * 60 * 1000).toISOString()
+          case '7d':
+            return new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+          case '30d':
+            return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+          default:
+            return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      }
+      
+      const startDate = getTimeFilterDate()
+      
       const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/monitoring'),
         fetch('/api/tsunami'),
         fetch('/api/tsunami/monitor'),
-        fetch('/api/alerts/history?limit=50') // Fetch more alerts for map
+        fetch(`/api/alerts/history?limit=50&startDate=${startDate}`) // Fetch 50 alerts with time filter
       ])
 
       if (statsRes.ok) {
@@ -261,6 +278,12 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeFilter]) // Refetch when time filter changes
+
+  useEffect(() => {
+    // Initial fetch
     fetchData()
     const interval = setInterval(fetchData, 15000)
     return () => clearInterval(interval)
@@ -874,6 +897,46 @@ export default function Dashboard() {
         {/* Phase 1: Global Event Map + Real-Time Feed */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
+            {/* Time Filter Controls */}
+            <div className="mb-4 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-slate-600" />
+                <span className="text-sm font-medium text-slate-700">Time Period:</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setTimeFilter('24h')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    timeFilter === '24h'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Last 24 Hours
+                </button>
+                <button
+                  onClick={() => setTimeFilter('7d')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    timeFilter === '7d'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Last 7 Days
+                </button>
+                <button
+                  onClick={() => setTimeFilter('30d')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    timeFilter === '30d'
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Last 30 Days
+                </button>
+              </div>
+            </div>
+            
             <GlobalEventMap
               events={mapEvents}
               height="500px"
