@@ -17,11 +17,20 @@ model User {
   phone         String?  @unique
   emailVerified DateTime?
   image         String?
+  
+  // RBAC fields
+  role          String   @default("VIEWER") // SUPER_ADMIN, ORG_ADMIN, OPERATOR, VIEWER
+  organizationId String?
+  isActive      Boolean  @default(true)
+  lastLoginAt   DateTime?
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   accounts      Account[]
   sessions      Session[]
+  organization  Organization? @relation(fields: [organizationId], references: [id])
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -263,6 +272,23 @@ model DeliveryLog {
   @@map("delivery_logs")
 }
 
+// Organizations for multi-tenancy
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  users       User[]
+  
+  @@map("organizations")
+}
+
 // System audit logs
 model AuditLog {
   id          String    @id @default(cuid())
@@ -274,6 +300,9 @@ model AuditLog {
   ipAddress   String?
   userAgent   String?
   createdAt   DateTime  @default(now())
+  
+  // Relationships
+  user        User?     @relation(fields: [userId], references: [id])
   
   @@map("audit_logs")
 }

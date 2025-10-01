@@ -207,7 +207,20 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.phone = user.phone
         token.name = user.name
-        token.role = 'admin'
+        
+        // Fetch RBAC fields from database
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            role: true,
+            organizationId: true,
+            isActive: true,
+          }
+        })
+        
+        token.role = dbUser?.role || 'VIEWER'
+        token.organizationId = dbUser?.organizationId
+        token.isActive = dbUser?.isActive ?? true
       }
 
       return token
@@ -226,10 +239,22 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string
         session.user.phone = token.phone as string
         session.user.maskedPhone = maskPhone(token.phone as string)
-        session.user.role = token.role as string || 'admin'
+        session.user.role = token.role as string || 'VIEWER'
+        session.user.organizationId = token.organizationId as string | undefined
+        session.user.isActive = token.isActive as boolean ?? true
         
         // Use name from token or fallback to Emergency Operator
         session.user.name = (token.name as string) || 'Emergency Operator'
+        
+        // Update last login time
+        if (token.id) {
+          await prisma.user.update({
+            where: { id: token.id as string },
+            data: { lastLoginAt: new Date() }
+          }).catch(() => {
+            // Ignore errors to not block session creation
+          })
+        }
       }
       
       return session

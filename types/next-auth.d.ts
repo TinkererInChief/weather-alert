@@ -10,6 +10,8 @@ declare module 'next-auth' {
       maskedPhone?: string | null
       image?: string | null
       role?: string | null
+      organizationId?: string | null
+      isActive?: boolean
     } & DefaultSession['user']
   }
 
@@ -20,6 +22,8 @@ declare module 'next-auth' {
     phone?: string | null
     image?: string | null
     role?: string | null
+    organizationId?: string | null
+    isActive?: boolean
   }
 }
 
@@ -29,5 +33,7 @@ declare module 'next-auth/jwt' {
     name?: string | null
     phone?: string | null
     role?: string | null
+    organizationId?: string | null
+    isActive?: boolean
   }
 }
