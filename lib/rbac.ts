@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 
 /**
  * User Roles in the Emergency Alert System
@@ -32,9 +32,15 @@ export enum Permission {
   CREATE_ALERTS = 'CREATE_ALERTS',
   MANAGE_MONITORING = 'MANAGE_MONITORING',
   
+  // Notification Management
+  VIEW_NOTIFICATIONS = 'VIEW_NOTIFICATIONS',
+  MANAGE_NOTIFICATIONS = 'MANAGE_NOTIFICATIONS',
+  
   // System Management
   VIEW_AUDIT_LOGS = 'VIEW_AUDIT_LOGS',
+  VIEW_USERS = 'VIEW_USERS',
   MANAGE_USERS = 'MANAGE_USERS',
+  ASSIGN_ROLES = 'ASSIGN_ROLES',
   MANAGE_SETTINGS = 'MANAGE_SETTINGS',
   MANAGE_DATA_SOURCES = 'MANAGE_DATA_SOURCES',
 }
@@ -54,8 +60,12 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.VIEW_ALERTS,
     Permission.CREATE_ALERTS,
     Permission.MANAGE_MONITORING,
+    Permission.VIEW_NOTIFICATIONS,
+    Permission.MANAGE_NOTIFICATIONS,
     Permission.VIEW_AUDIT_LOGS,
+    Permission.VIEW_USERS,
     Permission.MANAGE_USERS,
+    Permission.ASSIGN_ROLES,
     Permission.MANAGE_SETTINGS,
     Permission.MANAGE_DATA_SOURCES,
   ],
@@ -70,6 +80,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.VIEW_ALERTS,
     Permission.CREATE_ALERTS,
     Permission.MANAGE_MONITORING,
+    Permission.VIEW_NOTIFICATIONS,
+    Permission.MANAGE_NOTIFICATIONS,
     Permission.VIEW_AUDIT_LOGS,
     Permission.MANAGE_SETTINGS,
   ],
@@ -83,12 +95,14 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.VIEW_ALERTS,
     Permission.CREATE_ALERTS,
     Permission.MANAGE_MONITORING,
+    Permission.VIEW_NOTIFICATIONS,
   ],
   [Role.VIEWER]: [
     // Read-only permissions
     Permission.VIEW_CONTACTS,
     Permission.VIEW_GROUPS,
     Permission.VIEW_ALERTS,
+    Permission.VIEW_NOTIFICATIONS,
   ],
 }
 
