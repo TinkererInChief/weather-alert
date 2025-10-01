@@ -320,6 +320,12 @@ model AlertLog {
   contactsNotified Int      @default(0)
   success          Boolean  @default(false)
   errorMessage     String?
+  
+  // Data source traceability
+  dataSources      String[] @default([]) // ["USGS", "EMSC", "JMA", "NOAA", "PTWC"]
+  primarySource    String?  // Primary data source
+  sourceMetadata   Json?    @default("{}") // Additional source-specific data
+  
   createdAt        DateTime @default(now())
 
   @@map("alert_logs")
