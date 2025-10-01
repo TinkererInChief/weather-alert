@@ -9,17 +9,23 @@ export default function EarthquakeMonitoringPage() {
   const [alerts, setAlerts] = useState([])
   const [stats, setStats] = useState({ total: 0, last24h: 0 })
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const ALERTS_PER_PAGE = 20
 
   useEffect(() => {
     // Fetch earthquake alerts from history
     const fetchAlerts = async () => {
       try {
-        // Fetch alerts from last 30 days, max 50 alerts
+        // Fetch alerts from last 30 days
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-        const response = await fetch(`/api/alerts/history?limit=50&startDate=${thirtyDaysAgo}`)
+        const response = await fetch(`/api/alerts/history?limit=100&startDate=${thirtyDaysAgo}`)
         const data = await response.json()
         if (data.success) {
-          setAlerts(data.data?.alerts || [])
+          const allAlerts = data.data?.alerts || []
+          setAlerts(allAlerts)
+          setHasMore(allAlerts.length > ALERTS_PER_PAGE)
         }
       } catch (error) {
         console.error('Failed to fetch alerts:', error)
@@ -117,8 +123,9 @@ export default function EarthquakeMonitoringPage() {
                   <p className="text-slate-600">No seismic alerts have been dispatched yet.</p>
                 </div>
               ) : (
+                <>
                 <div className="space-y-4">
-                  {alerts.map((alert: any, index) => (
+                  {alerts.slice(0, page * ALERTS_PER_PAGE).map((alert: any, index) => (
                     <div key={index} className="border border-slate-200 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -154,6 +161,25 @@ export default function EarthquakeMonitoringPage() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Load More Button */}
+                {page * ALERTS_PER_PAGE < alerts.length && (
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={() => setPage(p => p + 1)}
+                      disabled={loadingMore}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {loadingMore ? 'Loading...' : `Load More (${alerts.length - page * ALERTS_PER_PAGE} remaining)`}
+                    </button>
+                  </div>
+                )}
+                
+                {/* Showing count */}
+                <div className="mt-4 text-center text-sm text-slate-600">
+                  Showing {Math.min(page * ALERTS_PER_PAGE, alerts.length)} of {alerts.length} alerts
+                </div>
+                </>
               )}
             </div>
           </div>
