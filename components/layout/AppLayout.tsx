@@ -60,6 +60,10 @@ export default function AppLayout({
     { name: 'Earthquake Monitoring', href: '/dashboard/alerts', icon: AlertTriangle, current: pathname === '/dashboard/alerts' },
     { name: 'Tsunami Monitoring', href: '/dashboard/tsunami', icon: Waves, current: pathname === '/dashboard/tsunami' },
     { name: 'Contacts', href: '/dashboard/contacts', icon: Users, current: pathname === '/dashboard/contacts' },
+    { name: 'Contact Groups', href: '/dashboard/groups', icon: Users, current: pathname?.startsWith('/dashboard/groups') },
+    { name: 'Alert History', href: '/dashboard/alerts/history', icon: Clock, current: pathname === '/dashboard/alerts/history' },
+    { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, current: pathname === '/dashboard/notifications' },
+    { name: 'Audit Trail', href: '/dashboard/audit', icon: Shield, current: pathname === '/dashboard/audit' },
     { name: 'System Status', href: '/dashboard/status', icon: Activity, current: pathname === '/dashboard/status' },
   ]
 

@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server'
 import { dataAggregator } from '@/lib/data-sources'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 /**
  * GET /api/data-sources/test
  * Test multi-source earthquake data aggregation
  */
 export async function GET(request: Request) {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const { searchParams } = new URL(request.url)
     const minMagnitude = parseFloat(searchParams.get('minMagnitude') || '4.0')

@@ -1227,7 +1227,7 @@ export default function Dashboard() {
             description: 'View and edit contact list',
             icon: Users,
             category: 'contacts',
-            action: () => window.location.href = '/contacts'
+            action: () => window.location.href = '/dashboard/contacts'
           }
         ]}
         onActionExecute={(id) => {

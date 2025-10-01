@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { alertManager } from '@/lib/alert-manager'
 import { db } from '@/lib/database'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 export async function POST() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     // Check if we have contacts
     const contacts = await db.getActiveContacts()
