@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  transpilePackages: ['lucide-react'],
+  transpilePackages: ['lucide-react', 'react-map-gl', 'mapbox-gl'],
   eslint: {
     // Temporarily disabled due to styling warnings - can be re-enabled after cleanup
     ignoreDuringBuilds: true,

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Map, Marker, Popup, NavigationControl, ScaleControl } from 'react-map-gl/mapbox'
+import { useEffect, useState } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, CircleMarker } from 'react-leaflet'
 import { MapPin, Layers } from 'lucide-react'
-import 'mapbox-gl/dist/mapbox-gl.css'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 
 type EventMarker = {
   id: string
@@ -24,20 +25,13 @@ type GlobalEventMapProps = {
 }
 
 export default function GlobalEventMap({ events, contacts = [], height = '500px' }: GlobalEventMapProps) {
-  const [selectedEvent, setSelectedEvent] = useState<EventMarker | null>(null)
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets')
-  const [viewState, setViewState] = useState({
-    longitude: 0,
-    latitude: 20,
-    zoom: 1.5
-  })
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'terrain'>('streets')
+  const [mounted, setMounted] = useState(false)
 
-  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN
-
-  // Debug: Log token status (remove in production)
-  if (typeof window !== 'undefined') {
-    console.log('Mapbox Token Status:', mapboxToken ? 'Present ✅' : 'Missing ❌')
-  }
+  // Fix for SSR - Leaflet needs window object
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const getMagnitudeColor = (magnitude: number) => {
     if (magnitude >= 7) return '#dc2626' // red-600
@@ -69,50 +63,82 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     return Math.max(8, magnitude * 2.5)
   }
 
-  const getMapboxStyle = useCallback((style: 'streets' | 'satellite' | 'dark') => {
-    switch (style) {
+  const getTileLayer = () => {
+    switch (mapStyle) {
       case 'satellite':
-        return 'mapbox://styles/mapbox/satellite-streets-v12'
-      case 'dark':
-        return 'mapbox://styles/mapbox/dark-v11'
-      default:
-        return 'mapbox://styles/mapbox/streets-v12'
+        return {
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        }
+      case 'terrain':
+        return {
+          url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+          attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+        }
+      default: // streets
+        return {
+          url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }
     }
-  }, [])
+  }
 
-  if (!mapboxToken) {
+  const cycleMapStyle = () => {
+    const styles: Array<'streets' | 'satellite' | 'terrain'> = ['streets', 'satellite', 'terrain']
+    const currentIndex = styles.indexOf(mapStyle)
+    const nextIndex = (currentIndex + 1) % styles.length
+    setMapStyle(styles[nextIndex])
+  }
+
+  // Create custom divIcon for events
+  const createEventIcon = (event: EventMarker) => {
+    const size = getEventSize(event)
+    const color = getEventColor(event)
+    
+    return L.divIcon({
+      className: 'custom-marker',
+      html: `
+        <div class="relative cursor-pointer group">
+          <div class="absolute inset-0 rounded-full animate-ping" style="
+            background-color: ${color};
+            opacity: 0.3;
+            width: ${size * 2}px;
+            height: ${size * 2}px;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+          "></div>
+          <div class="relative rounded-full border-2 border-white shadow-lg hover:scale-110 transition-transform" style="
+            background-color: ${color};
+            width: ${size}px;
+            height: ${size}px;
+          "></div>
+        </div>
+      `,
+      iconSize: [size * 2, size * 2],
+      iconAnchor: [size, size],
+    })
+  }
+
+  if (!mounted) {
     return (
       <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height }}>
         <div className="flex flex-col items-center justify-center h-full">
-          <MapPin className="h-12 w-12 text-slate-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">Mapbox Token Missing</h3>
-          <p className="text-sm text-slate-600 max-w-md">
-            Please add your Mapbox access token to <code className="px-2 py-1 bg-slate-100 rounded text-xs">NEXT_PUBLIC_MAPBOX_TOKEN</code> in your environment variables.
-          </p>
-          <a
-            href="https://account.mapbox.com/access-tokens/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-          >
-            Get Mapbox Token →
-          </a>
+          <MapPin className="h-12 w-12 text-slate-300 mb-4 animate-pulse" />
+          <p className="text-sm text-slate-600">Loading map...</p>
         </div>
       </div>
     )
   }
 
+  const tileLayer = getTileLayer()
+
   return (
     <div className="relative bg-white rounded-xl border border-slate-200 overflow-hidden">
       {/* Map Controls */}
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
         <button
-          onClick={() => {
-            const styles: Array<'streets' | 'satellite' | 'dark'> = ['streets', 'satellite', 'dark']
-            const currentIndex = styles.indexOf(mapStyle)
-            const nextIndex = (currentIndex + 1) % styles.length
-            setMapStyle(styles[nextIndex])
-          }}
+          onClick={cycleMapStyle}
           className="p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors"
           title={`Current: ${mapStyle} (click to cycle)`}
         >
@@ -121,7 +147,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-10 bg-white rounded-lg shadow-lg border border-slate-200 p-3">
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3">
         <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Magnitude</h4>
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs">
@@ -144,7 +170,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Event Stats */}
-      <div className="absolute top-4 left-4 z-10 bg-white rounded-lg shadow-lg border border-slate-200 p-3">
+      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3">
         <div className="flex items-center gap-3">
           <div className="text-center">
             <div className="text-lg font-bold text-slate-900">{events.length}</div>
@@ -158,113 +184,71 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
         </div>
       </div>
 
-      {/* Mapbox Container */}
-      <Map
-        {...viewState}
-        onMove={(evt) => setViewState(evt.viewState)}
-        mapboxAccessToken={mapboxToken}
-        mapStyle={getMapboxStyle(mapStyle)}
+      {/* Leaflet Map Container */}
+      <MapContainer
+        center={[20, 0]}
+        zoom={2}
         style={{ width: '100%', height }}
-        attributionControl={false}
+        zoomControl={false}
+        scrollWheelZoom={true}
       >
-        {/* Navigation Controls */}
-        <NavigationControl position="bottom-right" />
-        <ScaleControl />
+        <TileLayer
+          url={tileLayer.url}
+          attribution={tileLayer.attribution}
+        />
+        
+        <ZoomControl position="bottomright" />
 
         {/* Event Markers */}
-        {events.map((event) => {
-          const size = getEventSize(event)
-          const color = getEventColor(event)
-          
-          return (
-            <Marker
-              key={event.id}
-              longitude={event.lng}
-              latitude={event.lat}
-              anchor="center"
-              onClick={(e) => {
-                e.originalEvent.stopPropagation()
-                setSelectedEvent(event)
-              }}
-            >
-              <div className="relative cursor-pointer group">
-                {/* Pulse effect */}
-                <div
-                  className="absolute inset-0 rounded-full animate-ping"
-                  style={{
-                    backgroundColor: color,
-                    opacity: 0.3,
-                    width: size * 2,
-                    height: size * 2,
-                    left: '50%',
-                    top: '50%',
-                    transform: 'translate(-50%, -50%)'
-                  }}
-                />
-                {/* Main marker */}
-                <div
-                  className="relative rounded-full border-2 border-white shadow-lg group-hover:scale-110 transition-transform"
-                  style={{
-                    backgroundColor: color,
-                    width: size,
-                    height: size
-                  }}
-                />
-                {/* Magnitude label */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-white px-2 py-0.5 rounded shadow-md text-xs font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-                  M{event.magnitude?.toFixed(1) || event.severity}
+        {events.map((event) => (
+          <Marker
+            key={event.id}
+            position={[event.lat, event.lng]}
+            icon={createEventIcon(event)}
+          >
+            <Popup>
+              <div className="p-2 min-w-[250px]">
+                <h3 className="font-semibold text-slate-900 mb-1">{event.title}</h3>
+                <div className="space-y-1 text-xs text-slate-600">
+                  <p>
+                    <span className="font-medium">Magnitude:</span> {event.magnitude?.toFixed(1) || 'N/A'}
+                  </p>
+                  <p>
+                    <span className="font-medium">Time:</span>{' '}
+                    {new Date(event.timestamp).toLocaleString()}
+                  </p>
+                  {event.contactsAffected !== undefined && (
+                    <p>
+                      <span className="font-medium">Contacts Notified:</span> {event.contactsAffected}
+                    </p>
+                  )}
                 </div>
               </div>
-            </Marker>
-          )
-        })}
-
-        {/* Contact Markers */}
-        {contacts.map((contact, idx) => (
-          <Marker
-            key={`contact-${idx}`}
-            longitude={contact.longitude}
-            latitude={contact.latitude}
-            anchor="center"
-          >
-            <div
-              className="w-2 h-2 rounded-full bg-blue-500 opacity-60"
-              title={contact.name}
-            />
+            </Popup>
           </Marker>
         ))}
 
-        {/* Popup for selected event */}
-        {selectedEvent && (
-          <Popup
-            longitude={selectedEvent.lng}
-            latitude={selectedEvent.lat}
-            anchor="top"
-            onClose={() => setSelectedEvent(null)}
-            closeButton={true}
-            closeOnClick={false}
-            className="event-popup"
+        {/* Contact Markers */}
+        {contacts.map((contact, idx) => (
+          <CircleMarker
+            key={`contact-${idx}`}
+            center={[contact.latitude, contact.longitude]}
+            radius={3}
+            pathOptions={{
+              fillColor: '#3b82f6',
+              fillOpacity: 0.6,
+              color: '#3b82f6',
+              weight: 1
+            }}
           >
-            <div className="p-2 min-w-[250px]">
-              <h3 className="font-semibold text-slate-900 mb-1">{selectedEvent.title}</h3>
-              <div className="space-y-1 text-xs text-slate-600">
-                <p>
-                  <span className="font-medium">Magnitude:</span> {selectedEvent.magnitude?.toFixed(1) || 'N/A'}
-                </p>
-                <p>
-                  <span className="font-medium">Time:</span>{' '}
-                  {new Date(selectedEvent.timestamp).toLocaleString()}
-                </p>
-                {selectedEvent.contactsAffected !== undefined && (
-                  <p>
-                    <span className="font-medium">Contacts Notified:</span> {selectedEvent.contactsAffected}
-                  </p>
-                )}
+            <Popup>
+              <div className="text-xs">
+                <strong>{contact.name}</strong>
               </div>
-            </div>
-          </Popup>
-        )}
-      </Map>
+            </Popup>
+          </CircleMarker>
+        ))}
+      </MapContainer>
     </div>
   )
 }

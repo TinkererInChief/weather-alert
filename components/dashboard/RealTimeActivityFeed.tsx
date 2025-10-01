@@ -214,13 +214,6 @@ export default function RealTimeActivityFeed({
           </div>
         )}
       </div>
-
-      {/* Footer */}
-      <div className="p-3 border-t border-slate-200 bg-slate-50">
-        <button className="text-xs text-blue-600 hover:text-blue-700 font-medium w-full text-center">
-          View All Activity →
-        </button>
-      </div>
     </div>
   )
 }

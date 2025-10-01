@@ -61,6 +61,9 @@ export interface AlertLog {
   earthquakeId: string
   magnitude: number
   location: string
+  latitude?: number
+  longitude?: number
+  depth?: number
   timestamp: Date
   contactsNotified: number
   success: boolean

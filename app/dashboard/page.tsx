@@ -52,6 +52,9 @@ type AlertLog = {
   earthquakeId: string
   magnitude: number
   location: string
+  latitude?: number
+  longitude?: number
+  depth?: number
   timestamp: string
   contactsNotified: number
   success: boolean
@@ -609,16 +612,18 @@ export default function Dashboard() {
 
   // Transform data for new components
   const mapEvents = useMemo(() => {
-    return recentAlerts.map(alert => ({
-      id: alert.id,
-      lat: Math.random() * 180 - 90, // TODO: Add real lat/lng to AlertLog
-      lng: Math.random() * 360 - 180,
-      type: 'earthquake' as const,
-      magnitude: alert.magnitude,
-      title: `M${alert.magnitude.toFixed(1)} ${alert.location}`,
-      timestamp: alert.timestamp,
-      contactsAffected: alert.contactsNotified
-    }))
+    return recentAlerts
+      .filter(alert => alert.latitude != null && alert.longitude != null)
+      .map(alert => ({
+        id: alert.id,
+        lat: alert.latitude!,
+        lng: alert.longitude!,
+        type: 'earthquake' as const,
+        magnitude: alert.magnitude,
+        title: `M${alert.magnitude.toFixed(1)} ${alert.location}`,
+        timestamp: alert.timestamp,
+        contactsAffected: alert.contactsNotified
+      }))
   }, [recentAlerts])
 
   const keyMetrics = useMemo(() => [

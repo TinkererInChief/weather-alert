@@ -284,6 +284,9 @@ model AlertLog {
   earthquakeId     String
   magnitude        Float
   location         String
+  latitude         Float?
+  longitude        Float?
+  depth            Float?
   timestamp        DateTime @default(now())
   contactsNotified Int      @default(0)
   success          Boolean  @default(false)

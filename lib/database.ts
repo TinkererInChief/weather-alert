@@ -23,6 +23,9 @@ type AlertLogRow = {
   earthquakeId: string
   magnitude: number
   location: string
+  latitude: number | null
+  longitude: number | null
+  depth: number | null
   timestamp: Date
   contactsNotified: number
   success: boolean
@@ -164,6 +167,9 @@ class Database {
         earthquakeId: log.earthquakeId,
         magnitude: log.magnitude,
         location: log.location,
+        latitude: log.latitude ?? null,
+        longitude: log.longitude ?? null,
+        depth: log.depth ?? null,
         timestamp: log.timestamp,
         contactsNotified: log.contactsNotified,
         success: log.success,
@@ -176,6 +182,9 @@ class Database {
       earthquakeId: newLog.earthquakeId,
       magnitude: newLog.magnitude,
       location: newLog.location,
+      latitude: newLog.latitude ?? undefined,
+      longitude: newLog.longitude ?? undefined,
+      depth: newLog.depth ?? undefined,
       timestamp: newLog.timestamp,
       contactsNotified: newLog.contactsNotified,
       success: newLog.success,
@@ -185,7 +194,7 @@ class Database {
 
   async getAlertLogs(): Promise<AlertLog[]> {
     const logs = await prisma.$queryRaw<AlertLogRow[]>`
-      SELECT id, "earthquakeId", magnitude, location, timestamp,
+      SELECT id, "earthquakeId", magnitude, location, latitude, longitude, depth, timestamp,
              "contactsNotified", success, "errorMessage"
       FROM "alert_logs"
       ORDER BY timestamp DESC
@@ -196,6 +205,9 @@ class Database {
       earthquakeId: log.earthquakeId,
       magnitude: log.magnitude,
       location: log.location,
+      latitude: log.latitude ?? undefined,
+      longitude: log.longitude ?? undefined,
+      depth: log.depth ?? undefined,
       timestamp: log.timestamp,
       contactsNotified: log.contactsNotified,
       success: log.success,
@@ -205,7 +217,7 @@ class Database {
 
   async getRecentAlertLogs(limit: number = 10): Promise<AlertLog[]> {
     const logs = await prisma.$queryRaw<AlertLogRow[]>`
-      SELECT id, "earthquakeId", magnitude, location, timestamp,
+      SELECT id, "earthquakeId", magnitude, location, latitude, longitude, depth, timestamp,
              "contactsNotified", success, "errorMessage"
       FROM "alert_logs"
       ORDER BY timestamp DESC
@@ -217,6 +229,9 @@ class Database {
       earthquakeId: log.earthquakeId,
       magnitude: log.magnitude,
       location: log.location,
+      latitude: log.latitude ?? undefined,
+      longitude: log.longitude ?? undefined,
+      depth: log.depth ?? undefined,
       timestamp: log.timestamp,
       contactsNotified: log.contactsNotified,
       success: log.success,
