@@ -14,7 +14,9 @@ export default function EarthquakeMonitoringPage() {
     // Fetch earthquake alerts from history
     const fetchAlerts = async () => {
       try {
-        const response = await fetch('/api/alerts/history?limit=10')
+        // Fetch alerts from last 30 days, max 50 alerts
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        const response = await fetch(`/api/alerts/history?limit=50&startDate=${thirtyDaysAgo}`)
         const data = await response.json()
         if (data.success) {
           setAlerts(data.data?.alerts || [])

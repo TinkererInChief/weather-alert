@@ -11,13 +11,18 @@ export default function TsunamiMonitoringPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch tsunami alerts
+    // Fetch tsunami alerts from last 30 days
     const fetchAlerts = async () => {
       try {
         const response = await fetch('/api/tsunami')
         const data = await response.json()
         if (data.success) {
-          const tsunamiAlerts = data.data?.alerts || data.alerts || []
+          const allAlerts = data.data?.alerts || data.alerts || []
+          // Filter to last 30 days and limit to 50
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+          const tsunamiAlerts = allAlerts
+            .filter((a: any) => new Date(a.createdAt || a.timestamp) > thirtyDaysAgo)
+            .slice(0, 50)
           setAlerts(tsunamiAlerts)
           setStats({
             total: tsunamiAlerts.length,
