@@ -146,9 +146,17 @@ The system implements a comprehensive RBAC system with 4 user roles and granular
 - Manage contacts, groups, alerts
 - View audit logs
 - Manage organization settings
-- Cannot manage users or data sources
+- **Can view and manage users within their organization**
+- **Can assign OPERATOR and VIEWER roles** (not SUPER_ADMIN or ORG_ADMIN)
+- Cannot manage data sources
+- **Organization-scoped**: Can only access users in their own organization
 
 **Use Case**: Emergency management directors, organization administrators
+
+**Restrictions**:
+- Can only assign OPERATOR and VIEWER roles (not admin roles)
+- Can only manage users in their own organization
+- Cannot access system-wide settings or data sources
 
 #### 3. **OPERATOR** 👨‍💼
 - **Operational access**
@@ -185,7 +193,9 @@ The system implements a comprehensive RBAC system with 4 user roles and granular
 | Manage Monitoring | ✅ | ✅ | ✅ | ❌ |
 | **System** |
 | View Audit Logs | ✅ | ✅ | ❌ | ❌ |
-| Manage Users | ✅ | ❌ | ❌ | ❌ |
+| View Users | ✅ | ✅ (org only) | ❌ | ❌ |
+| Manage Users | ✅ | ✅ (org only) | ❌ | ❌ |
+| Assign Roles | ✅ (all roles) | ✅ (OPERATOR/VIEWER only) | ❌ | ❌ |
 | Manage Settings | ✅ | ✅ | ❌ | ❌ |
 | Manage Data Sources | ✅ | ❌ | ❌ | ❌ |
 

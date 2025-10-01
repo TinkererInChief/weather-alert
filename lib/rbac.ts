@@ -83,6 +83,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     Permission.VIEW_NOTIFICATIONS,
     Permission.MANAGE_NOTIFICATIONS,
     Permission.VIEW_AUDIT_LOGS,
+    Permission.VIEW_USERS,        // Can view users in their org
+    Permission.MANAGE_USERS,      // Can manage users in their org
+    Permission.ASSIGN_ROLES,      // Can assign roles to org users
     Permission.MANAGE_SETTINGS,
   ],
   [Role.OPERATOR]: [
@@ -221,6 +224,7 @@ export async function logAudit(params: {
 
 /**
  * Check if user can access a specific resource
+ * Implements organization-scoped access control
  */
 export async function canAccessResource(
   userId: string,
@@ -238,14 +242,46 @@ export async function canAccessResource(
     // Super admins can access everything
     if (user.role === Role.SUPER_ADMIN) return true
     
-    // Add resource-specific access logic here
-    // For example, check if resource belongs to user's organization
+    // Organization-scoped access for ORG_ADMIN
+    if (user.role === Role.ORG_ADMIN && user.organizationId) {
+      // Check if the target resource belongs to the same organization
+      switch (resourceType) {
+        case 'User': {
+          const targetUser = await prisma.user.findUnique({
+            where: { id: resourceId },
+            select: { organizationId: true }
+          })
+          return targetUser?.organizationId === user.organizationId
+        }
+        // TODO: Add organization isolation for Contact and ContactGroup
+        // when multi-tenancy is fully implemented
+        default:
+          return true
+      }
+    }
     
     return true
   } catch (error) {
     console.error('Error checking resource access:', error)
     return false
   }
+}
+
+/**
+ * Check if ORG_ADMIN can assign a specific role
+ * ORG_ADMINs can only assign OPERATOR and VIEWER roles, not SUPER_ADMIN or ORG_ADMIN
+ */
+export function canAssignRole(userRole: string, targetRole: string): boolean {
+  if (userRole === Role.SUPER_ADMIN) {
+    return true // Can assign any role
+  }
+  
+  if (userRole === Role.ORG_ADMIN) {
+    // ORG_ADMIN can only assign OPERATOR and VIEWER roles
+    return targetRole === Role.OPERATOR || targetRole === Role.VIEWER
+  }
+  
+  return false
 }
 
 /**
