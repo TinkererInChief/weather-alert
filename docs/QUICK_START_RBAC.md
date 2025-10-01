@@ -41,6 +41,16 @@ You'll see output like:
    Phone: +1234567893
 ```
 
+### 🔑 **Important: Development OTP**
+
+For **all test phone numbers** (+1234567890 through +1234567893), use:
+
+**OTP Code: `123456`**
+
+This works **only in development mode** (`NODE_ENV=development`) and **only for test phone numbers**. Real phone numbers will receive actual SMS OTPs.
+
+⚠️ **Security Note:** This bypass is automatically disabled in production!
+
 ---
 
 ## 🧪 Testing RBAC
@@ -48,9 +58,12 @@ You'll see output like:
 ### Test 1: VIEWER Role (Read-Only)
 
 1. **Login**: Go to `/login`, enter `+1234567893`
-2. **Try to view**: ✅ Can see contacts and groups
-3. **Try to create**: ❌ "Create Group" button should be hidden/disabled
-4. **Try API**: ❌ POST requests will return 403 Forbidden
+2. **Enter OTP**: Use `123456` (works for all test users in development)
+3. **Try to view**: ✅ Can see contacts and groups
+4. **Try to create**: ❌ "Create Group" button should be hidden/disabled
+5. **Try API**: ❌ POST requests will return 403 Forbidden
+
+**🔑 Development OTP:** All test phone numbers (+1234567890-93) accept `123456` as the OTP in development mode.
 
 **Expected Behavior:**
 - Can navigate and view all pages
@@ -60,10 +73,11 @@ You'll see output like:
 ### Test 2: OPERATOR Role
 
 1. **Login**: Go to `/login`, enter `+1234567892`
-2. **Try to view**: ✅ Can see contacts and groups
-3. **Try to create group**: ✅ Should work!
-4. **Try to delete contact**: ❌ Should fail (no permission)
-5. **Try to view audit logs**: ❌ Should be hidden/forbidden
+2. **Enter OTP**: Use `123456`
+3. **Try to view**: ✅ Can see contacts and groups
+4. **Try to create group**: ✅ Should work!
+5. **Try to delete contact**: ❌ Should fail (no permission)
+6. **Try to view audit logs**: ❌ Should be hidden/forbidden
 
 **Expected Behavior:**
 - Can create and edit contacts
@@ -75,10 +89,11 @@ You'll see output like:
 ### Test 3: ORG_ADMIN Role
 
 1. **Login**: Go to `/login`, enter `+1234567891`
-2. **Try everything OPERATOR can**: ✅ All should work
-3. **Try to delete contact**: ✅ Should work!
-4. **Try to view audit logs**: ✅ Should work!
-5. **Try to manage users**: ❌ Should fail (SUPER_ADMIN only)
+2. **Enter OTP**: Use `123456`
+3. **Try everything OPERATOR can**: ✅ All should work
+4. **Try to delete contact**: ✅ Should work!
+5. **Try to view audit logs**: ✅ Should work!
+6. **Try to manage users**: ❌ Should fail (SUPER_ADMIN only)
 
 **Expected Behavior:**
 - Can do everything OPERATOR can
@@ -90,7 +105,8 @@ You'll see output like:
 ### Test 4: SUPER_ADMIN Role
 
 1. **Login**: Go to `/login`, enter `+1234567890`
-2. **Try everything**: ✅ Everything should work!
+2. **Enter OTP**: Use `123456`
+3. **Try everything**: ✅ Everything should work!
 
 **Expected Behavior:**
 - Full access to all features

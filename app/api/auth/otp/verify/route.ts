@@ -89,8 +89,25 @@ export async function POST(request: Request) {
       }
     }
 
-    // 5. Verify the OTP
-    const otpResult = await otpService.verifyOtp({ phone, code })
+    // 5. Development bypass for test users (REMOVE IN PRODUCTION!)
+    const TEST_PHONE_NUMBERS = ['+1234567890', '+1234567891', '+1234567892', '+1234567893']
+    const isDevelopment = process.env.NODE_ENV === 'development'
+    const isTestPhone = TEST_PHONE_NUMBERS.includes(phone)
+    
+    let otpResult
+    
+    if (isDevelopment && isTestPhone && code === '123456') {
+      // Bypass OTP verification for test users in development
+      console.log(`🧪 [DEV] Bypassing OTP verification for test user: ${phone}`)
+      otpResult = {
+        success: true,
+        phone,
+        maskedPhone: phone.replace(/\d(?=\d{4})/g, '*')
+      }
+    } else {
+      // Normal OTP verification
+      otpResult = await otpService.verifyOtp({ phone, code })
+    }
     
     // 6. Clear failure count on successful verification
     await otpFailureTracker.clearFailures(phoneId)
