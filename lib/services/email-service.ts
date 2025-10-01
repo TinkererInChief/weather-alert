@@ -1,4 +1,10 @@
 import sgMail from '@sendgrid/mail'
+import { 
+  createEarthquakeAlertEmail, 
+  createTsunamiAlertEmail,
+  type EarthquakeAlertData,
+  type TsunamiAlertData 
+} from '@/lib/email-templates'
 
 interface EmailRequest {
   to: string
@@ -93,7 +99,38 @@ export class EmailService {
     return emailRegex.test(email)
   }
 
-  // Create HTML email template for emergency alerts
+  /**
+   * Send earthquake alert email using modern template
+   */
+  async sendEarthquakeAlert(to: string, data: EarthquakeAlertData): Promise<EmailResult> {
+    const { html, text, subject } = createEarthquakeAlertEmail(data)
+    
+    return this.sendEmail({
+      to,
+      subject,
+      html,
+      text
+    })
+  }
+  
+  /**
+   * Send tsunami alert email using modern template
+   */
+  async sendTsunamiAlert(to: string, data: TsunamiAlertData): Promise<EmailResult> {
+    const { html, text, subject } = createTsunamiAlertEmail(data)
+    
+    return this.sendEmail({
+      to,
+      subject,
+      html,
+      text
+    })
+  }
+  
+  /**
+   * @deprecated Use sendEarthquakeAlert or sendTsunamiAlert instead
+   * Legacy method for backward compatibility
+   */
   createEmergencyEmailHTML(data: {
     type: string
     severity: number
