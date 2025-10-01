@@ -63,6 +63,16 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     return Math.max(8, magnitude * 2.5)
   }
 
+  const getEventOpacity = (timestamp: string) => {
+    const eventTime = new Date(timestamp).getTime()
+    const now = Date.now()
+    const hoursSince = (now - eventTime) / (1000 * 60 * 60)
+    
+    if (hoursSince < 24) return 1.0 // Last 24 hours - full opacity
+    if (hoursSince < 168) return 0.7 // 1-7 days - 70% opacity
+    return 0.4 // 7-30 days - 40% opacity
+  }
+
   const getTileLayer = () => {
     switch (mapStyle) {
       case 'satellite':
@@ -90,15 +100,21 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     setMapStyle(styles[nextIndex])
   }
 
-  // Create custom divIcon for events
+  // Create custom divIcon for events with time-based opacity
   const createEventIcon = (event: EventMarker) => {
     const size = getEventSize(event)
     const color = getEventColor(event)
+    const opacity = getEventOpacity(event.timestamp)
+    const isRecent = opacity === 1.0
+    
+    // Add icon based on event type
+    const icon = event.type === 'tsunami' ? '🌊' : '⚡'
     
     return L.divIcon({
       className: 'custom-marker',
       html: `
         <div class="relative cursor-pointer group">
+          ${isRecent ? `
           <div class="absolute inset-0 rounded-full animate-ping" style="
             background-color: ${color};
             opacity: 0.3;
@@ -108,11 +124,22 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
             top: 50%;
             transform: translate(-50%, -50%);
           "></div>
-          <div class="relative rounded-full border-2 border-white shadow-lg hover:scale-110 transition-transform" style="
+          ` : ''}
+          <div class="relative rounded-full border-2 border-white shadow-lg hover:scale-125 transition-all duration-200" style="
             background-color: ${color};
+            opacity: ${opacity};
             width: ${size}px;
             height: ${size}px;
-          "></div>
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: ${size * 0.5}px;
+          ">
+            <span style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">${icon}</span>
+          </div>
+          ${isRecent ? `
+          <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></div>
+          ` : ''}
         </div>
       `,
       iconSize: [size * 2, size * 2],
@@ -147,24 +174,52 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3">
-        <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Magnitude</h4>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#84cc16' }} />
-            <span className="text-slate-600">M 3.0-4.9</span>
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3 max-w-xs">
+        <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Types & Severity</h4>
+        <div className="space-y-2">
+          {/* Earthquake Magnitudes */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#84cc16', fontSize: '8px' }}>⚡</div>
+              <span className="text-slate-600">M 3.0-4.9 (Minor)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f59e0b', fontSize: '8px' }}>⚡</div>
+              <span className="text-slate-600">M 5.0-5.9 (Moderate)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ea580c', fontSize: '8px' }}>⚡</div>
+              <span className="text-slate-600">M 6.0-6.9 (Strong)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#dc2626', fontSize: '8px' }}>⚡</div>
+              <span className="text-slate-600">M 7.0+ (Major)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#f59e0b' }} />
-            <span className="text-slate-600">M 5.0-5.9</span>
+          
+          {/* Tsunami */}
+          <div className="pt-2 border-t border-slate-200">
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8b5cf6', fontSize: '8px' }}>🌊</div>
+              <span className="text-slate-600">Tsunami Alert</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#ea580c' }} />
-            <span className="text-slate-600">M 6.0-6.9</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#dc2626' }} />
-            <span className="text-slate-600">M 7.0+</span>
+          
+          {/* Time-based opacity */}
+          <div className="pt-2 border-t border-slate-200">
+            <p className="text-xs text-slate-500 mb-1">Recency:</p>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-slate-600" style={{ opacity: 1.0 }} />
+              <span className="text-slate-600">&lt; 24h</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-slate-600" style={{ opacity: 0.7 }} />
+              <span className="text-slate-600">1-7 days</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-slate-600" style={{ opacity: 0.4 }} />
+              <span className="text-slate-600">7-30 days</span>
+            </div>
           </div>
         </div>
       </div>
@@ -207,21 +262,56 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
             icon={createEventIcon(event)}
           >
             <Popup>
-              <div className="p-2 min-w-[250px]">
-                <h3 className="font-semibold text-slate-900 mb-1">{event.title}</h3>
-                <div className="space-y-1 text-xs text-slate-600">
-                  <p>
-                    <span className="font-medium">Magnitude:</span> {event.magnitude?.toFixed(1) || 'N/A'}
-                  </p>
-                  <p>
-                    <span className="font-medium">Time:</span>{' '}
-                    {new Date(event.timestamp).toLocaleString()}
-                  </p>
-                  {event.contactsAffected !== undefined && (
-                    <p>
-                      <span className="font-medium">Contacts Notified:</span> {event.contactsAffected}
+              <div className="p-2 min-w-[280px]">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-2xl">{event.type === 'tsunami' ? '🌊' : '⚡'}</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-slate-900 mb-1">{event.title}</h3>
+                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                      event.type === 'earthquake' 
+                        ? 'bg-orange-100 text-orange-800' 
+                        : 'bg-purple-100 text-purple-800'
+                    }`}>
+                      {event.type === 'earthquake' ? 'Earthquake' : 'Tsunami'}
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-xs text-slate-600">
+                  {event.magnitude && (
+                    <p className="flex justify-between">
+                      <span className="font-medium">Magnitude:</span>
+                      <span className="font-semibold">{event.magnitude.toFixed(1)}</span>
                     </p>
                   )}
+                  {event.severity && (
+                    <p className="flex justify-between">
+                      <span className="font-medium">Severity:</span>
+                      <span className="font-semibold">Level {event.severity}</span>
+                    </p>
+                  )}
+                  <p className="flex justify-between">
+                    <span className="font-medium">Time:</span>
+                    <span>{new Date(event.timestamp).toLocaleString()}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="font-medium">Location:</span>
+                    <span>{event.lat.toFixed(2)}°, {event.lng.toFixed(2)}°</span>
+                  </p>
+                  {event.contactsAffected !== undefined && event.contactsAffected > 0 && (
+                    <p className="flex justify-between pt-1 border-t border-slate-200">
+                      <span className="font-medium">Contacts Notified:</span>
+                      <span className="font-semibold text-green-600">{event.contactsAffected}</span>
+                    </p>
+                  )}
+                  <p className="text-xs text-slate-500 pt-1">
+                    {(() => {
+                      const hoursSince = (Date.now() - new Date(event.timestamp).getTime()) / (1000 * 60 * 60)
+                      if (hoursSince < 1) return '🔴 Just now'
+                      if (hoursSince < 24) return `🔴 ${Math.floor(hoursSince)} hours ago`
+                      if (hoursSince < 168) return `🟡 ${Math.floor(hoursSince / 24)} days ago`
+                      return `⚪ ${Math.floor(hoursSince / 24)} days ago`
+                    })()}
+                  </p>
                 </div>
               </div>
             </Popup>

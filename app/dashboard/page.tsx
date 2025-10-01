@@ -194,11 +194,12 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes] = await Promise.all([
+      const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/monitoring'),
         fetch('/api/tsunami'),
-        fetch('/api/tsunami/monitor')
+        fetch('/api/tsunami/monitor'),
+        fetch('/api/alerts/history?limit=50') // Fetch more alerts for map
       ])
 
       if (statsRes.ok) {
@@ -232,6 +233,23 @@ export default function Dashboard() {
         const tsunamiMonitoringData: TsunamiMonitoringResponse = await tsunamiMonitoringRes.json()
         if (tsunamiMonitoringData.success) {
           setTsunamiMonitoring(tsunamiMonitoringData.data.monitoring.isMonitoring)
+        }
+      }
+      
+      // Fetch more alerts for map visualization
+      if (alertHistoryRes.ok) {
+        const alertHistoryData = await alertHistoryRes.json()
+        if (alertHistoryData.success && alertHistoryData.data?.alerts) {
+          // Merge with existing alerts, prioritizing the history data for map
+          const historyAlerts = alertHistoryData.data.alerts.filter((alert: AlertLog) => 
+            alert.latitude != null && alert.longitude != null
+          )
+          // Update recentAlerts with more comprehensive data
+          setRecentAlerts(prev => {
+            const existingIds = new Set(prev.map(a => a.id))
+            const newAlerts = historyAlerts.filter((a: AlertLog) => !existingIds.has(a.id))
+            return [...prev, ...newAlerts]
+          })
         }
       }
     } catch (error) {
@@ -622,9 +640,10 @@ export default function Dashboard() {
     ]
   }, [monitoringStatus, tsunamiMonitoring])
 
-  // Transform data for new components
+  // Transform data for new components - combine earthquake and tsunami alerts
   const mapEvents = useMemo(() => {
-    return recentAlerts
+    // Earthquake alerts
+    const earthquakeEvents = recentAlerts
       .filter(alert => alert.latitude != null && alert.longitude != null)
       .map(alert => ({
         id: alert.id,
@@ -636,7 +655,24 @@ export default function Dashboard() {
         timestamp: alert.timestamp,
         contactsAffected: alert.contactsNotified
       }))
-  }, [recentAlerts])
+    
+    // Tsunami alerts
+    const tsunamiEvents = tsunamiAlerts
+      .filter(alert => alert.latitude != null && alert.longitude != null)
+      .map(alert => ({
+        id: alert.id,
+        lat: alert.latitude!,
+        lng: alert.longitude!,
+        type: 'tsunami' as const,
+        severity: alert.severity,
+        magnitude: alert.magnitude,
+        title: alert.title || `Tsunami Alert - ${alert.location}`,
+        timestamp: alert.processedAt,
+        contactsAffected: 0
+      }))
+    
+    return [...earthquakeEvents, ...tsunamiEvents]
+  }, [recentAlerts, tsunamiAlerts])
 
   const keyMetrics = useMemo(() => [
     {
