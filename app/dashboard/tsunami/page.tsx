@@ -14,29 +14,35 @@ export default function TsunamiMonitoringPage() {
   const ALERTS_PER_PAGE = 20
 
   useEffect(() => {
-    // Fetch tsunami alerts from last 30 days
+    // Fetch tsunami alerts
     const fetchAlerts = async () => {
       try {
         const response = await fetch('/api/tsunami')
         const data = await response.json()
+        console.log('Tsunami API response:', data) // Debug log
+        
         if (data.success) {
           const allAlerts = data.data?.alerts || data.alerts || []
-          // Filter to last 30 days
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-          const tsunamiAlerts = allAlerts
-            .filter((a: any) => new Date(a.createdAt || a.timestamp) > thirtyDaysAgo)
-          setAlerts(tsunamiAlerts)
+          console.log('Tsunami alerts received:', allAlerts.length) // Debug log
+          
+          // Don't filter by date - show all current alerts
+          setAlerts(allAlerts)
+          
+          // Calculate stats
+          const now = Date.now()
+          const dayAgo = now - 24 * 60 * 60 * 1000
+          
           setStats({
-            total: tsunamiAlerts.length,
-            last24h: tsunamiAlerts.filter((a: any) => {
-              const alertTime = new Date(a.createdAt || a.timestamp)
-              const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+            total: allAlerts.length,
+            last24h: allAlerts.filter((a: any) => {
+              // Check processedAt, createdAt, timestamp, or time fields
+              const alertTime = new Date(a.processedAt || a.createdAt || a.timestamp || a.time).getTime()
               return alertTime > dayAgo
             }).length
           })
         }
       } catch (error) {
-        console.error('Failed to fetch alerts:', error)
+        console.error('Failed to fetch tsunami alerts:', error)
       } finally {
         setLoading(false)
       }
@@ -113,21 +119,21 @@ export default function TsunamiMonitoringPage() {
                 <>
                 <div className="space-y-4">
                   {alerts.slice(0, page * ALERTS_PER_PAGE).map((alert: any, index) => (
-                    <div key={index} className="border border-slate-200 rounded-lg p-4">
+                    <div key={alert.id || index} className="border border-slate-200 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
                             <span className="text-sm font-medium text-slate-900">
-                              {alert.title || 'Tsunami Alert'}
+                              {alert.title || alert.category || 'Tsunami Alert'}
                             </span>
                             <span className="text-sm text-slate-500">•</span>
-                            <span className="text-sm text-slate-600">{alert.location}</span>
+                            <span className="text-sm text-slate-600">{alert.location || 'Unknown location'}</span>
                           </div>
-                          <p className="text-sm text-slate-600 mb-2">{alert.description}</p>
+                          <p className="text-sm text-slate-600 mb-2">{alert.description || alert.instruction || 'No description available'}</p>
                           <div className="flex items-center space-x-4 text-xs text-slate-500">
                             <span className="flex items-center">
                               <Clock className="h-3 w-3 mr-1" />
-                              {new Date(alert.timestamp).toLocaleString()}
+                              {new Date(alert.processedAt || alert.createdAt || alert.timestamp || alert.time).toLocaleString()}
                             </span>
                             {alert.location && (
                               <span className="flex items-center">
@@ -135,14 +141,23 @@ export default function TsunamiMonitoringPage() {
                                 {alert.location}
                               </span>
                             )}
+                            {alert.threat && (
+                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                alert.threat.level === 'warning' ? 'bg-red-100 text-red-800' :
+                                alert.threat.level === 'watch' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'
+                              }`}>
+                                {alert.threat.level}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className={`px-2 py-1 text-xs font-medium rounded ${
-                          alert.severity === 'high' ? 'bg-red-100 text-red-800' :
-                          alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
+                          alert.severity >= 4 || alert.urgency === 'Immediate' ? 'bg-red-100 text-red-800' :
+                          alert.severity >= 2 || alert.urgency === 'Expected' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-blue-100 text-blue-800'
                         }`}>
-                          {alert.severity || 'low'}
+                          {alert.urgency || alert.category || 'Info'}
                         </div>
                       </div>
                     </div>
