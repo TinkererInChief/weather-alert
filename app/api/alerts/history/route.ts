@@ -47,13 +47,14 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
       }
     }
     
-    // Fetch alerts
+    // Fetch alerts with magnitude-first ordering to prioritize critical events
     const [alerts, total] = await Promise.all([
       prisma.alertLog.findMany({
         where,
-        orderBy: {
-          timestamp: 'desc'
-        },
+        orderBy: [
+          { magnitude: 'desc' },  // Critical events first
+          { timestamp: 'desc' }   // Then by recency within magnitude
+        ],
         skip,
         take: limit,
       }),

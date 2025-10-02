@@ -186,6 +186,8 @@ export default function Dashboard() {
   const [tsunamiMonitoring, setTsunamiMonitoring] = useState(false)
   const [operations, setOperations] = useState<OperationMessage[]>([])
   const [timeFilter, setTimeFilter] = useState<'24h' | '7d' | '30d'>('30d')
+  const [minMagnitude, setMinMagnitude] = useState<number>(3.0)
+  const [showAllEvents, setShowAllEvents] = useState(false)
 
   const logOperation = (content: string, tone: OperationTone = 'info') => {
     setOperations((prev) => [
@@ -213,12 +215,25 @@ export default function Dashboard() {
       
       const startDate = getTimeFilterDate()
       
+      // Build query parameters for alerts
+      const alertParams = new URLSearchParams({
+        startDate,
+        minMagnitude: minMagnitude.toString()
+      })
+      
+      // Add limit only if not showing all events
+      if (!showAllEvents) {
+        alertParams.append('limit', '50')
+      } else {
+        alertParams.append('limit', '500') // Reasonable upper limit for performance
+      }
+      
       const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/monitoring'),
         fetch('/api/tsunami'),
         fetch('/api/tsunami/monitor'),
-        fetch(`/api/alerts/history?limit=50&startDate=${startDate}`) // Fetch 50 alerts with time filter
+        fetch(`/api/alerts/history?${alertParams}`)
       ])
 
       if (statsRes.ok) {
@@ -282,7 +297,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeFilter]) // Refetch when time filter changes
+  }, [timeFilter, minMagnitude, showAllEvents]) // Refetch when filters change
 
   useEffect(() => {
     // Initial fetch
@@ -901,43 +916,83 @@ export default function Dashboard() {
         {/* Phase 1: Global Event Map + Real-Time Feed */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            {/* Time Filter Controls */}
-            <div className="mb-4 flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-slate-600" />
-                <span className="text-sm font-medium text-slate-700">Time Period:</span>
+            {/* Filter Controls */}
+            <div className="mb-4 space-y-3">
+              {/* Time Filter */}
+              <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-slate-600" />
+                  <span className="text-sm font-medium text-slate-700">Time Period:</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setTimeFilter('24h')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      timeFilter === '24h'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Last 24 Hours
+                  </button>
+                  <button
+                    onClick={() => setTimeFilter('7d')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      timeFilter === '7d'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Last 7 Days
+                  </button>
+                  <button
+                    onClick={() => setTimeFilter('30d')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      timeFilter === '30d'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Last 30 Days
+                  </button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setTimeFilter('24h')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    timeFilter === '24h'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  Last 24 Hours
-                </button>
-                <button
-                  onClick={() => setTimeFilter('7d')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    timeFilter === '7d'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  Last 7 Days
-                </button>
-                <button
-                  onClick={() => setTimeFilter('30d')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    timeFilter === '30d'
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  Last 30 Days
-                </button>
+
+              {/* Magnitude Filter & Show All */}
+              <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-slate-600" />
+                    <span className="text-sm font-medium text-slate-700">Min Magnitude:</span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-1 max-w-md">
+                    <input
+                      type="range"
+                      min="3.0"
+                      max="7.0"
+                      step="0.5"
+                      value={minMagnitude}
+                      onChange={(e) => setMinMagnitude(parseFloat(e.target.value))}
+                      className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    <span className="text-sm font-semibold text-blue-600 min-w-[3rem]">
+                      M{minMagnitude.toFixed(1)}+
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showAllEvents}
+                      onChange={(e) => setShowAllEvents(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Show All ({recentAlerts.filter(a => a.magnitude >= minMagnitude).length} events)
+                    </span>
+                  </label>
+                </div>
               </div>
             </div>
             
