@@ -66,7 +66,7 @@ export default function SystemStatusPage() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [latencyHistory, setLatencyHistory] = useState<Partial<Record<ServiceKey, HistoryPoint[]>>>({})
-  const [range, setRange] = useState<RangeKey>('60m')
+  const [range, setRange] = useState<RangeKey>('24h')
   const [uptimeTimeline, setUptimeTimeline] = useState<Partial<Record<ServiceKey, TimelinePoint[]>>>({})
   const [events, setEvents] = useState<SystemEvent[]>([])
   const [heroMetrics, setHeroMetrics] = useState<HeroMetrics | null>(null)

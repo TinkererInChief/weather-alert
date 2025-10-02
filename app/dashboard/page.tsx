@@ -224,9 +224,11 @@ export default function Dashboard() {
         minMagnitude: showAllEvents ? '0' : minMagnitude.toString()
       })
       
-      // Add limit only if not showing all events
+      // Add limit based on time period (more time = more events expected)
       if (!showAllEvents) {
-        alertParams.append('limit', '50')
+        // Scale limit based on time period to avoid missing recent events
+        const limit = timeFilter === '24h' ? '50' : timeFilter === '7d' ? '100' : '200'
+        alertParams.append('limit', limit)
       } else {
         alertParams.append('limit', '500') // Reasonable upper limit for performance
       }

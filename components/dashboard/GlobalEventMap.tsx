@@ -30,6 +30,8 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   const [mapStyle, setMapStyle] = useState<'satellite' | 'streets' | 'topo'>('satellite')
   const [mounted, setMounted] = useState(false)
   const [legendVisible, setLegendVisible] = useState(true)
+  const [hoveredEvent, setHoveredEvent] = useState<EventMarker | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
 
   // Fix for SSR - Leaflet needs window object
   useEffect(() => {
@@ -188,7 +190,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
         </button>
         
         {legendVisible && (
-          <div className="rounded-lg shadow-lg border border-white/20 p-3 max-w-xs hover:bg-white/60 transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+          <div className="rounded-lg shadow-lg border border-white/10 p-3 max-w-xs hover:bg-white/70 transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
             <h4 className="text-xs font-bold text-slate-900 mb-2">Event Types & Severity</h4>
         <div className="space-y-2">
           {/* Earthquake Magnitudes */}
@@ -241,7 +243,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Event Stats */}
-      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/20 p-3 hover:bg-white/60 transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/10 p-3 hover:bg-white/70 transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)' }}>
         <div className="flex items-center gap-3">
           <div className="text-center">
             <div className="text-xl font-extrabold text-slate-900">{events.length}</div>
@@ -276,7 +278,21 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
             key={event.id}
             position={[event.lat, event.lng]}
             icon={createEventIcon(event)}
+            eventHandlers={{
+              mouseover: (e) => {
+                const marker = e.target
+                const latLng = marker.getLatLng()
+                const point = marker._map.latLngToContainerPoint(latLng)
+                setHoveredEvent(event)
+                setTooltipPosition({ x: point.x, y: point.y })
+              },
+              mouseout: () => {
+                setHoveredEvent(null)
+                setTooltipPosition(null)
+              }
+            }}
           >
+            {/* Keep popup for mobile/touch devices */}
             <Popup>
               <div className="p-2 min-w-[280px]">
                 <div className="flex items-start gap-2 mb-2">
@@ -379,6 +395,87 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
           </CircleMarker>
         ))}
       </MapContainer>
+
+      {/* Hover Tooltip */}
+      {hoveredEvent && tooltipPosition && (
+        <div 
+          className="absolute z-[2000] pointer-events-none"
+          style={{
+            left: `${tooltipPosition.x}px`,
+            top: `${tooltipPosition.y - 10}px`,
+            transform: 'translate(-50%, -100%)'
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 p-3 min-w-[280px] max-w-[320px]">
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-2xl">{hoveredEvent.type === 'tsunami' ? '🌊' : '⚡'}</span>
+              <div className="flex-1">
+                <h3 className="font-semibold text-slate-900 text-sm mb-1">{hoveredEvent.title}</h3>
+                <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                  hoveredEvent.type === 'earthquake' 
+                    ? 'bg-orange-100 text-orange-800' 
+                    : 'bg-purple-100 text-purple-800'
+                }`}>
+                  {hoveredEvent.type === 'earthquake' ? 'Earthquake' : 'Tsunami'}
+                </span>
+              </div>
+            </div>
+            <div className="space-y-1.5 text-xs text-slate-600">
+              {hoveredEvent.magnitude && (
+                <p className="flex justify-between">
+                  <span className="font-medium">Magnitude:</span>
+                  <span className="font-semibold text-slate-900">{hoveredEvent.magnitude.toFixed(1)}</span>
+                </p>
+              )}
+              {hoveredEvent.severity && (
+                <p className="flex justify-between">
+                  <span className="font-medium">Severity:</span>
+                  <span className="font-semibold text-slate-900">Level {hoveredEvent.severity}</span>
+                </p>
+              )}
+              <p className="flex justify-between">
+                <span className="font-medium">Time:</span>
+                <span className="text-slate-900">{new Date(hoveredEvent.timestamp).toLocaleString()}</span>
+              </p>
+              {hoveredEvent.contactsAffected !== undefined && (
+                <p className="flex justify-between">
+                  <span className="font-medium">Contacts Notified:</span>
+                  <span className="font-semibold text-blue-600">{hoveredEvent.contactsAffected}</span>
+                </p>
+              )}
+              {hoveredEvent.sources && hoveredEvent.sources.length > 0 && (
+                <div className="pt-2 border-t border-slate-200">
+                  <p className="font-medium mb-1">Data Sources:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {hoveredEvent.sources.map((source, idx) => (
+                      <span 
+                        key={idx}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                          source === hoveredEvent.primarySource
+                            ? 'bg-blue-100 text-blue-800'
+                            : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        {source === hoveredEvent.primarySource && '⭐ '}
+                        {source}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-slate-500 pt-1">
+                {(() => {
+                  const hoursSince = (Date.now() - new Date(hoveredEvent.timestamp).getTime()) / (1000 * 60 * 60)
+                  if (hoursSince < 1) return '🔴 Just now'
+                  if (hoursSince < 24) return `🔴 ${Math.floor(hoursSince)} hours ago`
+                  if (hoursSince < 168) return `🟡 ${Math.floor(hoursSince / 24)} days ago`
+                  return `⚪ ${Math.floor(hoursSince / 24)} days ago`
+                })()}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
