@@ -21,6 +21,7 @@ type EventMarker = {
 }
 
 type GlobalEventMapProps = {
+  events: EventMarker[]
   contacts?: Array<{ latitude: number; longitude: number; name: string }>
   height?: string
 }
@@ -87,7 +88,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
           url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           attribution: '&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         }
-      case 'terrain':
+      case 'topo':
         return {
           url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
           attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
@@ -96,7 +97,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   }
 
   const cycleMapStyle = () => {
-    const styles: Array<'streets' | 'satellite' | 'terrain'> = ['streets', 'satellite', 'terrain']
+    const styles: Array<'streets' | 'satellite' | 'topo'> = ['streets', 'satellite', 'topo']
     const currentIndex = styles.indexOf(mapStyle)
     const nextIndex = (currentIndex + 1) % styles.length
     setMapStyle(styles[nextIndex])
