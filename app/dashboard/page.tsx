@@ -219,7 +219,9 @@ export default function Dashboard() {
       // Build query parameters for alerts
       const alertParams = new URLSearchParams({
         startDate,
-        minMagnitude: minMagnitude.toString()
+        // When showing all events, fetch ALL magnitudes (we'll filter client-side)
+        // When not showing all, fetch only events >= minMagnitude
+        minMagnitude: showAllEvents ? '0' : minMagnitude.toString()
       })
       
       // Add limit only if not showing all events
@@ -708,14 +710,14 @@ export default function Dashboard() {
   // This is fetched separately to show accurate "Show All (X events)" label
 
   // Transform data for new components - combine earthquake and tsunami alerts
-  // Apply magnitude filter to map events
+  // Apply magnitude filter to map events (only when not showing all)
   const mapEvents = useMemo(() => {
-    // Earthquake alerts - filter by magnitude
+    // Earthquake alerts - filter by magnitude only if not showing all
     const earthquakeEvents = recentAlerts
       .filter(alert => 
         alert.latitude != null && 
         alert.longitude != null &&
-        alert.magnitude >= minMagnitude  // Apply magnitude filter
+        (showAllEvents || alert.magnitude >= minMagnitude)  // Apply magnitude filter only when not showing all
       )
       .map(alert => ({
         id: alert.id,
@@ -746,7 +748,7 @@ export default function Dashboard() {
       }))
     
     return [...earthquakeEvents, ...tsunamiEvents]
-  }, [recentAlerts, tsunamiAlerts, minMagnitude])  // Add minMagnitude dependency
+  }, [recentAlerts, tsunamiAlerts, minMagnitude, showAllEvents])  // Add dependencies
 
   const keyMetrics = useMemo(() => [
     {
