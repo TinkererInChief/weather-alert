@@ -264,10 +264,13 @@ export default function Dashboard() {
         })
       }
 
+      // Process tsunami data first (needed for count calculation)
+      let freshTsunamiAlerts: any[] = []
       if (tsunamiRes.ok) {
         const tsunamiData: TsunamiApiResponse = await tsunamiRes.json()
         if (tsunamiData.success) {
-          setTsunamiAlerts(tsunamiData.data.alerts || [])
+          freshTsunamiAlerts = tsunamiData.data.alerts || []
+          setTsunamiAlerts(freshTsunamiAlerts)
           setTsunamiLastChecked(tsunamiData.data.lastChecked ?? null)
         }
       }
@@ -296,14 +299,17 @@ export default function Dashboard() {
         }
       }
       
-      // Get total unfiltered count
+      // Get total unfiltered count (earthquakes + tsunamis)
       if (countRes.ok) {
         const countData = await countRes.json()
         if (countData.success && countData.data?.alerts) {
-          const totalCount = countData.data.alerts.filter((alert: AlertLog) => 
+          const earthquakeCount = countData.data.alerts.filter((alert: AlertLog) => 
             alert.latitude != null && alert.longitude != null
           ).length
-          setTotalUnfilteredCount(totalCount)
+          const tsunamiCount = freshTsunamiAlerts.filter(alert => 
+            alert.latitude != null && alert.longitude != null
+          ).length
+          setTotalUnfilteredCount(earthquakeCount + tsunamiCount)
         }
       }
     } catch (error) {
