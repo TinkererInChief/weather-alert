@@ -188,6 +188,7 @@ export default function Dashboard() {
   const [timeFilter, setTimeFilter] = useState<'24h' | '7d' | '30d'>('30d')
   const [minMagnitude, setMinMagnitude] = useState<number>(3.0)
   const [showAllEvents, setShowAllEvents] = useState(false)
+  const [totalUnfilteredCount, setTotalUnfilteredCount] = useState<number>(0)
 
   const logOperation = (content: string, tone: OperationTone = 'info') => {
     setOperations((prev) => [
@@ -228,12 +229,20 @@ export default function Dashboard() {
         alertParams.append('limit', '500') // Reasonable upper limit for performance
       }
       
-      const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes] = await Promise.all([
+      // Build query for total count (no magnitude filter, just count)
+      const countParams = new URLSearchParams({
+        startDate,
+        minMagnitude: '0', // Get all events for count
+        limit: '1000' // High limit to get accurate count
+      })
+      
+      const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes, countRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/monitoring'),
         fetch('/api/tsunami'),
         fetch('/api/tsunami/monitor'),
-        fetch(`/api/alerts/history?${alertParams}`)
+        fetch(`/api/alerts/history?${alertParams}`),
+        fetch(`/api/alerts/history?${countParams}`) // Fetch for total count
       ])
 
       if (statsRes.ok) {
@@ -284,6 +293,17 @@ export default function Dashboard() {
             const newAlerts = historyAlerts.filter((a: AlertLog) => !existingIds.has(a.id))
             return [...prev, ...newAlerts]
           })
+        }
+      }
+      
+      // Get total unfiltered count
+      if (countRes.ok) {
+        const countData = await countRes.json()
+        if (countData.success && countData.data?.alerts) {
+          const totalCount = countData.data.alerts.filter((alert: AlertLog) => 
+            alert.latitude != null && alert.longitude != null
+          ).length
+          setTotalUnfilteredCount(totalCount)
         }
       }
     } catch (error) {
@@ -680,16 +700,8 @@ export default function Dashboard() {
     ]
   }, [monitoringStatus, tsunamiMonitoring])
 
-  // Calculate total events count (without magnitude filter) for "Show All" label
-  const totalEventsCount = useMemo(() => {
-    const earthquakeCount = recentAlerts.filter(alert => 
-      alert.latitude != null && alert.longitude != null
-    ).length
-    const tsunamiCount = tsunamiAlerts.filter(alert => 
-      alert.latitude != null && alert.longitude != null
-    ).length
-    return earthquakeCount + tsunamiCount
-  }, [recentAlerts, tsunamiAlerts])
+  // Total events count comes from API (unfiltered by magnitude)
+  // This is fetched separately to show accurate "Show All (X events)" label
 
   // Transform data for new components - combine earthquake and tsunami alerts
   // Apply magnitude filter to map events
@@ -1005,7 +1017,7 @@ export default function Dashboard() {
                       className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm font-medium text-slate-700">
-                      Show All ({totalEventsCount} events)
+                      Show All ({totalUnfilteredCount} events)
                     </span>
                   </label>
                 </div>
