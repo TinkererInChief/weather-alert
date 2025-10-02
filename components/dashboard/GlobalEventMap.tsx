@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, CircleMarker } from 'react-leaflet'
 import { MapPin, Layers } from 'lucide-react'
 import L from 'leaflet'
@@ -31,12 +31,40 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   const [mounted, setMounted] = useState(false)
   const [legendVisible, setLegendVisible] = useState(true)
   const [hoveredEvent, setHoveredEvent] = useState<EventMarker | null>(null)
-  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number; placement: 'above' | 'below' } | null>(null)
+  const wrapperRef = useRef<HTMLDivElement | null>(null)
+  const tooltipRef = useRef<HTMLDivElement | null>(null)
 
   // Fix for SSR - Leaflet needs window object
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // After tooltip renders, re-clamp using actual tooltip size to avoid clipping
+  useEffect(() => {
+    if (!hoveredEvent || !tooltipPosition || !wrapperRef.current || !tooltipRef.current) return
+    const W = wrapperRef.current.clientWidth
+    const H = wrapperRef.current.clientHeight
+    const w = tooltipRef.current.offsetWidth
+    const h = tooltipRef.current.offsetHeight
+
+    let { x, y, placement } = tooltipPosition
+
+    const minX = w / 2 + 8
+    const maxX = W - w / 2 - 8
+    if (x < minX) x = minX
+    if (x > maxX) x = maxX
+
+    if (placement === 'above' && y - h - 10 < 0) {
+      placement = 'below'
+    } else if (placement === 'below' && y + 10 + h > H) {
+      placement = 'above'
+    }
+
+    if (x !== tooltipPosition.x || y !== tooltipPosition.y || placement !== tooltipPosition.placement) {
+      setTooltipPosition({ x, y, placement })
+    }
+  }, [hoveredEvent, tooltipPosition])
 
   // ESC key to dismiss tooltip
   useEffect(() => {
@@ -51,11 +79,10 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   }, [])
 
   const getMagnitudeColor = (magnitude: number) => {
-    if (magnitude >= 7) return '#dc2626' // red-600
-    if (magnitude >= 6) return '#ea580c' // orange-600
-    if (magnitude >= 5) return '#f59e0b' // amber-500
-    if (magnitude >= 4) return '#eab308' // yellow-500
-    return '#84cc16' // lime-500
+    if (magnitude >= 7) return '#dc2626' // red-600 (M7.0+)
+    if (magnitude >= 6) return '#ea580c' // orange-600 (M6.0-6.9)
+    if (magnitude >= 5) return '#f59e0b' // amber-500 (M5.0-5.9)
+    return '#84cc16' // lime-500 (M3.0-4.9 and below)
   }
 
   const getSeverityColor = (severity: number) => {
@@ -154,9 +181,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
           ">
             <span style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));">${icon}</span>
           </div>
-          ${isRecent ? `
-          <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></div>
-          ` : ''}
+          
         </div>
       `,
       iconSize: [size * 2, size * 2],
@@ -178,7 +203,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   const tileLayer = getTileLayer()
 
   return (
-    <div className="relative bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div ref={wrapperRef} className="relative bg-white rounded-xl border border-slate-200 overflow-hidden">
       {/* Map Controls */}
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
         <button
@@ -305,6 +330,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                 
                 let x = point.x
                 let y = point.y
+                let placement: 'above' | 'below' = 'above'
                 
                 // Adjust horizontal position if too close to edges
                 if (x < tooltipWidth / 2 + 20) {
@@ -315,11 +341,15 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                 
                 // Adjust vertical position if too close to top
                 if (y < tooltipHeight + 30) {
-                  y = tooltipHeight + 30 // Show below marker if near top
+                  placement = 'below' // Show below marker if near top
+                }
+                // If too close to bottom and placed below, force above
+                if (placement === 'below' && (mapHeight - y) < tooltipHeight + 30) {
+                  placement = 'above'
                 }
                 
                 setHoveredEvent(event)
-                setTooltipPosition({ x, y })
+                setTooltipPosition({ x, y, placement })
               },
               mouseout: () => {
                 setHoveredEvent(null)
@@ -437,8 +467,8 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
           className="absolute z-[2000] pointer-events-none"
           style={{
             left: `${tooltipPosition.x}px`,
-            top: `${tooltipPosition.y - 10}px`,
-            transform: 'translate(-50%, -100%)'
+            top: tooltipPosition.placement === 'below' ? `${tooltipPosition.y + 10}px` : `${tooltipPosition.y - 10}px`,
+            transform: tooltipPosition.placement === 'below' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)'
           }}
         >
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 p-3 min-w-[280px] max-w-[320px] relative">
