@@ -68,9 +68,9 @@ async function main() {
         continue
       }
       
-      // Determine primary source
-      const sources = eq.properties.sources?.split(',').filter(s => s) || []
-      const primarySource = sources[0]?.toUpperCase() || 'USGS'
+      // Get sources from aggregated earthquake (not from properties.sources)
+      const sources = eq.sources || []
+      const primarySource = eq.primarySource || 'USGS'
       
       // Create alert log entry
       await prisma.alertLog.create({
@@ -85,7 +85,7 @@ async function main() {
           contactsNotified: 0, // Historical data, not actually sent
           success: true,
           dataSources: sources.map(s => s.toUpperCase()),
-          primarySource,
+          primarySource: primarySource.toUpperCase(),
           sourceMetadata: {
             usgs: eq.properties.net === 'us' ? {
               eventId: eq.id,

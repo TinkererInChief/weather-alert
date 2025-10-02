@@ -38,6 +38,10 @@ export class AlertManager {
     const contacts = await db.getActiveContacts()
     const alertMessage = this.createAlertMessage(earthquake, tsunamiThreat)
     
+    // Extract sources from aggregated earthquake
+    const sources = (earthquake as any).sources || []
+    const primarySource = (earthquake as any).primarySource || 'USGS'
+    
     let alertResult = {
       earthquakeId: earthquake.id,
       magnitude: earthquake.properties.mag,
@@ -49,7 +53,9 @@ export class AlertManager {
       contactsNotified: 0,
       success: false,
       errorMessage: undefined as string | undefined,
-      tsunamiThreat: tsunamiThreat.level
+      tsunamiThreat: tsunamiThreat.level,
+      dataSources: sources,
+      primarySource
     }
 
     try {

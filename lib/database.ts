@@ -173,7 +173,9 @@ class Database {
         timestamp: log.timestamp,
         contactsNotified: log.contactsNotified,
         success: log.success,
-        errorMessage: log.errorMessage ?? null
+        errorMessage: log.errorMessage ?? null,
+        dataSources: (log as any).dataSources || [],
+        primarySource: (log as any).primarySource || null
       }
     })
   

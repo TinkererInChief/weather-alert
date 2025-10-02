@@ -27,7 +27,7 @@ type GlobalEventMapProps = {
 }
 
 export default function GlobalEventMap({ events, contacts = [], height = '500px' }: GlobalEventMapProps) {
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'terrain'>('streets')
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'terrain'>('satellite')
   const [mounted, setMounted] = useState(false)
 
   // Fix for SSR - Leaflet needs window object
@@ -176,7 +176,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 p-3 max-w-xs">
+      <div className="absolute bottom-4 left-4 z-[1000] rounded-lg shadow-lg border border-slate-200/50 p-3 max-w-xs" style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(8px)' }}>
         <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Types & Severity</h4>
         <div className="space-y-2">
           {/* Earthquake Magnitudes */}

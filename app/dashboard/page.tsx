@@ -71,6 +71,8 @@ type AlertLog = {
   contactsNotified: number
   success: boolean
   errorMessage?: string
+  dataSources?: string[]
+  primarySource?: string
 }
 
 type MonitoringStatus = {
@@ -677,8 +679,8 @@ export default function Dashboard() {
         title: `M${alert.magnitude.toFixed(1)} ${alert.location}`,
         timestamp: alert.timestamp,
         contactsAffected: alert.contactsNotified,
-        sources: (alert as any).dataSources || [],
-        primarySource: (alert as any).primarySource
+        sources: alert.dataSources || [],
+        primarySource: alert.primarySource
       }))
     
     // Tsunami alerts
