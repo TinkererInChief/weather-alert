@@ -681,10 +681,15 @@ export default function Dashboard() {
   }, [monitoringStatus, tsunamiMonitoring])
 
   // Transform data for new components - combine earthquake and tsunami alerts
+  // Apply magnitude filter to map events
   const mapEvents = useMemo(() => {
-    // Earthquake alerts
+    // Earthquake alerts - filter by magnitude
     const earthquakeEvents = recentAlerts
-      .filter(alert => alert.latitude != null && alert.longitude != null)
+      .filter(alert => 
+        alert.latitude != null && 
+        alert.longitude != null &&
+        alert.magnitude >= minMagnitude  // Apply magnitude filter
+      )
       .map(alert => ({
         id: alert.id,
         lat: alert.latitude!,
@@ -714,7 +719,7 @@ export default function Dashboard() {
       }))
     
     return [...earthquakeEvents, ...tsunamiEvents]
-  }, [recentAlerts, tsunamiAlerts])
+  }, [recentAlerts, tsunamiAlerts, minMagnitude])  // Add minMagnitude dependency
 
   const keyMetrics = useMemo(() => [
     {
@@ -989,7 +994,7 @@ export default function Dashboard() {
                       className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm font-medium text-slate-700">
-                      Show All ({recentAlerts.filter(a => a.magnitude >= minMagnitude).length} events)
+                      Show All ({mapEvents.length} events)
                     </span>
                   </label>
                 </div>

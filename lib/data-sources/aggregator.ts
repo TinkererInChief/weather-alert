@@ -4,6 +4,7 @@ import { USGSSource } from './usgs-source'
 import { EMSCSource } from './emsc-source'
 import { JMASource } from './jma-source'
 import { PTWCSource } from './ptwc-source'
+import { IRISSource } from './iris-source'
 
 /**
  * Deduplicated earthquake event with source attribution
@@ -27,7 +28,8 @@ export class DataAggregator {
     this.sources = [
       new USGSSource(),
       new EMSCSource(),
-      new JMASource()
+      new JMASource(),
+      new IRISSource()
     ]
     
     this.tsunamiSources = [

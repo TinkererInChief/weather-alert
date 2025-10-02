@@ -305,9 +305,9 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                       <span className="font-semibold text-green-600">{event.contactsAffected}</span>
                     </p>
                   )}
-                  {event.sources && event.sources.length > 0 && (
-                    <div className="pt-1 border-t border-slate-200">
-                      <p className="font-medium mb-1">Data Sources:</p>
+                  <div className="pt-1 border-t border-slate-200">
+                    <p className="font-medium mb-1">Data Sources:</p>
+                    {event.sources && event.sources.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
                         {event.sources.map((source, idx) => (
                           <span
@@ -323,8 +323,12 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                           </span>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <span className="text-xs text-slate-500 italic">
+                        Source data not available (legacy event)
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-slate-500 pt-1">
                     {(() => {
                       const hoursSince = (Date.now() - new Date(event.timestamp).getTime()) / (1000 * 60 * 60)
