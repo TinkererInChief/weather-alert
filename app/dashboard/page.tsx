@@ -680,6 +680,17 @@ export default function Dashboard() {
     ]
   }, [monitoringStatus, tsunamiMonitoring])
 
+  // Calculate total events count (without magnitude filter) for "Show All" label
+  const totalEventsCount = useMemo(() => {
+    const earthquakeCount = recentAlerts.filter(alert => 
+      alert.latitude != null && alert.longitude != null
+    ).length
+    const tsunamiCount = tsunamiAlerts.filter(alert => 
+      alert.latitude != null && alert.longitude != null
+    ).length
+    return earthquakeCount + tsunamiCount
+  }, [recentAlerts, tsunamiAlerts])
+
   // Transform data for new components - combine earthquake and tsunami alerts
   // Apply magnitude filter to map events
   const mapEvents = useMemo(() => {
@@ -994,7 +1005,7 @@ export default function Dashboard() {
                       className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm font-medium text-slate-700">
-                      Show All ({mapEvents.length} events)
+                      Show All ({totalEventsCount} events)
                     </span>
                   </label>
                 </div>
