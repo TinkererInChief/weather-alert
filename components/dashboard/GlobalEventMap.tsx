@@ -177,7 +177,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/30 p-3 max-w-xs" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+      <div className="absolute bottom-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/20 p-3 max-w-xs" style={{ backgroundColor: 'rgba(255, 255, 255, 0.35)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
         <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Types & Severity</h4>
         <div className="space-y-2">
           {/* Earthquake Magnitudes */}
@@ -228,7 +228,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Event Stats */}
-      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/30 p-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}>
+      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/20 p-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.35)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
         <div className="flex items-center gap-3">
           <div className="text-center">
             <div className="text-lg font-bold text-slate-900">{events.length}</div>

@@ -321,16 +321,14 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
+    // Initial fetch and refetch when filters change
     fetchData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeFilter, minMagnitude, showAllEvents]) // Refetch when filters change
-
-  useEffect(() => {
-    // Initial fetch
-    fetchData()
+    
+    // Set up interval for auto-refresh every 15 seconds
     const interval = setInterval(fetchData, 15000)
     return () => clearInterval(interval)
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeFilter, minMagnitude, showAllEvents]) // Refetch when filters change OR on interval
 
   // Monitor for new earthquakes and show notifications
   useEffect(() => {
