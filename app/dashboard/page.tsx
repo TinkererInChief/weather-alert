@@ -163,6 +163,73 @@ type TsunamiMonitoringResponse = {
   }
 }
 
+// ---- Hardening helpers: deduplicate events across sources ----
+const dedupeEarthquakes = (alerts: AlertLog[]) => {
+  const byId = new Map<string, AlertLog>()
+
+  for (const a of alerts) {
+    const key = a.earthquakeId || a.id
+    const exist = byId.get(key)
+    if (!exist) {
+      byId.set(key, {
+        ...a,
+        id: key, // normalize id to logical quake id
+        earthquakeId: key,
+        dataSources: a.dataSources ? [...a.dataSources] : []
+      })
+      continue
+    }
+
+    // Merge without mutating existing object
+    const newest = new Date(a.timestamp).getTime() > new Date(exist.timestamp).getTime() ? a : exist
+    const magnitude = Math.max(a.magnitude, exist.magnitude)
+    const dataSources = Array.from(new Set([...(exist.dataSources ?? []), ...(a.dataSources ?? [])]))
+    const primarySource = exist.primarySource || a.primarySource
+    const contactsNotified = Math.max(exist.contactsNotified ?? 0, a.contactsNotified ?? 0)
+
+    byId.set(key, {
+      ...exist,
+      ...newest,
+      id: key,
+      earthquakeId: key,
+      magnitude,
+      dataSources,
+      primarySource,
+      contactsNotified
+    })
+  }
+
+  // Sort newest first
+  return Array.from(byId.values()).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+}
+
+const dedupeTsunamiAlerts = (alerts: TsunamiAlert[]) => {
+  const keyOf = (t: TsunamiAlert) => {
+    const day = new Date(t.processedAt).toISOString().slice(0, 10)
+    const title = (t.title || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+    const lat = Math.round((t.latitude ?? 0) * 10) / 10
+    const lng = Math.round((t.longitude ?? 0) * 10) / 10
+    return `${day}|${title}|${lat}|${lng}`
+  }
+
+  const byKey = new Map<string, TsunamiAlert>()
+  for (const t of alerts) {
+    const k = keyOf(t)
+    const ex = byKey.get(k)
+    if (!ex) {
+      byKey.set(k, t)
+      continue
+    }
+    // Prefer latest processedAt and max severity/magnitude
+    const latest = new Date(t.processedAt).getTime() > new Date(ex.processedAt).getTime() ? t : ex
+    const severity = Math.max(t.severity ?? 0, ex.severity ?? 0)
+    const magnitude = Math.max(t.magnitude ?? 0, ex.magnitude ?? 0)
+    byKey.set(k, { ...latest, severity, magnitude })
+  }
+
+  return Array.from(byKey.values()).sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
+}
+
 export default function Dashboard() {
   const { data: session } = useSession()
   const { showEmergencyAlert, showSystemNotification } = useNotifications()
@@ -249,11 +316,15 @@ export default function Dashboard() {
         fetch(`/api/alerts/history?${countParams}`) // Fetch for total count
       ])
 
+      // Collect recent earthquake candidates from stats and history for dedupe
+      let statsRecentAlerts: AlertLog[] = []
+      let historyAlerts: AlertLog[] = []
+
       if (statsRes.ok) {
         const statsData: StatsApiResponse = await statsRes.json()
         if (statsData?.success) {
           setStats(statsData.data.stats)
-          setRecentAlerts(statsData.data.recentAlerts)
+          statsRecentAlerts = statsData.data.recentAlerts || []
           if (statsData.data.stats.tsunami) {
             setTsunamiStats(statsData.data.stats.tsunami)
           }
@@ -269,11 +340,11 @@ export default function Dashboard() {
       }
 
       // Process tsunami data first (needed for count calculation)
-      let freshTsunamiAlerts: any[] = []
+      let freshTsunamiAlerts: TsunamiAlert[] = []
       if (tsunamiRes.ok) {
         const tsunamiData: TsunamiApiResponse = await tsunamiRes.json()
         if (tsunamiData.success) {
-          freshTsunamiAlerts = tsunamiData.data.alerts || []
+          freshTsunamiAlerts = dedupeTsunamiAlerts(tsunamiData.data.alerts || [])
           setTsunamiAlerts(freshTsunamiAlerts)
           setTsunamiLastChecked(tsunamiData.data.lastChecked ?? null)
         }
@@ -290,24 +361,23 @@ export default function Dashboard() {
       if (alertHistoryRes.ok) {
         const alertHistoryData = await alertHistoryRes.json()
         if (alertHistoryData.success && alertHistoryData.data?.alerts) {
-          // Merge with existing alerts, prioritizing the history data for map
-          const historyAlerts = alertHistoryData.data.alerts.filter((alert: AlertLog) => 
-            alert.latitude != null && alert.longitude != null
-          )
-          // Update recentAlerts with more comprehensive data
-          setRecentAlerts(prev => {
-            const existingIds = new Set(prev.map(a => a.id))
-            const newAlerts = historyAlerts.filter((a: AlertLog) => !existingIds.has(a.id))
-            return [...prev, ...newAlerts]
-          })
+          historyAlerts = alertHistoryData.data.alerts
         }
       }
+
+      // Upstream dedupe: combine stat-provided recent alerts with history and dedupe by logical quake id
+      const dedupedEarthquakes = dedupeEarthquakes([
+        ...statsRecentAlerts,
+        ...historyAlerts,
+      ])
+      setRecentAlerts(dedupedEarthquakes)
       
-      // Get total unfiltered count (earthquakes + tsunamis)
+      // Get total unfiltered count (earthquakes + tsunamis) using deduped data
       if (countRes.ok) {
         const countData = await countRes.json()
         if (countData.success && countData.data?.alerts) {
-          const earthquakeCount = countData.data.alerts.filter((alert: AlertLog) => 
+          const dedupedForCount = dedupeEarthquakes(countData.data.alerts)
+          const earthquakeCount = dedupedForCount.filter((alert: AlertLog) => 
             alert.latitude != null && alert.longitude != null
           ).length
           const tsunamiCount = freshTsunamiAlerts.filter(alert => 
@@ -714,25 +784,76 @@ export default function Dashboard() {
   // Transform data for new components - combine earthquake and tsunami alerts
   // Apply magnitude filter to map events (only when not showing all)
   const mapEvents = useMemo(() => {
-    // Earthquake alerts - filter by magnitude only if not showing all
-    const earthquakeEvents = recentAlerts
+    // Earthquake alerts - filter then deduplicate by earthquakeId
+    const filtered = recentAlerts
       .filter(alert => 
         alert.latitude != null && 
         alert.longitude != null &&
-        (showAllEvents || alert.magnitude >= minMagnitude)  // Apply magnitude filter only when not showing all
+        (showAllEvents || alert.magnitude >= minMagnitude)
       )
-      .map(alert => ({
-        id: alert.id,
-        lat: alert.latitude!,
-        lng: alert.longitude!,
-        type: 'earthquake' as const,
-        magnitude: alert.magnitude,
-        title: `M${alert.magnitude.toFixed(1)} ${alert.location}`,
-        timestamp: alert.timestamp,
-        contactsAffected: alert.contactsNotified,
-        sources: alert.dataSources || [],
-        primarySource: alert.primarySource
-      }))
+
+    // Aggregate by earthquakeId (fallback to alert.id)
+    const byEqId = new Map<string, {
+      id: string
+      lat: number
+      lng: number
+      magnitude: number
+      title: string
+      timestamp: string
+      contactsAffected: number
+      sources: Set<string>
+      primarySource?: string
+    }>()
+
+    for (const a of filtered) {
+      const key = a.earthquakeId || a.id
+      const existing = byEqId.get(key)
+      if (!existing) {
+        byEqId.set(key, {
+          id: key,
+          lat: a.latitude!,
+          lng: a.longitude!,
+          magnitude: a.magnitude,
+          title: `M${a.magnitude.toFixed(1)} ${a.location}`,
+          timestamp: a.timestamp,
+          contactsAffected: a.contactsNotified,
+          sources: new Set(a.dataSources ?? []),
+          primarySource: a.primarySource
+        })
+      } else {
+        // Use latest timestamp and corresponding coords/title
+        if (new Date(a.timestamp).getTime() > new Date(existing.timestamp).getTime()) {
+          existing.timestamp = a.timestamp
+          existing.lat = a.latitude!
+          existing.lng = a.longitude!
+          existing.title = `M${a.magnitude.toFixed(1)} ${a.location}`
+        }
+        // Keep the maximum magnitude observed across sources
+        if (a.magnitude > existing.magnitude) {
+          existing.magnitude = a.magnitude
+          existing.title = `M${a.magnitude.toFixed(1)} ${a.location}`
+        }
+        // Merge sources
+        for (const s of (a.dataSources ?? [])) existing.sources.add(s)
+        // Prefer an existing primarySource; otherwise adopt incoming
+        if (!existing.primarySource && a.primarySource) existing.primarySource = a.primarySource
+        // Keep max contactsAffected (avoid inflating by summing)
+        if (a.contactsNotified > existing.contactsAffected) existing.contactsAffected = a.contactsNotified
+      }
+    }
+
+    const earthquakeEvents = Array.from(byEqId.values()).map(e => ({
+      id: e.id,
+      lat: e.lat,
+      lng: e.lng,
+      type: 'earthquake' as const,
+      magnitude: e.magnitude,
+      title: e.title,
+      timestamp: e.timestamp,
+      contactsAffected: e.contactsAffected,
+      sources: Array.from(e.sources),
+      primarySource: e.primarySource
+    }))
     
     // Tsunami alerts
     const tsunamiEvents = tsunamiAlerts
