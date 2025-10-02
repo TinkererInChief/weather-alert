@@ -38,6 +38,18 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     setMounted(true)
   }, [])
 
+  // ESC key to dismiss tooltip
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setHoveredEvent(null)
+        setTooltipPosition(null)
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [])
+
   const getMagnitudeColor = (magnitude: number) => {
     if (magnitude >= 7) return '#dc2626' // red-600
     if (magnitude >= 6) return '#ea580c' // orange-600
@@ -283,8 +295,32 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                 const marker = e.target
                 const latLng = marker.getLatLng()
                 const point = marker._map.latLngToContainerPoint(latLng)
+                const mapContainer = marker._map.getContainer()
+                const mapWidth = mapContainer.offsetWidth
+                const mapHeight = mapContainer.offsetHeight
+                
+                // Smart positioning: adjust based on marker location
+                // Tooltip is ~300px wide and ~200px tall
+                const tooltipWidth = 300
+                const tooltipHeight = 200
+                
+                let x = point.x
+                let y = point.y
+                
+                // Adjust horizontal position if too close to edges
+                if (x < tooltipWidth / 2 + 20) {
+                  x = tooltipWidth / 2 + 20 // Left edge
+                } else if (x > mapWidth - tooltipWidth / 2 - 20) {
+                  x = mapWidth - tooltipWidth / 2 - 20 // Right edge
+                }
+                
+                // Adjust vertical position if too close to top
+                if (y < tooltipHeight + 30) {
+                  y = tooltipHeight + 30 // Show below marker if near top
+                }
+                
                 setHoveredEvent(event)
-                setTooltipPosition({ x: point.x, y: point.y })
+                setTooltipPosition({ x, y })
               },
               mouseout: () => {
                 setHoveredEvent(null)
@@ -406,7 +442,10 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
             transform: 'translate(-50%, -100%)'
           }}
         >
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 p-3 min-w-[280px] max-w-[320px]">
+          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 p-3 min-w-[280px] max-w-[320px] relative">
+            <div className="absolute top-2 right-2 text-[10px] text-slate-400 font-medium">
+              ESC to close
+            </div>
             <div className="flex items-start gap-2 mb-2">
               <span className="text-2xl">{hoveredEvent.type === 'tsunami' ? '🌊' : '⚡'}</span>
               <div className="flex-1">
