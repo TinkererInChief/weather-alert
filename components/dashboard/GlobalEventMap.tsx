@@ -21,14 +21,14 @@ type EventMarker = {
 }
 
 type GlobalEventMapProps = {
-  events: EventMarker[]
   contacts?: Array<{ latitude: number; longitude: number; name: string }>
   height?: string
 }
 
 export default function GlobalEventMap({ events, contacts = [], height = '500px' }: GlobalEventMapProps) {
-  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'terrain'>('satellite')
+  const [mapStyle, setMapStyle] = useState<'satellite' | 'streets' | 'topo'>('satellite')
   const [mounted, setMounted] = useState(false)
+  const [legendVisible, setLegendVisible] = useState(true)
 
   // Fix for SSR - Leaflet needs window object
   useEffect(() => {
@@ -176,68 +176,80 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
         </button>
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/20 p-3 max-w-xs" style={{ backgroundColor: 'rgba(255, 255, 255, 0.35)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Types & Severity</h4>
+      {/* Legend - Collapsible */}
+      <div className="absolute bottom-4 left-4 z-[1000]">
+        <button
+          onClick={() => setLegendVisible(!legendVisible)}
+          className="mb-2 px-3 py-2 rounded-lg shadow-lg border border-white/20 hover:bg-white/60 transition-all text-xs font-semibold text-slate-900"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
+        >
+          {legendVisible ? '📖 Hide Legend' : '📖 Show Legend'}
+        </button>
+        
+        {legendVisible && (
+          <div className="rounded-lg shadow-lg border border-white/20 p-3 max-w-xs hover:bg-white/60 transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+            <h4 className="text-xs font-bold text-slate-900 mb-2">Event Types & Severity</h4>
         <div className="space-y-2">
           {/* Earthquake Magnitudes */}
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#84cc16', fontSize: '8px' }}>⚡</div>
-              <span className="text-slate-600">M 3.0-4.9 (Minor)</span>
+              <span className="text-slate-900 font-semibold">M 3.0-4.9 (Minor)</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#f59e0b', fontSize: '8px' }}>⚡</div>
-              <span className="text-slate-600">M 5.0-5.9 (Moderate)</span>
+              <span className="text-slate-900 font-semibold">M 5.0-5.9 (Moderate)</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#ea580c', fontSize: '8px' }}>⚡</div>
-              <span className="text-slate-600">M 6.0-6.9 (Strong)</span>
+              <span className="text-slate-900 font-semibold">M 6.0-6.9 (Strong)</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#dc2626', fontSize: '8px' }}>⚡</div>
-              <span className="text-slate-600">M 7.0+ (Major)</span>
+              <span className="text-slate-900 font-semibold">M 7.0+ (Major)</span>
             </div>
           </div>
           
           {/* Tsunami */}
-          <div className="pt-2 border-t border-slate-200">
+          <div className="pt-2 border-t border-slate-300">
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full flex items-center justify-center" style={{ backgroundColor: '#8b5cf6', fontSize: '8px' }}>🌊</div>
-              <span className="text-slate-600">Tsunami Alert</span>
+              <span className="text-slate-900 font-semibold">Tsunami Alert</span>
             </div>
           </div>
           
           {/* Time-based opacity */}
-          <div className="pt-2 border-t border-slate-200">
-            <p className="text-xs text-slate-500 mb-1">Recency:</p>
+          <div className="pt-2 border-t border-slate-300">
+            <p className="text-xs text-slate-900 font-bold mb-1">Recency:</p>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-slate-600" style={{ opacity: 1.0 }} />
-              <span className="text-slate-600">&lt; 24h</span>
+              <span className="text-slate-900 font-semibold">&lt; 24h</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-slate-600" style={{ opacity: 0.7 }} />
-              <span className="text-slate-600">1-7 days</span>
+              <span className="text-slate-900 font-semibold">1-7 days</span>
             </div>
             <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-slate-600" style={{ opacity: 0.4 }} />
-              <span className="text-slate-600">7-30 days</span>
+              <span className="text-slate-900 font-semibold">7-30 days</span>
             </div>
           </div>
         </div>
+          </div>
+        )}
       </div>
 
       {/* Event Stats */}
-      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/20 p-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.35)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
+      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-white/20 p-3 hover:bg-white/60 transition-all" style={{ backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
         <div className="flex items-center gap-3">
           <div className="text-center">
-            <div className="text-lg font-bold text-slate-900">{events.length}</div>
-            <div className="text-xs text-slate-500">Events</div>
+            <div className="text-xl font-extrabold text-slate-900">{events.length}</div>
+            <div className="text-xs text-slate-900 font-semibold">Events</div>
           </div>
-          <div className="w-px h-8 bg-slate-200" />
+          <div className="w-px h-8 bg-slate-400" />
           <div className="text-center">
-            <div className="text-lg font-bold text-slate-900">{contacts.length}</div>
-            <div className="text-xs text-slate-500">Contacts</div>
+            <div className="text-xl font-extrabold text-slate-900">{contacts.length}</div>
+            <div className="text-xs text-slate-900 font-semibold">Contacts</div>
           </div>
         </div>
       </div>
