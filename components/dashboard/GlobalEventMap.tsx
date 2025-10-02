@@ -168,7 +168,8 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
         <button
           onClick={cycleMapStyle}
-          className="p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+          className="p-2 rounded-lg shadow-lg border border-slate-200/50 hover:bg-white/90 transition-colors"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
           title={`Current: ${mapStyle} (click to cycle)`}
         >
           <Layers className="h-4 w-4 text-slate-700" />
@@ -176,7 +177,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] rounded-lg shadow-lg border border-slate-200/50 p-3 max-w-xs" style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(8px)' }}>
+      <div className="absolute bottom-4 left-4 z-[1000] rounded-lg shadow-lg border border-slate-200/50 p-3 max-w-xs" style={{ backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
         <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Types & Severity</h4>
         <div className="space-y-2">
           {/* Earthquake Magnitudes */}
@@ -227,7 +228,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Event Stats */}
-      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3">
+      <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-slate-200/50 p-3" style={{ backgroundColor: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}>
         <div className="flex items-center gap-3">
           <div className="text-center">
             <div className="text-lg font-bold text-slate-900">{events.length}</div>
