@@ -1155,6 +1155,7 @@ export default function Dashboard() {
             
             <GlobalEventMap
               events={mapEvents}
+              totalCount={totalUnfilteredCount}
               height="500px"
             />
           </div>

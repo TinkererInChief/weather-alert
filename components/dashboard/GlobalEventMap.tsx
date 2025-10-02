@@ -24,9 +24,10 @@ type GlobalEventMapProps = {
   events: EventMarker[]
   contacts?: Array<{ latitude: number; longitude: number; name: string }>
   height?: string
+  totalCount?: number
 }
 
-export default function GlobalEventMap({ events, contacts = [], height = '500px' }: GlobalEventMapProps) {
+export default function GlobalEventMap({ events, contacts = [], height = '500px', totalCount }: GlobalEventMapProps) {
   const [mapStyle, setMapStyle] = useState<'satellite' | 'streets' | 'topo'>('satellite')
   const [mounted, setMounted] = useState(false)
   const [legendVisible, setLegendVisible] = useState(true)
@@ -96,8 +97,9 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     if (event.type === 'earthquake' && event.magnitude) {
       return getMagnitudeColor(event.magnitude)
     }
-    if (event.type === 'tsunami' && event.severity) {
-      return getSeverityColor(event.severity)
+    if (event.type === 'tsunami') {
+      // Legend uses a fixed purple for tsunami alerts
+      return '#8b5cf6'
     }
     return '#6b7280'
   }
@@ -282,8 +284,8 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       <div className="absolute top-4 left-4 z-[1000] rounded-lg shadow-lg border border-slate-200 p-3 bg-white">
         <div className="flex items-center gap-3">
           <div className="text-center">
-            <div className="text-xl font-bold text-slate-900">{events.length}</div>
-            <div className="text-xs text-slate-600">Events</div>
+            <div className="text-xl font-bold text-slate-900">{typeof totalCount === 'number' ? `${events.length} / ${totalCount}` : events.length}</div>
+            <div className="text-xs text-slate-600">{typeof totalCount === 'number' ? 'Events (shown/all)' : 'Events'}</div>
           </div>
           <div className="w-px h-8 bg-slate-200" />
           <div className="text-center">
