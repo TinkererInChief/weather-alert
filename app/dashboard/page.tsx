@@ -676,7 +676,9 @@ export default function Dashboard() {
         magnitude: alert.magnitude,
         title: `M${alert.magnitude.toFixed(1)} ${alert.location}`,
         timestamp: alert.timestamp,
-        contactsAffected: alert.contactsNotified
+        contactsAffected: alert.contactsNotified,
+        sources: (alert as any).dataSources || [],
+        primarySource: (alert as any).primarySource
       }))
     
     // Tsunami alerts

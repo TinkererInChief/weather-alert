@@ -16,6 +16,8 @@ type EventMarker = {
   title: string
   timestamp: string
   contactsAffected?: number
+  sources?: string[]  // Data sources (USGS, EMSC, JMA, etc.)
+  primarySource?: string  // Primary data source
 }
 
 type GlobalEventMapProps = {
@@ -75,6 +77,11 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
 
   const getTileLayer = () => {
     switch (mapStyle) {
+      case 'streets':
+        return {
+          url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+        }
       case 'satellite':
         return {
           url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -84,11 +91,6 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
         return {
           url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
           attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-        }
-      default: // streets
-        return {
-          url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         }
     }
   }
@@ -174,7 +176,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       </div>
 
       {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3 max-w-xs">
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-slate-200 p-3 max-w-xs">
         <h4 className="text-xs font-semibold text-slate-900 mb-2">Event Types & Severity</h4>
         <div className="space-y-2">
           {/* Earthquake Magnitudes */}
@@ -302,6 +304,26 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                       <span className="font-medium">Contacts Notified:</span>
                       <span className="font-semibold text-green-600">{event.contactsAffected}</span>
                     </p>
+                  )}
+                  {event.sources && event.sources.length > 0 && (
+                    <div className="pt-1 border-t border-slate-200">
+                      <p className="font-medium mb-1">Data Sources:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {event.sources.map((source, idx) => (
+                          <span
+                            key={idx}
+                            className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                              source === event.primarySource
+                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                            title={source === event.primarySource ? 'Primary Source' : ''}
+                          >
+                            {source}{source === event.primarySource ? ' ⭐' : ''}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   <p className="text-xs text-slate-500 pt-1">
                     {(() => {
