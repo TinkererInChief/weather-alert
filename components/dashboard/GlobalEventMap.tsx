@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, CircleMarker, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, ZoomControl, ScaleControl, CircleMarker, useMap } from 'react-leaflet'
 import { MapPin, Layers, Maximize2, Minimize2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -499,89 +499,47 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
               mouseout: () => {
                 setHoveredEvent(null)
                 setTooltipPosition(null)
+              },
+              // Mobile/touch support: tap to toggle tooltip
+              click: (e) => {
+                const marker = e.target
+                const latLng = marker.getLatLng()
+                const point = marker._map.latLngToContainerPoint(latLng)
+                const mapContainer = marker._map.getContainer()
+                const mapWidth = mapContainer.offsetWidth
+                const mapHeight = mapContainer.offsetHeight
+                
+                const tooltipWidth = 300
+                const tooltipHeight = 200
+                
+                let x = point.x
+                let y = point.y
+                let placement: 'above' | 'below' = 'above'
+                
+                if (x < tooltipWidth / 2 + 20) {
+                  x = tooltipWidth / 2 + 20
+                } else if (x > mapWidth - tooltipWidth / 2 - 20) {
+                  x = mapWidth - tooltipWidth / 2 - 20
+                }
+                
+                if (y < tooltipHeight + 30) {
+                  placement = 'below'
+                }
+                if (placement === 'below' && (mapHeight - y) < tooltipHeight + 30) {
+                  placement = 'above'
+                }
+                
+                // Toggle tooltip on click/tap (for touch devices)
+                if (hoveredEvent?.id === event.id) {
+                  setHoveredEvent(null)
+                  setTooltipPosition(null)
+                } else {
+                  setHoveredEvent(event)
+                  setTooltipPosition({ x, y, placement })
+                }
               }
             }}
-          >
-            {/* Keep popup for mobile/touch devices */}
-            <Popup>
-              <div className="p-2 min-w-[280px]">
-                <div className="flex items-start gap-2 mb-2">
-                  <span className="text-2xl">{event.type === 'tsunami' ? '🌊' : '⚡'}</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 mb-1">{event.title}</h3>
-                    <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                      event.type === 'earthquake' 
-                        ? 'bg-orange-100 text-orange-800' 
-                        : 'bg-purple-100 text-purple-800'
-                    }`}>
-                      {event.type === 'earthquake' ? 'Earthquake' : 'Tsunami'}
-                    </span>
-                  </div>
-                </div>
-                <div className="space-y-1.5 text-xs text-slate-600">
-                  {event.magnitude && (
-                    <p className="flex justify-between">
-                      <span className="font-medium">Magnitude:</span>
-                      <span className="font-semibold">{event.magnitude.toFixed(1)}</span>
-                    </p>
-                  )}
-                  {event.severity && (
-                    <p className="flex justify-between">
-                      <span className="font-medium">Severity:</span>
-                      <span className="font-semibold">Level {event.severity}</span>
-                    </p>
-                  )}
-                  <p className="flex justify-between">
-                    <span className="font-medium">Time:</span>
-                    <span>{new Date(event.timestamp).toLocaleString()}</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="font-medium">Location:</span>
-                    <span>{event.lat.toFixed(2)}°, {event.lng.toFixed(2)}°</span>
-                  </p>
-                  {event.contactsAffected !== undefined && event.contactsAffected > 0 && (
-                    <p className="flex justify-between pt-1 border-t border-slate-200">
-                      <span className="font-medium">Contacts Notified:</span>
-                      <span className="font-semibold text-green-600">{event.contactsAffected}</span>
-                    </p>
-                  )}
-                  <div className="pt-1 border-t border-slate-200">
-                    <p className="font-medium mb-1">Data Sources:</p>
-                    {event.sources && event.sources.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {event.sources.map((source, idx) => (
-                          <span
-                            key={idx}
-                            className={`inline-block px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                              source === event.primarySource
-                                ? 'bg-blue-100 text-blue-800 border border-blue-300'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
-                            title={source === event.primarySource ? 'Primary Source' : ''}
-                          >
-                            {source}{source === event.primarySource ? ' ⭐' : ''}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-500 italic">
-                        Source data not available (legacy event)
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-slate-500 pt-1">
-                    {(() => {
-                      const hoursSince = (Date.now() - new Date(event.timestamp).getTime()) / (1000 * 60 * 60)
-                      if (hoursSince < 1) return '⏰ Just now'
-                      if (hoursSince < 24) return `⏰ ${Math.floor(hoursSince)} hours ago`
-                      if (hoursSince < 168) return `🕐 ${Math.floor(hoursSince / 24)} days ago`
-                      return `🕒 ${Math.floor(hoursSince / 24)} days ago`
-                    })()}
-                  </p>
-                </div>
-              </div>
-            </Popup>
-          </Marker>
+          />
         ))}
 
         {/* Contact Markers */}
@@ -597,11 +555,6 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
               weight: 1
             }}
           >
-            <Popup>
-              <div className="text-xs">
-                <strong>{contact.name}</strong>
-              </div>
-            </Popup>
           </CircleMarker>
         ))}
       </MapContainer>
