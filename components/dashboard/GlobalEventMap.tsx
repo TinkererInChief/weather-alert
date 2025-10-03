@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, CircleMarker } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, CircleMarker, useMap } from 'react-leaflet'
 import { MapPin, Layers, Maximize2, Minimize2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -37,6 +37,8 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number; placement: 'above' | 'below' } | null>(null)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
   const tooltipRef = useRef<HTMLDivElement | null>(null)
+  const mapRef = useRef<L.Map | null>(null)
+  const prevViewRef = useRef<{ center: L.LatLngExpression; zoom: number; size: { w: number; h: number } } | null>(null)
 
   // Fix for SSR - Leaflet needs window object
   useEffect(() => {
@@ -83,6 +85,89 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
+  }, [isFullscreen])
+
+  // Binder to capture map instance from within MapContainer
+  const MapInstanceBinder = () => {
+    const map = useMap()
+    useEffect(() => {
+      mapRef.current = map
+      // Ensure sizing is correct after mount
+      setTimeout(() => map.invalidateSize(), 0)
+    }, [map])
+    return null
+  }
+
+  // Sync isFullscreen with native fullscreen and fix map size
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const onFsChange = () => {
+      const fsEl = (document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement) as Element | null
+      setIsFullscreen(fsEl === wrapperRef.current)
+      if (mapRef.current) {
+        mapRef.current.invalidateSize()
+        setTimeout(() => mapRef.current && mapRef.current.invalidateSize(), 300)
+      }
+    }
+    document.addEventListener('fullscreenchange', onFsChange)
+    document.addEventListener('webkitfullscreenchange', onFsChange as any)
+    document.addEventListener('mozfullscreenchange', onFsChange as any)
+    document.addEventListener('MSFullscreenChange', onFsChange as any)
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange)
+      document.removeEventListener('webkitfullscreenchange', onFsChange as any)
+      document.removeEventListener('mozfullscreenchange', onFsChange as any)
+      document.removeEventListener('MSFullscreenChange', onFsChange as any)
+    }
+  }, [])
+
+  // When entering/exiting fullscreen, lock body scroll and invalidate Leaflet size
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const el = document.documentElement
+    if (isFullscreen) {
+      el.style.overflow = 'hidden'
+    } else {
+      el.style.overflow = ''
+    }
+
+    // Invalidate size immediately and after transition to recalc tiles
+    if (mapRef.current) {
+      const m = mapRef.current
+      m.invalidateSize()
+      try { window.dispatchEvent(new Event('resize')) } catch {}
+      const t = window.setTimeout(() => m.invalidateSize(), 350)
+      // Adjust zoom to maintain approximate visual scale when toggling
+      const t2 = window.setTimeout(() => {
+        try {
+          const map = mapRef.current
+          if (!map) return
+          const size = map.getSize()
+          const newH = size.y
+          const prev = prevViewRef.current
+          if (prev) {
+            // Maintain approximate vertical scale by using height ratio only
+            const ratio = newH / Math.max(1, prev.size.h)
+            // Each zoom level doubles scale => delta = log2(ratio)
+            const delta = Math.log2(Math.max(0.5, Math.min(4, ratio)))
+            const target = prev.zoom + delta
+            const clamped = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), target))
+            map.setView(map.getCenter(), clamped, { animate: false })
+          }
+        } catch {}
+      }, 400)
+      const t3 = window.setTimeout(() => {
+        try { mapRef.current && mapRef.current.invalidateSize() } catch {}
+      }, 800)
+      return () => {
+        window.clearTimeout(t)
+        window.clearTimeout(t2)
+        window.clearTimeout(t3)
+      }
+    }
   }, [isFullscreen])
 
   const getEventColor = (event: EventMarker) => {
@@ -188,22 +273,63 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
 
   const tileLayer = getTileLayer()
 
+  const requestFullscreen = () => {
+    const el = wrapperRef.current as any
+    if (!el) return
+    // Store previous view before entering FS to restore/scale
+    if (mapRef.current) {
+      const m = mapRef.current
+      const s = m.getSize()
+      prevViewRef.current = { center: m.getCenter(), zoom: m.getZoom(), size: { w: s.x, h: s.y } }
+    }
+    if (el.requestFullscreen) el.requestFullscreen()
+    else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen()
+    else if (el.mozRequestFullScreen) el.mozRequestFullScreen()
+    else if (el.msRequestFullscreen) el.msRequestFullscreen()
+    else setIsFullscreen(true) // fallback CSS-only
+  }
+
+  const exitFullscreen = () => {
+    const d: any = document
+    // Restore previous view after exiting FS
+    const restore = () => {
+      try {
+        const prev = prevViewRef.current
+        const map = mapRef.current
+        if (prev && map) {
+          map.setView(prev.center as L.LatLngExpression, prev.zoom, { animate: false })
+          // clear stored
+          prevViewRef.current = null
+        }
+      } catch {}
+    }
+    if (document.exitFullscreen) { document.exitFullscreen(); restore() }
+    else if (d.webkitExitFullscreen) { d.webkitExitFullscreen(); restore() }
+    else if (d.mozCancelFullScreen) { d.mozCancelFullScreen(); restore() }
+    else if (d.msExitFullscreen) { d.msExitFullscreen(); restore() }
+    else { setIsFullscreen(false); restore() }
+  }
+
   const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen)
+    const next = !isFullscreen
+    setIsFullscreen(next)
     // Close tooltip when toggling fullscreen
     setHoveredEvent(null)
     setTooltipPosition(null)
+    // Best-effort native fullscreen; ignore failures
+    try {
+      if (next) requestFullscreen()
+      else exitFullscreen()
+    } catch {}
   }
 
   return (
     <div 
       ref={wrapperRef} 
       className={`relative bg-white border border-slate-200 overflow-hidden transition-all ${
-        isFullscreen 
-          ? 'fixed inset-0 z-[9999] rounded-none' 
-          : 'rounded-xl'
+        isFullscreen ? 'fixed inset-0 z-[9999] rounded-none' : 'rounded-xl'
       }`}
-      style={{ height: isFullscreen ? '100vh' : height }}
+      style={{ height: isFullscreen ? '100vh' : height, width: isFullscreen ? '100vw' : undefined }}
     >
       {/* Map Controls */}
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
@@ -314,6 +440,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
         zoomControl={false}
         scrollWheelZoom={true}
       >
+        <MapInstanceBinder />
         <TileLayer
           url={tileLayer.url}
           attribution={tileLayer.attribution}
