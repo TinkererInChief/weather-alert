@@ -408,10 +408,10 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                   <p className="text-xs text-slate-500 pt-1">
                     {(() => {
                       const hoursSince = (Date.now() - new Date(event.timestamp).getTime()) / (1000 * 60 * 60)
-                      if (hoursSince < 1) return '🔴 Just now'
-                      if (hoursSince < 24) return `🔴 ${Math.floor(hoursSince)} hours ago`
-                      if (hoursSince < 168) return `🟡 ${Math.floor(hoursSince / 24)} days ago`
-                      return `⚪ ${Math.floor(hoursSince / 24)} days ago`
+                      if (hoursSince < 1) return '⏰ Just now'
+                      if (hoursSince < 24) return `⏰ ${Math.floor(hoursSince)} hours ago`
+                      if (hoursSince < 168) return `🕐 ${Math.floor(hoursSince / 24)} days ago`
+                      return `🕒 ${Math.floor(hoursSince / 24)} days ago`
                     })()}
                   </p>
                 </div>
@@ -515,10 +515,10 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
               <p className="text-xs text-slate-500 pt-1">
                 {(() => {
                   const hoursSince = (Date.now() - new Date(hoveredEvent.timestamp).getTime()) / (1000 * 60 * 60)
-                  if (hoursSince < 1) return '🔴 Just now'
-                  if (hoursSince < 24) return `🔴 ${Math.floor(hoursSince)} hours ago`
-                  if (hoursSince < 168) return `🟡 ${Math.floor(hoursSince / 24)} days ago`
-                  return `⚪ ${Math.floor(hoursSince / 24)} days ago`
+                  if (hoursSince < 1) return '⏰ Just now'
+                  if (hoursSince < 24) return `⏰ ${Math.floor(hoursSince)} hours ago`
+                  if (hoursSince < 168) return `🕐 ${Math.floor(hoursSince / 24)} days ago`
+                  return `🕒 ${Math.floor(hoursSince / 24)} days ago`
                 })()}
               </p>
             </div>
