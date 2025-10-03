@@ -6,6 +6,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
+import { getMagnitudeClasses } from '@/lib/utils/event-colors'
 
 type Alert = {
   id: string
@@ -108,10 +109,7 @@ export default function AlertHistoryPage() {
   }
   
   const getMagnitudeColor = (magnitude: number) => {
-    if (magnitude >= 7) return 'text-red-600 bg-red-50'
-    if (magnitude >= 6) return 'text-orange-600 bg-orange-50'
-    if (magnitude >= 5) return 'text-yellow-600 bg-yellow-50'
-    return 'text-blue-600 bg-blue-50'
+    return getMagnitudeClasses(magnitude).combined
   }
   
   const formatDate = (date: string) => {

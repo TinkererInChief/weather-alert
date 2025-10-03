@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { AlertTriangle, Users, MessageSquare, Mail, Phone, MessageCircle, CheckCircle, XCircle, Clock, MapPin, Activity } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
+import AuthGuard from '@/components/auth/AuthGuard'
+import { Activity, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { getMagnitudeClasses } from '@/lib/utils/event-colors'
 
 interface AlertDetail {
   id: string
@@ -86,10 +88,7 @@ export default function AlertsPage() {
   }
 
   const getMagnitudeColor = (magnitude: number) => {
-    if (magnitude >= 7) return 'text-red-600 bg-red-50'
-    if (magnitude >= 6) return 'text-orange-600 bg-orange-50'
-    if (magnitude >= 5) return 'text-yellow-600 bg-yellow-50'
-    return 'text-green-600 bg-green-50'
+    return getMagnitudeClasses(magnitude).combined
   }
 
   if (loading) {

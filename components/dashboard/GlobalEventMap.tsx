@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, Circ
 import { MapPin, Layers } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { getMagnitudeColor, getTsunamiColor, getEventOpacity as getOpacity, getEventSize as getSize } from '@/lib/utils/event-colors'
 
 type EventMarker = {
   id: string
@@ -79,44 +80,22 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     return () => window.removeEventListener('keydown', handleEscape)
   }, [])
 
-  const getMagnitudeColor = (magnitude: number) => {
-    if (magnitude >= 7) return '#dc2626' // red-600 (M7.0+)
-    if (magnitude >= 6) return '#ea580c' // orange-600 (M6.0-6.9)
-    if (magnitude >= 5) return '#f59e0b' // amber-500 (M5.0-5.9)
-    return '#84cc16' // lime-500 (M3.0-4.9 and below)
-  }
-
-  const getSeverityColor = (severity: number) => {
-    if (severity >= 4) return '#dc2626'
-    if (severity >= 3) return '#ea580c'
-    if (severity >= 2) return '#f59e0b'
-    return '#3b82f6'
-  }
-
   const getEventColor = (event: EventMarker) => {
     if (event.type === 'earthquake' && event.magnitude) {
       return getMagnitudeColor(event.magnitude)
     }
     if (event.type === 'tsunami') {
-      // Legend uses a fixed purple for tsunami alerts
-      return '#8b5cf6'
+      return getTsunamiColor()
     }
     return '#6b7280'
   }
 
   const getEventSize = (event: EventMarker) => {
-    const magnitude = event.magnitude || event.severity || 4
-    return Math.max(8, magnitude * 2.5)
+    return getSize(event.magnitude, event.severity)
   }
 
   const getEventOpacity = (timestamp: string) => {
-    const eventTime = new Date(timestamp).getTime()
-    const now = Date.now()
-    const hoursSince = (now - eventTime) / (1000 * 60 * 60)
-    
-    if (hoursSince < 24) return 1.0 // Last 24 hours - full opacity
-    if (hoursSince < 168) return 0.7 // 1-7 days - 70% opacity
-    return 0.4 // 7-30 days - 40% opacity
+    return getOpacity(timestamp)
   }
 
   const getTileLayer = () => {
