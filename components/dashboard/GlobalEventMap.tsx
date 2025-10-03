@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, ZoomControl, ScaleControl, CircleMarker } from 'react-leaflet'
-import { MapPin, Layers } from 'lucide-react'
+import { MapPin, Layers, Maximize2, Minimize2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getMagnitudeColor, getTsunamiColor, getEventOpacity as getOpacity, getEventSize as getSize } from '@/lib/utils/event-colors'
@@ -32,6 +32,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
   const [mapStyle, setMapStyle] = useState<'satellite' | 'streets' | 'topo'>('satellite')
   const [mounted, setMounted] = useState(false)
   const [legendVisible, setLegendVisible] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
   const [hoveredEvent, setHoveredEvent] = useState<EventMarker | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number; placement: 'above' | 'below' } | null>(null)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
@@ -183,10 +184,48 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
 
   const tileLayer = getTileLayer()
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen)
+    // Close tooltip when toggling fullscreen
+    setHoveredEvent(null)
+    setTooltipPosition(null)
+  }
+
+  // Handle ESC key to exit fullscreen
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [isFullscreen])
+
   return (
-    <div ref={wrapperRef} className="relative bg-white rounded-xl border border-slate-200 overflow-hidden">
+    <div 
+      ref={wrapperRef} 
+      className={`relative bg-white border border-slate-200 overflow-hidden transition-all ${
+        isFullscreen 
+          ? 'fixed inset-0 z-[9999] rounded-none' 
+          : 'rounded-xl'
+      }`}
+      style={{ height: isFullscreen ? '100vh' : height }}
+    >
       {/* Map Controls */}
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+        <button
+          onClick={toggleFullscreen}
+          className="p-2 rounded-lg shadow-lg border border-white/30 hover:bg-white/70 transition-colors"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.5)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)' }}
+          title={isFullscreen ? 'Exit fullscreen (ESC)' : 'Expand to fullscreen'}
+        >
+          {isFullscreen ? (
+            <Minimize2 className="h-4 w-4 text-slate-700" />
+          ) : (
+            <Maximize2 className="h-4 w-4 text-slate-700" />
+          )}
+        </button>
         <button
           onClick={cycleMapStyle}
           className="p-2 rounded-lg shadow-lg border border-white/30 hover:bg-white/70 transition-colors"
