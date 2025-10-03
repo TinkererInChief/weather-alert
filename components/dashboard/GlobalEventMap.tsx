@@ -616,54 +616,54 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
             transform: tooltipPosition.placement === 'below' ? 'translate(-50%, 0)' : 'translate(-50%, -100%)'
           }}
         >
-          <div className="bg-white rounded-lg shadow-2xl border border-slate-200 p-3 min-w-[280px] max-w-[320px] relative">
+          <div className="bg-black/60 backdrop-blur-sm rounded-lg shadow-2xl border border-white/20 p-3 min-w-[280px] max-w-[320px] relative">
             <div className="flex items-start gap-2 mb-2">
               <span className="text-2xl">{hoveredEvent.type === 'tsunami' ? '🌊' : '⚡'}</span>
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-900 text-sm mb-1">{hoveredEvent.title}</h3>
+                <h3 className="font-semibold text-white text-sm mb-1">{hoveredEvent.title}</h3>
                 <span className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
                   hoveredEvent.type === 'earthquake' 
-                    ? 'bg-orange-100 text-orange-800' 
-                    : 'bg-purple-100 text-purple-800'
+                    ? 'bg-orange-500/80 text-white' 
+                    : 'bg-purple-500/80 text-white'
                 }`}>
                   {hoveredEvent.type === 'earthquake' ? 'Earthquake' : 'Tsunami'}
                 </span>
               </div>
             </div>
-            <div className="space-y-1.5 text-xs text-slate-600">
+            <div className="space-y-1.5 text-xs text-white/90">
               {hoveredEvent.magnitude && (
                 <p className="flex justify-between">
                   <span className="font-medium">Magnitude:</span>
-                  <span className="font-semibold text-slate-900">{hoveredEvent.magnitude.toFixed(1)}</span>
+                  <span className="font-semibold text-white">{hoveredEvent.magnitude.toFixed(1)}</span>
                 </p>
               )}
               {hoveredEvent.severity && (
                 <p className="flex justify-between">
                   <span className="font-medium">Severity:</span>
-                  <span className="font-semibold text-slate-900">Level {hoveredEvent.severity}</span>
+                  <span className="font-semibold text-white">Level {hoveredEvent.severity}</span>
                 </p>
               )}
               <p className="flex justify-between">
                 <span className="font-medium">Time:</span>
-                <span className="text-slate-900">{new Date(hoveredEvent.timestamp).toLocaleString()}</span>
+                <span className="text-white">{new Date(hoveredEvent.timestamp).toLocaleString()}</span>
               </p>
               {hoveredEvent.contactsAffected !== undefined && (
                 <p className="flex justify-between">
                   <span className="font-medium">Contacts Notified:</span>
-                  <span className="font-semibold text-blue-600">{hoveredEvent.contactsAffected}</span>
+                  <span className="font-semibold text-blue-300">{hoveredEvent.contactsAffected}</span>
                 </p>
               )}
               {hoveredEvent.sources && hoveredEvent.sources.length > 0 && (
-                <div className="pt-2 border-t border-slate-200">
-                  <p className="font-medium mb-1">Data Sources:</p>
+                <div className="pt-2 border-t border-white/20">
+                  <p className="font-medium mb-1 text-white">Data Sources:</p>
                   <div className="flex flex-wrap gap-1">
                     {hoveredEvent.sources.map((source, idx) => (
                       <span 
                         key={idx}
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
                           source === hoveredEvent.primarySource
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-slate-100 text-slate-700'
+                            ? 'bg-blue-500/80 text-white'
+                            : 'bg-white/20 text-white'
                         }`}
                       >
                         {source === hoveredEvent.primarySource && '⭐ '}
@@ -673,7 +673,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                   </div>
                 </div>
               )}
-              <p className="text-xs text-slate-500 pt-1">
+              <p className="text-xs text-white/70 pt-1">
                 {(() => {
                   const hoursSince = (Date.now() - new Date(hoveredEvent.timestamp).getTime()) / (1000 * 60 * 60)
                   if (hoursSince < 1) return '⏰ Just now'
@@ -683,8 +683,8 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                 })()}
               </p>
             </div>
-            <div className="mt-2 pt-2 border-t border-slate-100 text-center">
-              <span className="text-[10px] text-slate-400 font-medium">Press ESC to close</span>
+            <div className="mt-2 pt-2 border-t border-white/20 text-center">
+              <span className="text-[10px] text-white/60 font-medium">Press ESC to close</span>
             </div>
           </div>
         </div>
