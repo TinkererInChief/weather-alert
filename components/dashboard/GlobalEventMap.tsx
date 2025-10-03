@@ -69,17 +69,21 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     }
   }, [hoveredEvent, tooltipPosition])
 
-  // ESC key to dismiss tooltip
+  // ESC key to dismiss tooltip or exit fullscreen
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setHoveredEvent(null)
-        setTooltipPosition(null)
+        if (isFullscreen) {
+          setIsFullscreen(false)
+        } else {
+          setHoveredEvent(null)
+          setTooltipPosition(null)
+        }
       }
     }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
-  }, [])
+  }, [isFullscreen])
 
   const getEventColor = (event: EventMarker) => {
     if (event.type === 'earthquake' && event.magnitude) {
@@ -190,17 +194,6 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
     setHoveredEvent(null)
     setTooltipPosition(null)
   }
-
-  // Handle ESC key to exit fullscreen
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isFullscreen) {
-        setIsFullscreen(false)
-      }
-    }
-    window.addEventListener('keydown', handleEscape)
-    return () => window.removeEventListener('keydown', handleEscape)
-  }, [isFullscreen])
 
   return (
     <div 
