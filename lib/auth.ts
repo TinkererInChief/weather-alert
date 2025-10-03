@@ -192,10 +192,19 @@ export const authOptions: NextAuthOptions = {
 
           return userResult
         } catch (error) {
-          console.error('OTP authentication failed:', error)
-          // Return null to indicate authentication failure
-          // NextAuth will handle the error display
-          return null
+          console.error('OTP authentication failed:', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            phone: credentials.phone?.slice(-4), // Only last 4 digits for privacy
+            timestamp: new Date().toISOString(),
+            errorType: error instanceof Error ? error.constructor.name : 'Unknown'
+          })
+          
+          // Rethrow the error to preserve specific error messages
+          // This allows NextAuth to display the actual OTP error to the user
+          if (error instanceof Error) {
+            throw error
+          }
+          throw new Error('OTP verification failed. Please try again.')
         }
       }
     })
