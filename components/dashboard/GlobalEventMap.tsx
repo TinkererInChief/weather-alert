@@ -617,9 +617,6 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
           }}
         >
           <div className="bg-white rounded-lg shadow-2xl border border-slate-200 p-3 min-w-[280px] max-w-[320px] relative">
-            <div className="absolute top-2 right-2 text-[10px] text-slate-400 font-medium">
-              ESC to close
-            </div>
             <div className="flex items-start gap-2 mb-2">
               <span className="text-2xl">{hoveredEvent.type === 'tsunami' ? '🌊' : '⚡'}</span>
               <div className="flex-1">
@@ -685,6 +682,9 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                   return `🕒 ${Math.floor(hoursSince / 24)} days ago`
                 })()}
               </p>
+            </div>
+            <div className="mt-2 pt-2 border-t border-slate-100 text-center">
+              <span className="text-[10px] text-slate-400 font-medium">Press ESC to close</span>
             </div>
           </div>
         </div>
