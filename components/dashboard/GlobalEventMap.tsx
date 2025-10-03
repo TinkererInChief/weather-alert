@@ -310,7 +310,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       <MapContainer
         center={[20, 0]}
         zoom={2}
-        style={{ width: '100%', height }}
+        style={{ width: '100%', height: '100%' }}
         zoomControl={false}
         scrollWheelZoom={true}
       >
