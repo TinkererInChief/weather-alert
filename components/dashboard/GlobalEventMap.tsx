@@ -147,15 +147,20 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
           if (!map) return
           const size = map.getSize()
           const newH = size.y
+          const newW = size.x
           const prev = prevViewRef.current
           if (prev) {
-            // Maintain approximate vertical scale by using height ratio only
-            const ratio = newH / Math.max(1, prev.size.h)
+            // Maintain approximate visual scale: use the larger dimension ratio
+            const ratioH = newH / Math.max(1, prev.size.h)
+            const ratioW = newW / Math.max(1, prev.size.w)
+            const ratio = Math.max(ratioH, ratioW)
             // Each zoom level doubles scale => delta = log2(ratio)
             const delta = Math.log2(Math.max(0.5, Math.min(4, ratio)))
             const target = prev.zoom + delta
             const clamped = Math.max(map.getMinZoom(), Math.min(map.getMaxZoom(), target))
             map.setView(map.getCenter(), clamped, { animate: false })
+            // Extra reflow after zoom change
+            setTimeout(() => { try { map.invalidateSize() } catch {} }, 50)
           }
         } catch {}
       }, 400)
@@ -329,7 +334,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
       className={`relative bg-white border border-slate-200 overflow-hidden transition-all ${
         isFullscreen ? 'fixed inset-0 z-[9999] rounded-none' : 'rounded-xl'
       }`}
-      style={{ height: isFullscreen ? '100vh' : height, width: isFullscreen ? '100vw' : undefined }}
+      style={{ height: isFullscreen ? '100dvh' : height, width: isFullscreen ? '100vw' : undefined }}
     >
       {/* Map Controls */}
       <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
