@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
-import { Activity, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Activity, AlertTriangle, CheckCircle2, XCircle, ChevronDown, ChevronUp, MessageSquare, Mail, MessageCircle, Phone, Clock, Users, CheckCircle } from 'lucide-react'
 import { getMagnitudeClasses } from '@/lib/utils/event-colors'
 
 interface AlertDetail {
