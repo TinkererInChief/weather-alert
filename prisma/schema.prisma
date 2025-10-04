@@ -24,6 +24,12 @@ model User {
   isActive      Boolean  @default(true)
   lastLoginAt   DateTime?
   
+  // User approval workflow
+  approvalStatus String   @default("pending") // "pending", "approved", "rejected"
+  approvedBy     String?
+  approvedAt     DateTime?
+  rejectionReason String?
+  
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

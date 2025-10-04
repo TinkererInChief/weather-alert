@@ -2,7 +2,7 @@ import { EarthquakeService } from './earthquake-service'
 import { SMSService } from './sms-service'
 import { db } from './database'
 import { EarthquakeFeature } from '@/types/earthquake'
-import { TsunamiService, TsunamiAlertLevel } from './tsunami-service'
+import { TsunamiService } from './services/tsunami-service'
 import { voiceService, VoiceAlertType } from './voice-service'
 import { NotificationService } from './services/notification-service'
 import { prisma } from './prisma'
@@ -218,9 +218,6 @@ export class AlertManager {
    */
   private async assessTsunamiThreat(earthquake: EarthquakeFeature): Promise<any> {
     try {
-      // Fetch latest tsunami alerts to correlate
-      const tsunamiAlerts = await TsunamiService.fetchLatestAlerts()
-      
       // Create earthquake data object for assessment
       const earthquakeData = {
         magnitude: earthquake.properties.mag || 0,
@@ -230,19 +227,45 @@ export class AlertManager {
         location: earthquake.properties.place || 'Unknown location'
       }
 
-      // Assess tsunami threat
-      const threat = TsunamiService.assessTsunamiThreat(earthquakeData, tsunamiAlerts)
+      // Use TsunamiService to analyze earthquake for tsunami potential
+      const tsunamiService = TsunamiService.getInstance()
+      const wouldGenerateTsunami = await tsunamiService.analyzeEarthquakeForTsunami(earthquakeData)
       
-      if (threat.level !== TsunamiAlertLevel.INFORMATION) {
-        console.log(`🌊 Tsunami threat assessed: ${threat.level} (confidence: ${Math.round(threat.confidence * 100)}%)`)
+      // Simple threat assessment based on magnitude and depth
+      const mag = earthquakeData.magnitude
+      const depth = earthquakeData.depth
+      
+      let level = 'information'
+      let confidence = 0
+      
+      if (wouldGenerateTsunami) {
+        if (mag >= 8.5 && depth <= 35) {
+          level = 'emergency'
+          confidence = 0.9
+        } else if (mag >= 7.5 && depth <= 50) {
+          level = 'warning'
+          confidence = 0.7
+        } else if (mag >= 7.0) {
+          level = 'advisory'
+          confidence = 0.5
+        } else {
+          level = 'watch'
+          confidence = 0.3
+        }
+        
+        console.log(`🌊 Tsunami threat assessed: ${level} (confidence: ${Math.round(confidence * 100)}%)`)
       }
 
-      return threat
+      return {
+        level,
+        confidence,
+        affectedRegions: [earthquake.properties.place || 'Unknown']
+      }
 
     } catch (error) {
       console.error('❌ Error assessing tsunami threat:', error)
       return {
-        level: TsunamiAlertLevel.INFORMATION,
+        level: 'information',
         confidence: 0,
         affectedRegions: [earthquake.properties.place || 'Unknown']
       }
@@ -256,7 +279,7 @@ export class AlertManager {
     const baseMessage = this.earthquakeService.formatEarthquakeAlert(earthquake)
     
     // Add tsunami information if there's a significant threat
-    if (tsunamiThreat.level !== TsunamiAlertLevel.INFORMATION || tsunamiThreat.confidence > 0.3) {
+    if (tsunamiThreat.level !== 'information' || tsunamiThreat.confidence > 0.3) {
       const tsunamiEmoji = this.getTsunamiEmoji(tsunamiThreat.level)
       const confidenceText = Math.round(tsunamiThreat.confidence * 100)
       
@@ -277,11 +300,12 @@ Emergency Alert System`
   /**
    * Get appropriate emoji for tsunami threat level
    */
-  private getTsunamiEmoji(level: TsunamiAlertLevel): string {
+  private getTsunamiEmoji(level: string): string {
     switch (level) {
-      case TsunamiAlertLevel.WARNING: return '🚨🌊'
-      case TsunamiAlertLevel.WATCH: return '⚠️🌊'
-      case TsunamiAlertLevel.ADVISORY: return '📢🌊'
+      case 'emergency': return '🆘🌊'
+      case 'warning': return '🚨🌊'
+      case 'watch': return '⚠️🌊'
+      case 'advisory': return '📢🌊'
       default: return '🌊'
     }
   }
@@ -332,13 +356,14 @@ Emergency Alert System`
   /**
    * Get guidance text for tsunami threat level
    */
-  private getTsunamiGuidance(level: TsunamiAlertLevel): string {
+  private getTsunamiGuidance(level: string): string {
     switch (level) {
-      case TsunamiAlertLevel.WARNING:
+      case 'emergency':
+      case 'warning':
         return 'EVACUATE COASTAL AREAS IMMEDIATELY! Move to higher ground now.'
-      case TsunamiAlertLevel.WATCH:
+      case 'watch':
         return 'Be prepared to evacuate coastal areas. Monitor official sources.'
-      case TsunamiAlertLevel.ADVISORY:
+      case 'advisory':
         return 'Stay away from beaches and harbors. Follow local guidance.'
       default:
         return 'Monitor conditions and be aware of tsunami potential.'
@@ -350,13 +375,15 @@ Emergency Alert System`
    */
   private getTsunamiSeverity(tsunamiThreat: any): number {
     switch (tsunamiThreat.level) {
-      case TsunamiAlertLevel.WARNING:
+      case 'emergency':
         return 5 // Critical - all channels (voice + sms + whatsapp + email)
-      case TsunamiAlertLevel.WATCH:
+      case 'warning':
+        return 5 // Critical - all channels (voice + sms + whatsapp + email)
+      case 'watch':
         return 4 // High - all channels  
-      case TsunamiAlertLevel.ADVISORY:
+      case 'advisory':
         return 3 // Medium - fast channels (sms + whatsapp + email)
-      case TsunamiAlertLevel.INFORMATION:
+      case 'information':
       default:
         return 2 // Medium - fast channels (sms + whatsapp + email)
     }
@@ -508,9 +535,10 @@ Emergency Alert System`
   private shouldMakeVoiceCalls(tsunamiThreat: any): boolean {
     // Make voice calls for high-priority alerts
     return (
-      tsunamiThreat.level === TsunamiAlertLevel.WARNING ||
-      tsunamiThreat.level === TsunamiAlertLevel.WATCH ||
-      (tsunamiThreat.level === TsunamiAlertLevel.ADVISORY && tsunamiThreat.confidence > 0.7)
+      tsunamiThreat.level === 'emergency' ||
+      tsunamiThreat.level === 'warning' ||
+      tsunamiThreat.level === 'watch' ||
+      (tsunamiThreat.level === 'advisory' && tsunamiThreat.confidence > 0.7)
     )
   }
 
@@ -527,13 +555,14 @@ Emergency Alert System`
       let alertType: VoiceAlertType
       
       switch (tsunamiThreat.level) {
-        case TsunamiAlertLevel.WARNING:
+        case 'emergency':
+        case 'warning':
           alertType = VoiceAlertType.TSUNAMI_WARNING
           break
-        case TsunamiAlertLevel.WATCH:
+        case 'watch':
           alertType = VoiceAlertType.TSUNAMI_WATCH
           break
-        case TsunamiAlertLevel.ADVISORY:
+        case 'advisory':
           alertType = VoiceAlertType.TSUNAMI_ADVISORY
           break
         default:
@@ -580,15 +609,15 @@ Emergency Alert System`
     
     let message = `A magnitude ${magnitude} earthquake has been detected near ${location}.`
 
-    if (tsunamiThreat.level !== TsunamiAlertLevel.INFORMATION) {
+    if (tsunamiThreat.level !== 'information') {
       const threatLevel = tsunamiThreat.level.replace('_', ' ')
       const confidence = Math.round(tsunamiThreat.confidence * 100)
       
       message += ` A tsunami ${threatLevel} is in effect with ${confidence} percent confidence.`
       
-      if (tsunamiThreat.level === TsunamiAlertLevel.WARNING) {
+      if (tsunamiThreat.level === 'emergency' || tsunamiThreat.level === 'warning') {
         message += ' Evacuate coastal areas immediately and move to higher ground.'
-      } else if (tsunamiThreat.level === TsunamiAlertLevel.WATCH) {
+      } else if (tsunamiThreat.level === 'watch') {
         message += ' Be prepared to evacuate coastal areas quickly if conditions change.'
       } else {
         message += ' Stay away from beaches and harbors.'

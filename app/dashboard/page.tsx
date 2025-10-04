@@ -45,6 +45,7 @@ import KeyMetricsWidget from '@/components/dashboard/KeyMetricsWidget'
 import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
 import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
 import EventTimelinePlayback from '@/components/dashboard/EventTimelinePlayback'
+import DeliveryStatusWidget from '@/components/dashboard/DeliveryStatusWidget'
 import { TrendingUp, Zap } from 'lucide-react'
 
 type OperationTone = 'success' | 'error' | 'info'
@@ -1066,11 +1067,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Phase 1: Key Metrics Dashboard */}
-        <KeyMetricsWidget metrics={keyMetrics} />
-
-
-        {/* Phase 1: Global Event Map + Real-Time Feed */}
+        {/* Phase 1: Global Event Map + Unified Incident Timeline */}
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             {/* Filter Controls */}
@@ -1160,9 +1157,51 @@ export default function Dashboard() {
             />
           </div>
           <div className="h-[500px] overflow-hidden">
-            <RealTimeActivityFeed maxItems={20} autoRefresh={true} refreshInterval={3000} />
+            <div className="card h-full">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-slate-900">Unified Incident Timeline</h3>
+                <span className="text-xs font-medium text-slate-500">Last 24 hours</span>
+              </div>
+              <div className="space-y-3 overflow-y-auto" style={{maxHeight: 'calc(500px - 60px)'}}>
+                {timelineEvents.length ? (
+                  timelineEvents.slice(0, 10).map((event) => (
+                    <div key={event.id} className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/90 p-3 shadow-sm">
+                      {getTimelineIcon(event.type)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-slate-900 truncate">{event.title}</p>
+                            <p className="text-xs text-slate-500 truncate">{event.subtitle}</p>
+                          </div>
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${event.success ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                            {event.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {event.timestamp.toLocaleString()}
+                        </p>
+                        {event.details && (
+                          <p className="mt-1 text-xs text-rose-600 truncate">{event.details}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12 text-slate-500">
+                    <Activity className="mx-auto mb-3 h-8 w-8 text-slate-300" />
+                    <p className="text-sm">No incidents in last 24 hours</p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
+        {/* Phase 1: Key Metrics Dashboard */}
+        <KeyMetricsWidget metrics={keyMetrics} />
+
+        {/* Delivery Status Widget */}
+        <DeliveryStatusWidget />
 
         <div className="grid gap-4 md:grid-cols-2">
           {monitoringSummary.map((item) => (
@@ -1356,43 +1395,7 @@ export default function Dashboard() {
 
         <div className="grid gap-6 xl:grid-cols-3">
           <div className="card xl:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Unified Incident Timeline</h3>
-              <span className="text-xs font-medium text-slate-500">Earthquake + Tsunami over the last 24 hours</span>
-            </div>
-            {timelineEvents.length ? (
-              <div className="space-y-4">
-                {timelineEvents.map((event) => (
-                  <div key={event.id} className="flex items-start gap-4 rounded-2xl border border-slate-200/60 bg-white/90 p-4 shadow-sm">
-                    {getTimelineIcon(event.type)}
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{event.title}</p>
-                          <p className="text-xs text-slate-500">{event.subtitle}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${event.success ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                            {event.status}
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            {event.timestamp.toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                      {event.details && (
-                        <p className="mt-2 text-xs text-rose-600">{event.details}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 text-slate-500">
-                <Activity className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                <p>No incidents detected in the last 24 hours.</p>
-              </div>
-            )}
+            <RealTimeActivityFeed maxItems={20} autoRefresh={true} refreshInterval={3000} />
           </div>
 
           <div className="card">

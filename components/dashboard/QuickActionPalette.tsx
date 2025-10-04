@@ -182,12 +182,12 @@ export default function QuickActionPalette({ actions = [], onActionExecute }: Qu
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/50 z-[9999] backdrop-blur-sm"
         onClick={() => setIsOpen(false)}
       />
 
       {/* Command Palette */}
-      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl">
+      <div className="fixed top-[20%] left-1/2 -translate-x-1/2 z-[10000] w-full max-w-2xl">
         <div className="bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
           {/* Search Input */}
           <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200">

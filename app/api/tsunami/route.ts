@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
-import { TsunamiService } from '@/lib/tsunami-service'
+import { TsunamiService } from '@/lib/services/tsunami-service'
 
 export async function GET() {
   try {
     console.log('🌊 Starting tsunami alert monitoring...')
     
-    // Fetch latest tsunami alerts from NOAA
-    const alerts = await TsunamiService.fetchLatestAlerts()
+    // Fetch latest tsunami alerts from NOAA and PTWC
+    const tsunamiService = TsunamiService.getInstance()
+    const alerts = await tsunamiService.getNewTsunamiAlerts()
     
     if (alerts.length === 0) {
       return NextResponse.json({
@@ -14,50 +15,35 @@ export async function GET() {
         message: 'No active tsunami alerts',
         data: {
           alertCount: 0,
-          alerts: []
+          alerts: [],
+          sources: ['noaa', 'ptwc']
         }
       })
     }
 
-    // Process each alert and assess threat level
-    const processedAlerts = []
+    // Store alerts in database
+    const storedAlerts = []
     
     for (const alert of alerts) {
       try {
-        // Assess tsunami threat (simplified - no earthquake data for now)
-        const mockEarthquake = {
-          magnitude: alert.magnitude || 0,
-          depth: alert.depth ? parseFloat(alert.depth.replace(/[^\d.]/g, '')) : 0,
-          latitude: alert.latitude,
-          longitude: alert.longitude,
-          location: alert.location
-        }
-
-        const threat = TsunamiService.assessTsunamiThreat(mockEarthquake, alerts)
-        
-        // Store in database if significant threat
-        if (threat.level !== 'information' || threat.confidence > 0.3) {
-          await TsunamiService.storeTsunamiAlert(alert, threat)
-        }
-
-        processedAlerts.push({
+        await tsunamiService.storeTsunamiAlert(alert)
+        storedAlerts.push({
           ...alert,
-          threat,
-          processedAt: new Date().toISOString()
+          processedAt: new Date().toISOString(),
+          formattedMessage: tsunamiService.formatTsunamiAlert(alert)
         })
-
       } catch (error) {
-        console.error(`❌ Error processing alert ${alert.id}:`, error)
+        console.error(`❌ Error storing alert ${alert.id}:`, error)
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${processedAlerts.length} tsunami alerts`,
+      message: `Processed ${storedAlerts.length} tsunami alerts`,
       data: {
-        alertCount: processedAlerts.length,
-        alerts: processedAlerts,
-        sources: ['NTWC', 'PTWC'],
+        alertCount: storedAlerts.length,
+        alerts: storedAlerts,
+        sources: Array.from(new Set(storedAlerts.map(a => a.source))),
         lastChecked: new Date().toISOString()
       }
     })
@@ -78,7 +64,8 @@ export async function POST() {
     console.log('🌊 Manual tsunami alert check triggered...')
     
     // This endpoint allows manual triggering of tsunami monitoring
-    const alerts = await TsunamiService.fetchLatestAlerts()
+    const tsunamiService = TsunamiService.getInstance()
+    const alerts = await tsunamiService.getNewTsunamiAlerts()
     
     return NextResponse.json({
       success: true,

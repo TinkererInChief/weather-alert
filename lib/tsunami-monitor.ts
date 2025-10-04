@@ -1,4 +1,4 @@
-import { TsunamiService, TsunamiAlertLevel } from '@/lib/tsunami-service'
+import { TsunamiService, TsunamiAlert } from '@/lib/services/tsunami-service'
 import { SMSService } from '@/lib/sms-service'
 import { prisma } from '@/lib/prisma'
 
@@ -12,7 +12,7 @@ export interface TsunamiMonitorConfig {
   notificationSettings: {
     enableSMS: boolean
     enableEmail: boolean
-    priorityLevels: TsunamiAlertLevel[]
+    priorityLevels: Array<'watch' | 'advisory' | 'warning' | 'emergency'>
   }
 }
 
@@ -32,11 +32,7 @@ export class TsunamiMonitor {
     notificationSettings: {
       enableSMS: true,
       enableEmail: false,
-      priorityLevels: [
-        TsunamiAlertLevel.WARNING,
-        TsunamiAlertLevel.WATCH,
-        TsunamiAlertLevel.ADVISORY
-      ]
+      priorityLevels: ['warning', 'watch', 'advisory']
     }
   }
 
@@ -105,8 +101,9 @@ export class TsunamiMonitor {
     try {
       console.log('🔍 Performing tsunami monitoring check...')
 
-      // 1. Fetch latest tsunami alerts from NOAA
-      const alerts = await TsunamiService.fetchLatestAlerts()
+      // 1. Fetch latest tsunami alerts from NOAA and PTWC
+      const tsunamiService = TsunamiService.getInstance()
+      const alerts = await tsunamiService.getNewTsunamiAlerts()
       
       if (alerts.length === 0) {
         console.log('ℹ️ No active tsunami alerts found')
@@ -137,26 +134,11 @@ export class TsunamiMonitor {
    */
   private async processTsunamiAlert(alert: any, earthquakes: any[]): Promise<void> {
     try {
-      // Find related earthquake if any
-      const relatedEarthquake = earthquakes.find(eq => 
-        TsunamiService['isNearLocation'](
-          eq.latitude, eq.longitude,
-          alert.latitude, alert.longitude,
-          100 // 100km radius
-        )
-      )
-
-      // Assess threat level
-      const threat = TsunamiService.assessTsunamiThreat(
-        relatedEarthquake || {
-          magnitude: alert.magnitude || 0,
-          depth: alert.depth ? parseFloat(alert.depth.replace(/[^\d.]/g, '')) : 0,
-          latitude: alert.latitude,
-          longitude: alert.longitude,
-          location: alert.location
-        },
-        [alert]
-      )
+      // Alert is already classified by the TsunamiService
+      const threat = {
+        level: alert.alertType,
+        confidence: alert.severityLevel / 5 // Convert to 0-1 scale
+      }
 
       // Check if this is a new or updated alert
       const existingAlert = await prisma.tsunamiAlert.findFirst({
@@ -169,10 +151,11 @@ export class TsunamiMonitor {
       })
 
       if (!existingAlert && this.shouldNotify(threat)) {
-        console.log(`🚨 New tsunami alert: ${alert.title} - Level: ${threat.level}`)
+        console.log(`🚨 New tsunami alert: ${alert.id} - Level: ${threat.level}`)
         
         // Store in database
-        await TsunamiService.storeTsunamiAlert(alert, threat)
+        const tsunamiService = TsunamiService.getInstance()
+        await tsunamiService.storeTsunamiAlert(alert)
         
         // Send notifications
         await this.sendTsunamiNotifications(alert, threat)
@@ -218,8 +201,13 @@ export class TsunamiMonitor {
           data: { tsunamiPossible: true }
         })
 
-        // Create tsunami threat assessment
-        const threat = TsunamiService.assessTsunamiThreat(earthquake, [])
+        // Create tsunami threat assessment based on earthquake
+        const tsunamiService = TsunamiService.getInstance()
+        const wouldGenerateTsunami = await tsunamiService.analyzeEarthquakeForTsunami(earthquake)
+        const threat = {
+          level: magnitude >= 8.5 ? 'emergency' : magnitude >= 7.5 ? 'warning' : 'advisory',
+          confidence: wouldGenerateTsunami ? 0.7 : 0.3
+        }
         
         if (this.shouldNotify(threat)) {
           await this.sendTsunamiPotentialAlert(earthquake, threat)
@@ -321,33 +309,10 @@ Emergency Alert System`
   /**
    * Create tsunami-specific alert message
    */
-  private createTsunamiMessage(alert: any, threat: any): string {
-    let urgencyEmoji = '🌊'
-    
-    switch (threat.level) {
-      case TsunamiAlertLevel.WARNING:
-        urgencyEmoji = '🚨🌊'
-        break
-      case TsunamiAlertLevel.WATCH:
-        urgencyEmoji = '⚠️🌊'
-        break
-      case TsunamiAlertLevel.ADVISORY:
-        urgencyEmoji = '📢🌊'
-        break
-    }
-
-    return `${urgencyEmoji} TSUNAMI ${alert.category.toUpperCase()}
-
-${alert.title}
-
-${alert.instruction}
-
-Confidence: ${Math.round(threat.confidence * 100)}%
-Time: ${new Date().toLocaleString()}
-
-${threat.level === TsunamiAlertLevel.WARNING ? 'EVACUATE COASTAL AREAS IMMEDIATELY!' : 'Monitor conditions and follow local guidance.'}
-
-Emergency Alert System`
+  private createTsunamiMessage(alert: TsunamiAlert, threat: any): string {
+    // Use the built-in formatting from TsunamiService
+    const tsunamiService = TsunamiService.getInstance()
+    return tsunamiService.formatTsunamiAlert(alert)
   }
 
   /**
@@ -373,6 +338,22 @@ Emergency Alert System`
       console.error('❌ Error fetching recent earthquakes:', error)
       return []
     }
+  }
+
+  /**
+   * Calculate distance between two coordinates (for finding related earthquakes)
+   */
+  private isNearLocation(lat1: number, lon1: number, lat2: number, lon2: number, radiusKm: number): boolean {
+    const R = 6371 // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180
+    const dLon = (lon2 - lon1) * Math.PI / 180
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+    const distance = R * c
+
+    return distance <= radiusKm
   }
 
   /**

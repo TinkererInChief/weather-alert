@@ -19,7 +19,8 @@ import {
   X,
   Clock,
   CheckCircle,
-  Loader2
+  Loader2,
+  UserCircle
 } from 'lucide-react'
 
 interface AppLayoutProps {
@@ -59,7 +60,7 @@ export default function AppLayout({
     { name: 'Dashboard', href: '/dashboard', icon: Home, current: pathname === '/dashboard' },
     { name: 'Earthquake Monitoring', href: '/dashboard/alerts', icon: AlertTriangle, current: pathname === '/dashboard/alerts' },
     { name: 'Tsunami Monitoring', href: '/dashboard/tsunami', icon: Waves, current: pathname === '/dashboard/tsunami' },
-    { name: 'Contacts', href: '/dashboard/contacts', icon: Users, current: pathname === '/dashboard/contacts' },
+    { name: 'Contacts', href: '/dashboard/contacts', icon: UserCircle, current: pathname === '/dashboard/contacts' },
     { name: 'Contact Groups', href: '/dashboard/groups', icon: Users, current: pathname?.startsWith('/dashboard/groups') },
     { name: 'Alert History', href: '/dashboard/alerts/history', icon: Clock, current: pathname === '/dashboard/alerts/history' },
     { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, current: pathname === '/dashboard/notifications' },
@@ -68,6 +69,7 @@ export default function AppLayout({
   ]
 
   const adminNavigation = effectiveUser.role === 'admin' ? [
+    { name: 'User Management', href: '/dashboard/users', icon: Users, current: pathname === '/dashboard/users' },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' },
   ] : []
 

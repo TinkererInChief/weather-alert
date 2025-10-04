@@ -18,6 +18,10 @@ export const GET = withPermission(Permission.VIEW_USERS, async (req, session) =>
         organizationId: true,
         isActive: true,
         lastLoginAt: true,
+        approvalStatus: true,
+        approvedBy: true,
+        approvedAt: true,
+        rejectionReason: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -28,7 +32,7 @@ export const GET = withPermission(Permission.VIEW_USERS, async (req, session) =>
     
     return NextResponse.json({
       success: true,
-      data: users
+      users: users
     })
   } catch (error) {
     console.error('Error fetching users:', error)
