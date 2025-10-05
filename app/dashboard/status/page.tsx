@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 // Types for strict mode
 type OverallStatus = 'healthy' | 'warning' | 'critical' | 'degraded' | 'error' | 'unknown'
 
-type ServiceKey = 'database' | 'redis' | 'sms' | 'email' | 'usgs' | 'noaa' | 'whatsapp' | 'voice'
+type ServiceKey = 'database' | 'redis' | 'sms' | 'email' | 'usgs' | 'noaa' | 'emsc' | 'jma' | 'ptwc' | 'iris' | 'whatsapp' | 'voice'
 
 type ServiceStatus = {
   status: OverallStatus
@@ -102,6 +102,10 @@ export default function SystemStatusPage() {
 
         const usgsStatus = coerce(services?.usgs?.status)
         const noaaStatus = coerce(services?.noaa?.status)
+        const emscStatus = coerce(services?.emsc?.status)
+        const jmaStatus = coerce(services?.jma?.status)
+        const ptwcStatus = coerce(services?.ptwc?.status)
+        const irisStatus = coerce(services?.iris?.status)
 
         const mapped: SystemStatus = {
           status: coerce(raw?.status),
@@ -143,6 +147,30 @@ export default function SystemStatusPage() {
               lastCheck: now,
               error: services?.noaa?.error
             },
+            emsc: {
+              status: normalize(emscStatus),
+              responseTime: typeof services?.emsc?.latencyMs === 'number' ? services.emsc.latencyMs : undefined,
+              lastCheck: now,
+              error: services?.emsc?.error
+            },
+            jma: {
+              status: normalize(jmaStatus),
+              responseTime: typeof services?.jma?.latencyMs === 'number' ? services.jma.latencyMs : undefined,
+              lastCheck: now,
+              error: services?.jma?.error
+            },
+            ptwc: {
+              status: normalize(ptwcStatus),
+              responseTime: typeof services?.ptwc?.latencyMs === 'number' ? services.ptwc.latencyMs : undefined,
+              lastCheck: now,
+              error: services?.ptwc?.error
+            },
+            iris: {
+              status: normalize(irisStatus),
+              responseTime: typeof services?.iris?.latencyMs === 'number' ? services.iris.latencyMs : undefined,
+              lastCheck: now,
+              error: services?.iris?.error
+            },
             whatsapp: {
               status: normalize(services?.twilio?.status),
               responseTime: typeof services?.twilio?.latencyMs === 'number' ? services.twilio.latencyMs : undefined,
@@ -177,7 +205,7 @@ export default function SystemStatusPage() {
   // Fetch history + uptime for selected range
   useEffect(() => {
     let active = true
-    const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa'
+    const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa,emsc,jma,ptwc,iris'
     const load = async () => {
       try {
         const [histRes, upRes] = await Promise.all([
@@ -207,6 +235,10 @@ export default function SystemStatusPage() {
           voice: mapSeries('voice'),
           usgs: mapSeries('usgs'),
           noaa: mapSeries('noaa'),
+          emsc: mapSeries('emsc'),
+          jma: mapSeries('jma'),
+          ptwc: mapSeries('ptwc'),
+          iris: mapSeries('iris'),
         })
 
         if (up?.timeline) {
@@ -220,6 +252,10 @@ export default function SystemStatusPage() {
             voice: tl('voice'),
             usgs: tl('usgs'),
             noaa: tl('noaa'),
+            emsc: tl('emsc'),
+            jma: tl('jma'),
+            ptwc: tl('ptwc'),
+            iris: tl('iris'),
           })
         }
       } catch (e) {
@@ -310,7 +346,11 @@ export default function SystemStatusPage() {
     { name: 'Voice', icon: Phone, key: 'voice' },
     { name: 'Email Service', icon: Mail, key: 'email' },
     { name: 'USGS API', icon: Globe, key: 'usgs' },
-    { name: 'NOAA Tsunami', icon: Wifi, key: 'noaa' }
+    { name: 'NOAA Tsunami', icon: Wifi, key: 'noaa' },
+    { name: 'EMSC', icon: Globe, key: 'emsc' },
+    { name: 'JMA', icon: Globe, key: 'jma' },
+    { name: 'PTWC', icon: Wifi, key: 'ptwc' },
+    { name: 'IRIS', icon: Globe, key: 'iris' }
   ]
 
   return (
@@ -466,6 +506,10 @@ export default function SystemStatusPage() {
                 { key: 'voice', name: 'Voice', color: '#f59e0b' },
                 { key: 'usgs', name: 'USGS API', color: '#64748b' },
                 { key: 'noaa', name: 'NOAA Tsunami', color: '#ef4444' },
+                { key: 'emsc', name: 'EMSC', color: '#06b6d4' },
+                { key: 'jma', name: 'JMA', color: '#ec4899' },
+                { key: 'ptwc', name: 'PTWC', color: '#14b8a6' },
+                { key: 'iris', name: 'IRIS', color: '#a855f7' },
               ] as Array<{ key: ServiceKey; name: string; color: string }> )
                 .filter(cfg => (latencyHistory[cfg.key]?.length ?? 0) > 0)
                 .map(cfg => (
@@ -493,6 +537,10 @@ export default function SystemStatusPage() {
                 { key: 'voice', name: 'Voice' },
                 { key: 'usgs', name: 'USGS API' },
                 { key: 'noaa', name: 'NOAA Tsunami' },
+                { key: 'emsc', name: 'EMSC' },
+                { key: 'jma', name: 'JMA' },
+                { key: 'ptwc', name: 'PTWC' },
+                { key: 'iris', name: 'IRIS' },
               ] as Array<{ key: ServiceKey; name: string }> )
                 .filter(cfg => (uptimeTimeline[cfg.key]?.length ?? 0) > 0)
                 .map(cfg => (
@@ -504,20 +552,20 @@ export default function SystemStatusPage() {
           {/* Recent System Events & Maintenance Windows - Side by Side */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Recent Incidents */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-              <div className="p-6 border-b border-slate-200">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+              <div className="p-6 border-b border-slate-200 flex-shrink-0">
                 <h3 className="text-lg font-semibold text-slate-900">Recent System Events</h3>
                 <p className="text-sm text-slate-500 mt-1">Real-time status changes and incidents</p>
               </div>
               
-              <div className="p-6">
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: '400px' }}>
                 <IncidentTimeline events={events} />
               </div>
             </div>
 
             {/* Maintenance Scheduler */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-              <div className="p-6">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col">
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: '480px' }}>
                 <MaintenanceScheduler />
               </div>
             </div>

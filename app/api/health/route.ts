@@ -219,8 +219,12 @@ async function checkExternalServicesHealth() {
 
   const usgsUrl = process.env.USGS_API_URL || 'https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&limit=1'
   const noaaUrl = process.env.NOAA_TSUNAMI_URL || 'https://www.tsunami.gov/events/xml/atom.xml'
+  const emscUrl = 'https://www.seismicportal.eu/fdsnws/event/1/query?limit=1&format=json'
+  const jmaUrl = 'https://www.data.jma.go.jp/svd/eew/data/hypo/index.html'
+  const ptwcUrl = 'https://www.tsunami.gov/'
+  const irisUrl = 'https://service.iris.edu/fdsnws/event/1/query?limit=1&format=json'
 
-  const [twilioRes, sendgridRes, usgsRes, noaaRes] = await Promise.all([
+  const results = await Promise.all([
     (async () => {
       if (!twilioConfigured) {
         return { status: 'warning', latencyMs: null, configured: false, message: 'Twilio not configured' }
@@ -280,13 +284,59 @@ async function checkExternalServicesHealth() {
       const healthy = resp.ok
       return { status: healthy ? 'healthy' : 'critical', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'NOAA reachable' : `NOAA status ${ resp.status }` }
     })(),
+
+    (async () => {
+      const result = await time(async () => fetchWithTimeout(emscUrl, {}, 5000))
+      if (!result.ok) {
+        return { status: 'warning', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'EMSC request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'warning', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'EMSC reachable' : `EMSC status ${ resp.status }` }
+    })(),
+
+    (async () => {
+      const result = await time(async () => fetchWithTimeout(jmaUrl, {}, 5000))
+      if (!result.ok) {
+        return { status: 'warning', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'JMA request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'warning', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'JMA reachable' : `JMA status ${ resp.status }` }
+    })(),
+
+    (async () => {
+      const result = await time(async () => fetchWithTimeout(ptwcUrl, {}, 5000))
+      if (!result.ok) {
+        return { status: 'warning', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'PTWC request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'warning', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'PTWC reachable' : `PTWC status ${ resp.status }` }
+    })(),
+
+    (async () => {
+      const result = await time(async () => fetchWithTimeout(irisUrl, {}, 5000))
+      if (!result.ok) {
+        return { status: 'warning', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'IRIS request failed' }
+      }
+      const resp = result.value as Response
+      const healthy = resp.ok
+      return { status: healthy ? 'healthy' : 'warning', latencyMs: result.ms, configured: true, statusCode: resp.status, message: healthy ? 'IRIS reachable' : `IRIS status ${ resp.status }` }
+    })(),
   ])
+
+  const [twilioRes, sendgridRes, usgsRes, noaaRes, emscRes, jmaRes, ptwcRes, irisRes] = results
 
   return {
     twilio: twilioRes,
     sendgrid: sendgridRes,
     usgs: usgsRes,
     noaa: noaaRes,
+    emsc: emscRes,
+    jma: jmaRes,
+    ptwc: ptwcRes,
+    iris: irisRes,
   }
 }
 
