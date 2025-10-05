@@ -66,8 +66,9 @@ export default function SystemStatusPage() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [latencyHistory, setLatencyHistory] = useState<Partial<Record<ServiceKey, HistoryPoint[]>>>({})
-  const [range, setRange] = useState<RangeKey>('24h')
+  const [latencyRange, setLatencyRange] = useState<RangeKey>('24h')
   const [uptimeTimeline, setUptimeTimeline] = useState<Partial<Record<ServiceKey, TimelinePoint[]>>>({})
+  const [uptimeRange, setUptimeRange] = useState<RangeKey>('24h')
   const [events, setEvents] = useState<SystemEvent[]>([])
   const [heroMetrics, setHeroMetrics] = useState<HeroMetrics | null>(null)
 
@@ -202,18 +203,14 @@ export default function SystemStatusPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch history + uptime for selected range
+  // Fetch latency history for selected range
   useEffect(() => {
     let active = true
     const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa,emsc,jma,ptwc,iris'
     const load = async () => {
       try {
-        const [histRes, upRes] = await Promise.all([
-          fetch(`/api/health/history?range=${range}&services=${servicesParam}`, { cache: 'no-store' }),
-          fetch(`/api/health/uptime?range=${range}&services=${servicesParam}`, { cache: 'no-store' }),
-        ])
+        const histRes = await fetch(`/api/health/history?range=${latencyRange}&services=${servicesParam}`, { cache: 'no-store' })
         const json: any = await histRes.json()
-        const up: any = await upRes.json()
         if (!active) return
         if (!json?.series) return
         const mapSeries = (key: ServiceKey) => {
@@ -240,7 +237,25 @@ export default function SystemStatusPage() {
           ptwc: mapSeries('ptwc'),
           iris: mapSeries('iris'),
         })
+      } catch (e) {
+        console.error('Failed to load latency history', e)
+      }
+    }
 
+    load()
+    const id = setInterval(load, 30000)
+    return () => { active = false; clearInterval(id) }
+  }, [latencyRange])
+
+  // Fetch uptime timeline for selected range
+  useEffect(() => {
+    let active = true
+    const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa,emsc,jma,ptwc,iris'
+    const load = async () => {
+      try {
+        const upRes = await fetch(`/api/health/uptime?range=${uptimeRange}&services=${servicesParam}`, { cache: 'no-store' })
+        const up: any = await upRes.json()
+        if (!active) return
         if (up?.timeline) {
           const tl = (key: ServiceKey) => (up.timeline[key] as TimelinePoint[] | undefined) || []
           setUptimeTimeline({
@@ -259,14 +274,14 @@ export default function SystemStatusPage() {
           })
         }
       } catch (e) {
-        console.error('Failed to load health history', e)
+        console.error('Failed to load uptime timeline', e)
       }
     }
 
     load()
     const id = setInterval(load, 30000)
     return () => { active = false; clearInterval(id) }
-  }, [range])
+  }, [uptimeRange])
 
   // Fetch recent events
   useEffect(() => {
@@ -493,7 +508,7 @@ export default function SystemStatusPage() {
               <h3 className="text-lg font-semibold text-slate-900">Service Latency</h3>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">Auto-refresh every 30s</span>
-                <RangeSwitcher value={range} onChange={setRange} />
+                <RangeSwitcher value={latencyRange} onChange={setLatencyRange} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -524,7 +539,7 @@ export default function SystemStatusPage() {
               <h3 className="text-lg font-semibold text-slate-900">Service Uptime Timeline</h3>
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">Auto-refresh every 30s</span>
-                <RangeSwitcher value={range} onChange={setRange} />
+                <RangeSwitcher value={uptimeRange} onChange={setUptimeRange} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
