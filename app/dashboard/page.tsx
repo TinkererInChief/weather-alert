@@ -356,7 +356,16 @@ export default function Dashboard() {
       if (tsunamiRes.ok) {
         const tsunamiData: TsunamiApiResponse = await tsunamiRes.json()
         if (tsunamiData.success) {
-          freshTsunamiAlerts = dedupeTsunamiAlerts(tsunamiData.data.alerts || [])
+          // Normalize alerts to ensure threat property exists
+          const normalizedAlerts = (tsunamiData.data.alerts || []).map((alert: any) => ({
+            ...alert,
+            threat: alert.threat || {
+              level: alert.category || alert.urgency || 'advisory',
+              confidence: alert.severity || 1,
+              affectedRegions: []
+            }
+          }))
+          freshTsunamiAlerts = dedupeTsunamiAlerts(normalizedAlerts)
           setTsunamiAlerts(freshTsunamiAlerts)
           setTsunamiLastChecked(tsunamiData.data.lastChecked ?? null)
         }
@@ -742,7 +751,7 @@ export default function Dashboard() {
   }
 
   const criticalTsunamiAlert = useMemo(() => {
-    return tsunamiAlerts.find((alert) => ['warning', 'watch'].includes(alert.threat.level.toLowerCase())) || null
+    return tsunamiAlerts.find((alert) => alert.threat?.level && ['warning', 'watch'].includes(alert.threat.level.toLowerCase())) || null
   }, [tsunamiAlerts])
 
   const mostSevereEarthquake = useMemo(() => {
@@ -1492,13 +1501,13 @@ export default function Dashboard() {
                         </div>
                       </div>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        alert.threat.level.toLowerCase() === 'warning'
+                        alert.threat?.level?.toLowerCase() === 'warning'
                           ? 'bg-rose-50 text-rose-600 border border-rose-100'
-                          : alert.threat.level.toLowerCase() === 'watch'
+                          : alert.threat?.level?.toLowerCase() === 'watch'
                             ? 'bg-amber-50 text-amber-600 border border-amber-100'
                             : 'bg-blue-50 text-blue-600 border border-blue-100'
                       }`}>
-                        {alert.threat.level.toUpperCase()}
+                        {alert.threat?.level?.toUpperCase() || 'UNKNOWN'}
                       </span>
                     </div>
                     <p className="mt-3 text-xs text-slate-600">{alert.description}</p>

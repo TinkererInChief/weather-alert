@@ -19,7 +19,8 @@
     "queue:dev": "node scripts/queue-worker.js",
     "ingestion:dev": "node scripts/ingestion-worker.js",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx scripts/seed-database.ts"
+    "db:seed": "tsx scripts/seed-database.ts",
+    "user:promote": "tsx scripts/promote-user.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
