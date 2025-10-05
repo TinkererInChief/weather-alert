@@ -479,7 +479,8 @@ export default function SystemStatusPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-slate-900">Service Uptime Timeline</h3>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-slate-500">Range: {range}</span>
+                <span className="text-xs text-slate-500">Auto-refresh every 30s</span>
+                <RangeSwitcher value={range} onChange={setRange} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -500,22 +501,25 @@ export default function SystemStatusPage() {
             </div>
           </div>
 
-          {/* Recent Incidents */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-            <div className="p-6 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900">Recent System Events</h3>
-              <p className="text-sm text-slate-500 mt-1">Real-time status changes and incidents</p>
+          {/* Recent System Events & Maintenance Windows - Side by Side */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Incidents */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+              <div className="p-6 border-b border-slate-200">
+                <h3 className="text-lg font-semibold text-slate-900">Recent System Events</h3>
+                <p className="text-sm text-slate-500 mt-1">Real-time status changes and incidents</p>
+              </div>
+              
+              <div className="p-6">
+                <IncidentTimeline events={events} />
+              </div>
             </div>
-            
-            <div className="p-6">
-              <IncidentTimeline events={events} />
-            </div>
-          </div>
 
-          {/* Maintenance Scheduler */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-            <div className="p-6">
-              <MaintenanceScheduler />
+            {/* Maintenance Scheduler */}
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+              <div className="p-6">
+                <MaintenanceScheduler />
+              </div>
             </div>
           </div>
         </div>

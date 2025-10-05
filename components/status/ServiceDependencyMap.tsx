@@ -29,15 +29,19 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
   // Define your service topology
   const nodes: ServiceNode[] = [
     // Layer 0: External data sources
-    { id: 'usgs', name: 'USGS API', icon: Globe, status: services.usgs?.status as any || 'unknown', layer: 0, dependencies: [] },
+    { id: 'usgs', name: 'USGS', icon: Globe, status: services.usgs?.status as any || 'unknown', layer: 0, dependencies: [] },
+    { id: 'emsc', name: 'EMSC', icon: Globe, status: services.emsc?.status as any || 'unknown', layer: 0, dependencies: [] },
+    { id: 'jma', name: 'JMA', icon: Globe, status: services.jma?.status as any || 'unknown', layer: 0, dependencies: [] },
     { id: 'noaa', name: 'NOAA', icon: Wifi, status: services.noaa?.status as any || 'unknown', layer: 0, dependencies: [] },
+    { id: 'ptwc', name: 'PTWC', icon: Wifi, status: services.ptwc?.status as any || 'unknown', layer: 0, dependencies: [] },
+    { id: 'iris', name: 'IRIS', icon: Globe, status: services.iris?.status as any || 'unknown', layer: 0, dependencies: [] },
     
     // Layer 2: Infrastructure (depends on nothing)
     { id: 'database', name: 'Database', icon: Database, status: services.database?.status as any || 'unknown', layer: 2, dependencies: [] },
     { id: 'redis', name: 'Redis', icon: Activity, status: services.redis?.status as any || 'unknown', layer: 2, dependencies: [] },
     
-    // Layer 1: Core services (depend on infrastructure)
-    { id: 'core', name: 'Alert Engine', icon: AlertCircle, status: 'healthy', layer: 1, dependencies: ['database', 'redis', 'usgs', 'noaa'] },
+    // Layer 1: Core services (depend on infrastructure and external sources)
+    { id: 'core', name: 'Alert Engine', icon: AlertCircle, status: 'healthy', layer: 1, dependencies: ['database', 'redis', 'usgs', 'emsc', 'jma', 'noaa', 'ptwc', 'iris'] },
     
     // Layer 3: Notification channels (depend on core)
     { id: 'sms', name: 'SMS', icon: MessageSquare, status: services.sms?.status as any || 'unknown', layer: 3, dependencies: ['core', 'database'] },
@@ -119,19 +123,19 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
   }
 
   return (
-    <div ref={containerRef} className="relative p-4 md:p-8 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
-      <div className="min-w-[320px] md:min-w-[800px] relative">
+    <div ref={containerRef} className="relative p-3 sm:p-4 md:p-8 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="min-w-[280px] sm:min-w-[320px] md:min-w-[900px] lg:min-w-[1100px] relative">
         {/* Layer labels - hide on mobile, show on desktop */}
-        <div className="hidden md:flex justify-around mb-8 text-xs font-medium text-slate-500">
+        <div className="hidden lg:flex justify-around mb-8 text-xs font-medium text-slate-500">
           <span>External Sources</span>
           <span>Core Engine</span>
           <span>Infrastructure</span>
           <span>Notification Channels</span>
         </div>
 
-        {/* SVG for connection lines - render behind nodes */}
+        {/* SVG for connection lines - render behind nodes (desktop only for clarity) */}
         <svg 
-          className="absolute inset-0 pointer-events-none" 
+          className="hidden lg:block absolute inset-0 pointer-events-none" 
           style={{ zIndex: 0 }}
           width="100%" 
           height="100%"
@@ -185,72 +189,79 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
         </svg>
 
         {/* Service nodes in layers */}
-        <div className="flex flex-col md:flex-row md:justify-around items-start gap-4 md:gap-8 relative z-10">
+        <div className="flex flex-col lg:flex-row lg:justify-around items-start gap-3 sm:gap-4 lg:gap-6 relative z-10">
           {layers.map((layerNodes, layerIdx) => (
-            <div key={layerIdx} className="flex flex-col gap-3 md:gap-4 items-center w-full md:w-auto">
-              {/* Mobile layer label */}
-              <div className="md:hidden text-xs font-semibold text-slate-600 mb-1">
-                {layerIdx === 0 && 'External Sources'}
-                {layerIdx === 1 && 'Core Engine'}
-                {layerIdx === 2 && 'Infrastructure'}
-                {layerIdx === 3 && 'Notification Channels'}
+            <div key={layerIdx} className="flex flex-col gap-2 sm:gap-3 items-stretch lg:items-center w-full lg:w-auto">
+              {/* Mobile/Tablet layer label */}
+              <div className="lg:hidden text-xs font-semibold text-slate-600 mb-1 px-1">
+                {layerIdx === 0 && '📡 External Sources'}
+                {layerIdx === 1 && '⚙️ Core Engine'}
+                {layerIdx === 2 && '🗄️ Infrastructure'}
+                {layerIdx === 3 && '📨 Notification Channels'}
               </div>
-              {layerNodes.map((node) => {
-                const Icon = node.icon
-                return (
-                  <div
-                    key={node.id}
-                    data-node-id={node.id}
-                    className={`relative group px-3 md:px-4 py-2 md:py-3 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer w-full md:w-auto ${getStatusColor(node.status)}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`${node.name} - ${node.status}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4" />
-                      <span className="text-xs md:text-sm font-medium whitespace-nowrap">{node.name}</span>
-                      <div className={`w-2 h-2 rounded-full ${getStatusDot(node.status)}`} />
+              
+              {/* For external sources layer (0), use grid on mobile/tablet */}
+              <div className={layerIdx === 0 ? 'grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-col gap-2 sm:gap-3' : 'flex flex-col gap-2 sm:gap-3'}>
+                {layerNodes.map((node) => {
+                  const Icon = node.icon
+                  return (
+                    <div
+                      key={node.id}
+                      data-node-id={node.id}
+                      className={`relative group px-2 sm:px-3 lg:px-4 py-1.5 sm:py-2 lg:py-3 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer ${getStatusColor(node.status)}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`${node.name} - ${node.status}`}
+                    >
+                      <div className="flex items-center gap-1.5 sm:gap-2 justify-center lg:justify-start">
+                        <Icon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="text-xs sm:text-sm font-medium truncate">{node.name}</span>
+                        <div className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full flex-shrink-0 ${getStatusDot(node.status)}`} />
+                      </div>
+                      
+                      {/* Tooltip on hover - desktop only */}
+                      <div className="hidden lg:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20 shadow-xl">
+                        <div className="font-semibold">{node.name}</div>
+                        <div className="text-slate-300">Status: {node.status}</div>
+                        {node.dependencies.length > 0 && (
+                          <div className="text-slate-400 text-xs mt-1">
+                            Depends on: {node.dependencies.slice(0, 3).join(', ')}{node.dependencies.length > 3 ? '...' : ''}
+                          </div>
+                        )}
+                        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
+                      </div>
                     </div>
-                    
-                    {/* Tooltip on hover */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                      <div className="font-semibold">{node.name}</div>
-                      <div className="text-slate-300">Status: {node.status}</div>
-                      {node.dependencies.length > 0 && (
-                        <div className="text-slate-400 text-xs mt-1">
-                          Depends on: {node.dependencies.join(', ')}
-                        </div>
-                      )}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900"></div>
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           ))}
         </div>
 
         {/* Legend */}
-        <div className="mt-8 flex items-center justify-center gap-6 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+        <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs px-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-500 flex-shrink-0"></div>
             <span className="text-slate-600">Healthy</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-500 flex-shrink-0"></div>
             <span className="text-slate-600">Warning</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-500 flex-shrink-0"></div>
             <span className="text-slate-600">Critical</span>
           </div>
         </div>
 
         {/* Impact Analysis */}
         {nodes.some(n => n.status === 'critical' || n.status === 'warning') && (
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h4 className="text-sm font-semibold text-yellow-900 mb-2">⚠️ Impact Analysis</h4>
-            <ul className="text-xs text-yellow-800 space-y-1">
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h4 className="text-xs sm:text-sm font-semibold text-yellow-900 mb-2 flex items-center gap-1">
+              <span>⚠️</span>
+              <span>Impact Analysis</span>
+            </h4>
+            <ul className="text-xs text-yellow-800 space-y-1.5 sm:space-y-2">
               {nodes
                 .filter(n => n.status === 'critical')
                 .map(n => {
@@ -258,8 +269,8 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
                     other.dependencies.includes(n.id)
                   )
                   return (
-                    <li key={n.id}>
-                      <strong>{n.name}</strong> is down → May affect: {
+                    <li key={n.id} className="leading-relaxed">
+                      <strong className="font-semibold">{n.name}</strong> is down → May affect: {
                         affected.length > 0 
                           ? affected.map(a => a.name).join(', ')
                           : 'No downstream services'
