@@ -412,6 +412,10 @@ async function persistHealthSnapshots(checks: any) {
   push('email', svc.sendgrid)
   push('usgs', svc.usgs)
   push('noaa', svc.noaa)
+  push('emsc', svc.emsc)
+  push('jma', svc.jma)
+  push('ptwc', svc.ptwc)
+  push('iris', svc.iris)
   // Derive WhatsApp and Voice from Twilio as well
   push('whatsapp', svc.twilio)
   push('voice', svc.twilio)
@@ -461,6 +465,10 @@ async function trackHealthEvents(checks: any, overallStatus: string) {
     email: checks?.services?.sendgrid,
     usgs: checks?.services?.usgs,
     noaa: checks?.services?.noaa,
+    emsc: checks?.services?.emsc,
+    jma: checks?.services?.jma,
+    ptwc: checks?.services?.ptwc,
+    iris: checks?.services?.iris,
     whatsapp: checks?.services?.twilio, // Same as SMS
     voice: checks?.services?.twilio,     // Same as SMS
   }

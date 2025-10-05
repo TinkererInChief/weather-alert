@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/prisma'
 // Use local unions to avoid build-time enum issues
 type HealthStatus = 'healthy' | 'warning' | 'critical'
-type HealthService = 'database' | 'redis' | 'sms' | 'email' | 'usgs' | 'noaa' | 'whatsapp' | 'voice'
+type HealthService = 'database' | 'redis' | 'sms' | 'email' | 'usgs' | 'noaa' | 'emsc' | 'jma' | 'ptwc' | 'iris' | 'whatsapp' | 'voice'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -50,6 +50,10 @@ const toEnumServices = (servicesParam: string | null): HealthService[] => {
     'email',
     'usgs',
     'noaa',
+    'emsc',
+    'jma',
+    'ptwc',
+    'iris',
     'whatsapp',
     'voice',
   ] as HealthService[])

@@ -30,7 +30,7 @@ const parseRange = (value: string | null): { key: RangeKey; ms: number; bucketMs
   }
 }
 
-const serviceList = ['database','redis','sms','email','usgs','noaa','whatsapp','voice'] as const
+const serviceList = ['database','redis','sms','email','usgs','noaa','emsc','jma','ptwc','iris','whatsapp','voice'] as const
 type ServiceKey = typeof serviceList[number]
 
 const parseServices = (s: string | null): ServiceKey[] => {
