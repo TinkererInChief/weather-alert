@@ -72,7 +72,7 @@ export default function EventsByTypeWidget() {
         const recentTsunamis = (tsunamiData.data?.alerts || [])
           .filter((alert: any) => new Date(alert.time || alert.eventTime).getTime() >= since)
 
-        const lower = (val?: string) => (val ?? '').toLowerCase()
+        const lower = (val: unknown) => String(val ?? '').toLowerCase()
         const bySeverity = {
           watch: recentTsunamis.filter((a: any) =>
             lower(a.severity).includes('watch') || lower(a.type).includes('watch')

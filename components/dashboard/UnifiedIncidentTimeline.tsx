@@ -163,7 +163,7 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
           ) : (
             <div className="text-center py-12 text-slate-500">
               <Activity className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-              <p className="text-sm">No {eventType === 'all' ? '' : eventType} incidents in {timeRangeLabel[timeRange].toLowerCase()}</p>
+              <p className="text-sm">No {eventType === 'all' ? '' : eventType} incidents in {String(timeRangeLabel[timeRange] ?? '').toLowerCase()}</p>
             </div>
           )}
         </div>
