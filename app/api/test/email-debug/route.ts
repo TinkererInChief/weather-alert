@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import sgMail from '@sendgrid/mail'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 export async function GET() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const apiKey = process.env.SENDGRID_API_KEY
     const fromEmail = process.env.SENDGRID_FROM_EMAIL

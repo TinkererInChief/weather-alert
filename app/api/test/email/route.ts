@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { EmailService } from '@/lib/services/email-service'
 import { db } from '@/lib/database'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 export async function POST() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const emailService = new EmailService()
     const contacts = await db.getActiveContacts()
@@ -76,6 +81,10 @@ export async function POST() {
 }
 
 export async function GET() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const contacts = await db.getActiveContacts()
     const emailContacts = contacts.filter(c => c.email)

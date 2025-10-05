@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server'
 import { alertManager } from '@/lib/alert-manager'
+import { Permission, withPermission } from '@/lib/rbac'
 
-export async function GET() {
+/**
+ * GET /api/monitoring
+ * Get monitoring status (requires VIEW_ALERTS permission)
+ */
+export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) => {
   try {
     const status = alertManager.getMonitoringStatus()
     
@@ -18,9 +23,13 @@ export async function GET() {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: Request) {
+/**
+ * POST /api/monitoring
+ * Start/stop monitoring (requires MANAGE_SETTINGS permission)
+ */
+export const POST = withPermission(Permission.MANAGE_SETTINGS, async (request, session) => {
   try {
     const { action } = await request.json()
     
@@ -54,4 +63,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
+})

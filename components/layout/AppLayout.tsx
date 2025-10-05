@@ -20,7 +20,8 @@ import {
   Clock,
   CheckCircle,
   Loader2,
-  UserCircle
+  UserCircle,
+  ShieldCheck
 } from 'lucide-react'
 
 interface AppLayoutProps {
@@ -69,7 +70,7 @@ export default function AppLayout({
   ]
 
   const adminNavigation = effectiveUser.role === 'admin' ? [
-    { name: 'User Management', href: '/dashboard/users', icon: Users, current: pathname === '/dashboard/users' },
+    { name: 'User Management', href: '/dashboard/users', icon: ShieldCheck, current: pathname === '/dashboard/users' },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' },
   ] : []
 

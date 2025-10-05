@@ -15,6 +15,16 @@ export class PTWCSource extends BaseDataSource {
   private readonly baseUrl = 'https://www.tsunami.gov'
   private readonly eventsUrl = 'https://www.tsunami.gov/events_json/events.json'
   
+  // Backoff/TTL + caching
+  private nextAllowedFetchAt = 0
+  private backoffMs = 0
+  private readonly ttlMs = parseInt(process.env.TSUNAMI_POLL_TTL_MS || '300000', 10) // 5 minutes
+  private readonly maxBackoffMs = parseInt(process.env.TSUNAMI_POLL_MAX_BACKOFF_MS || '3600000', 10) // 60 minutes
+  private lastErrorLogAt = 0
+  private readonly errorLogIntervalMs = 5 * 60 * 1000
+  private lastModified: string | undefined
+  private etag: string | undefined
+  
   protected async healthCheck(): Promise<void> {
     const response = await fetch(this.baseUrl, {
       method: 'HEAD',
@@ -36,22 +46,55 @@ export class PTWCSource extends BaseDataSource {
     const fetchStartTime = Date.now()
     
     try {
+      const now = Date.now()
+      if (now < this.nextAllowedFetchAt) {
+        return []
+      }
+
+      const userAgent = process.env.PTWC_USER_AGENT || process.env.EXTERNAL_REQUEST_USER_AGENT || 'weather-alert/1.0 (+https://weather-alert.app; contact@weather-alert.app)'
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'User-Agent': userAgent,
+        'Referer': 'https://www.tsunami.gov/'
+      }
+      if (this.lastModified) headers['If-Modified-Since'] = this.lastModified
+      if (this.etag) headers['If-None-Match'] = this.etag
+
       const response = await fetch(this.eventsUrl, {
         signal: AbortSignal.timeout(15000),
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'EmergencyAlertSystem/1.0'
-        }
+        headers
       })
       
+      if (response.status === 304) {
+        // Not modified: honor TTL
+        this.recordSuccess()
+        this.recordResponseTime(Date.now() - fetchStartTime)
+        this.nextAllowedFetchAt = now + this.ttlMs
+        return []
+      }
+
       if (!response.ok) {
-        throw new Error(`PTWC fetch failed: ${response.status}`)
+        const status = response.status
+        // Apply backoff on 403/429
+        if (status === 403 || status === 429) {
+          this.backoffMs = Math.min(this.backoffMs ? this.backoffMs * 2 : 10 * 60 * 1000, this.maxBackoffMs)
+          this.nextAllowedFetchAt = now + this.backoffMs
+          if (now - this.lastErrorLogAt >= this.errorLogIntervalMs) {
+            console.warn(`PTWC returned ${status}. Backing off for ${Math.round(this.backoffMs / 60000)}m.`)
+            this.lastErrorLogAt = now
+          }
+          return []
+        }
+        throw new Error(`PTWC fetch failed: ${status}`)
       }
       
       const data = await response.json()
+      this.lastModified = response.headers.get('Last-Modified') ?? undefined
+      this.etag = response.headers.get('ETag') ?? undefined
       
       this.recordSuccess()
       this.recordResponseTime(Date.now() - fetchStartTime)
+      this.nextAllowedFetchAt = now + this.ttlMs
       
       return this.convertPTWCToStandard(data)
       
@@ -64,11 +107,11 @@ export class PTWCSource extends BaseDataSource {
   private convertPTWCToStandard(data: any): TsunamiAlert[] {
     const alerts: TsunamiAlert[] = []
     
-    if (!data || !Array.isArray(data)) {
-      return alerts
-    }
+    // Accept either array or object with `events` array
+    const events: any[] = Array.isArray(data) ? data : Array.isArray(data?.events) ? data.events : []
+    if (!events.length) return alerts
     
-    for (const event of data) {
+    for (const event of events) {
       try {
         // PTWC event structure
         const alert: TsunamiAlert = {

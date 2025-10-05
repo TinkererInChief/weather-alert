@@ -120,6 +120,7 @@ model Contact {
   // Relationships
   groupMemberships      ContactGroupMember[]
   deliveryLogs          DeliveryLog[]
+  vesselAssignments     VesselContact[]  // Maritime: vessels assigned to this contact
   
   @@map("contacts")
 }
@@ -456,4 +457,136 @@ model MaintenanceWindow {
 
   @@index([startTime, endTime])
   @@map("maintenance_windows")
+}
+
+// ============================================================================
+// MARITIME ALERT SYSTEM MODELS
+// ============================================================================
+
+// Vessel registry for maritime tracking
+model Vessel {
+  id            String   @id @default(cuid())
+  mmsi          String   @unique  // Maritime Mobile Service Identity (required for tracking)
+  imo           String?  @unique  // International Maritime Organization number
+  name          String
+  callsign      String?
+  
+  // Vessel specifications
+  vesselType    String   // container, bulk, tanker, ro-ro, passenger, fishing, other
+  flag          String?
+  length        Float?   // meters
+  width         Float?   // meters
+  draught       Float?   // meters
+  grossTonnage  Float?
+  
+  // Ownership/Operation
+  operator      String?
+  owner         String?
+  
+  // Tracking status
+  active        Boolean  @default(true)
+  lastSeen      DateTime?
+  
+  // Relations
+  positions     VesselPosition[]
+  alerts        VesselAlert[]
+  contacts      VesselContact[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([mmsi])
+  @@index([active])
+  @@index([vesselType])
+  @@map("vessels")
+}
+
+// Vessel position history (from MarineTraffic API)
+model VesselPosition {
+  id            String   @id @default(cuid())
+  vesselId      String
+  vessel        Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  
+  // Position data
+  latitude      Float
+  longitude     Float
+  speed         Float?   // Knots (Speed Over Ground)
+  course        Float?   // Degrees (Course Over Ground)
+  heading       Float?   // Degrees (True heading)
+  navStatus     String?  // "Underway using engine", "At anchor", "Moored", etc.
+  
+  // Voyage data
+  destination   String?
+  eta           DateTime?
+  draught       Float?   // Current draught
+  
+  // Metadata
+  timestamp     DateTime
+  dataSource    String   @default("marinetraffic")
+  
+  createdAt     DateTime @default(now())
+  
+  @@index([vesselId, timestamp])
+  @@index([timestamp])
+  @@map("vessel_positions")
+}
+
+// Maritime alerts (tsunami risk, port closure, etc.)
+model VesselAlert {
+  id            String   @id @default(cuid())
+  vesselId      String
+  vessel        Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  
+  // Alert details
+  type          String   // tsunami, earthquake, storm, port_closure
+  severity      String   // low, moderate, high, critical
+  
+  // Event linkage
+  eventId       String?  // Link to earthquake/tsunami event
+  eventType     String?  // earthquake, tsunami
+  
+  // Risk assessment
+  riskLevel     String   // safe, caution, warning, danger
+  tsunamiETA    Int?     // Minutes until tsunami arrival
+  waveHeight    Float?   // Estimated wave height in meters
+  waterDepth    Float?   // Water depth at vessel position in meters
+  distance      Float?   // Distance from epicenter in km
+  
+  // Recommendations
+  recommendation String  @db.Text
+  actions        String[] @default([])
+  aiContext      String? @db.Text
+  
+  // Status
+  acknowledged  Boolean  @default(false)
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  resolvedAt    DateTime?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([vesselId, createdAt])
+  @@index([type, severity])
+  @@index([riskLevel])
+  @@map("vessel_alerts")
+}
+
+// Link vessels to contacts (crew, operators, emergency contacts)
+model VesselContact {
+  id            String   @id @default(cuid())
+  vesselId      String
+  contactId     String
+  role          String   // captain, operator, crew, emergency_contact, shore_support
+  primary       Boolean  @default(false)
+  
+  vessel        Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  contact       Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  createdAt     DateTime @default(now())
+  
+  @@unique([vesselId, contactId])
+  @@index([vesselId])
+  @@index([contactId])
+  @@map("vessel_contacts")
 }

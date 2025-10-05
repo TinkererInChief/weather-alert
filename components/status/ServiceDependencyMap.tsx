@@ -119,10 +119,10 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
   }
 
   return (
-    <div ref={containerRef} className="relative p-8 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
-      <div className="min-w-[800px] relative">
-        {/* Layer labels */}
-        <div className="flex justify-around mb-8 text-xs font-medium text-slate-500">
+    <div ref={containerRef} className="relative p-4 md:p-8 bg-slate-50 rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="min-w-[320px] md:min-w-[800px] relative">
+        {/* Layer labels - hide on mobile, show on desktop */}
+        <div className="hidden md:flex justify-around mb-8 text-xs font-medium text-slate-500">
           <span>External Sources</span>
           <span>Core Engine</span>
           <span>Infrastructure</span>
@@ -185,23 +185,30 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
         </svg>
 
         {/* Service nodes in layers */}
-        <div className="flex justify-around items-start gap-8 relative z-10">
+        <div className="flex flex-col md:flex-row md:justify-around items-start gap-4 md:gap-8 relative z-10">
           {layers.map((layerNodes, layerIdx) => (
-            <div key={layerIdx} className="flex flex-col gap-4 items-center">
+            <div key={layerIdx} className="flex flex-col gap-3 md:gap-4 items-center w-full md:w-auto">
+              {/* Mobile layer label */}
+              <div className="md:hidden text-xs font-semibold text-slate-600 mb-1">
+                {layerIdx === 0 && 'External Sources'}
+                {layerIdx === 1 && 'Core Engine'}
+                {layerIdx === 2 && 'Infrastructure'}
+                {layerIdx === 3 && 'Notification Channels'}
+              </div>
               {layerNodes.map((node) => {
                 const Icon = node.icon
                 return (
                   <div
                     key={node.id}
                     data-node-id={node.id}
-                    className={`relative group px-4 py-3 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer ${getStatusColor(node.status)}`}
+                    className={`relative group px-3 md:px-4 py-2 md:py-3 rounded-lg border-2 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 cursor-pointer w-full md:w-auto ${getStatusColor(node.status)}`}
                     role="button"
                     tabIndex={0}
                     aria-label={`${node.name} - ${node.status}`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4" />
-                      <span className="text-sm font-medium whitespace-nowrap">{node.name}</span>
+                      <span className="text-xs md:text-sm font-medium whitespace-nowrap">{node.name}</span>
                       <div className={`w-2 h-2 rounded-full ${getStatusDot(node.status)}`} />
                     </div>
                     

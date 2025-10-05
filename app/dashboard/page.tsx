@@ -44,8 +44,17 @@ import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
 import KeyMetricsWidget from '@/components/dashboard/KeyMetricsWidget'
 import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
 import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
-import EventTimelinePlayback from '@/components/dashboard/EventTimelinePlayback'
 import DeliveryStatusWidget from '@/components/dashboard/DeliveryStatusWidget'
+import ActiveContactsWidget from '@/components/dashboard/ActiveContactsWidget'
+import FeedStatusWidget from '@/components/dashboard/FeedStatusWidget'
+import ChannelStatusWidget from '@/components/dashboard/ChannelStatusWidget'
+import EventsByTypeWidget from '@/components/dashboard/EventsByTypeWidget'
+import LastCheckWidget from '@/components/dashboard/LastCheckWidget'
+import AlertsSentWidget from '@/components/dashboard/AlertsSentWidget'
+import AuditTrailWidget from '@/components/dashboard/AuditTrailWidget'
+import TestingControlsWidget from '@/components/dashboard/TestingControlsWidget'
+import UnifiedIncidentTimeline from '@/components/dashboard/UnifiedIncidentTimeline'
+import MaritimeIntelligenceWidget from '@/components/dashboard/MaritimeIntelligenceWidget'
 import { TrendingUp, Zap } from 'lucide-react'
 
 type OperationTone = 'success' | 'error' | 'info'
@@ -301,11 +310,13 @@ export default function Dashboard() {
         alertParams.append('limit', '500') // Reasonable upper limit for performance
       }
       
-      // Build query for total count (no magnitude filter, just count)
+      // Build query for total count (no magnitude filter, distinct EQ with coords only)
       const countParams = new URLSearchParams({
         startDate,
-        minMagnitude: '0', // Get all events for count
-        limit: '1000' // High limit to get accurate count
+        minMagnitude: '0',
+        coordsOnly: 'true',
+        distinctByEarthquake: 'true',
+        limit: '1' // We only need meta; keep payload tiny
       })
       
       const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes, countRes] = await Promise.all([
@@ -373,17 +384,30 @@ export default function Dashboard() {
       ])
       setRecentAlerts(dedupedEarthquakes)
       
-      // Get total unfiltered count (earthquakes + tsunamis) using deduped data
+      // Get total unfiltered count (earthquakes + tsunamis) using server meta and filtered tsunami
       if (countRes.ok) {
         const countData = await countRes.json()
         if (countData.success && countData.data?.alerts) {
-          const dedupedForCount = dedupeEarthquakes(countData.data.alerts)
-          const earthquakeCount = dedupedForCount.filter((alert: AlertLog) => 
-            alert.latitude != null && alert.longitude != null
-          ).length
+          // Prefer server-side meta distinct counts; fallback to local count if missing
+          const serverEqDistinctWithCoords: number | undefined = countData.data?.meta?.totalDistinctWithCoords
+          let earthquakeCount: number
+          if (typeof serverEqDistinctWithCoords === 'number' && !Number.isNaN(serverEqDistinctWithCoords)) {
+            earthquakeCount = serverEqDistinctWithCoords
+          } else {
+            const dedupedForCount = dedupeEarthquakes(countData.data.alerts)
+            earthquakeCount = dedupedForCount.filter((alert: AlertLog) => 
+              alert.latitude != null && alert.longitude != null
+            ).length
+          }
+
+          // Apply same time window for tsunami alerts
+          const startMs = new Date(startDate).getTime()
           const tsunamiCount = freshTsunamiAlerts.filter(alert => 
-            alert.latitude != null && alert.longitude != null
+            alert.latitude != null && 
+            alert.longitude != null &&
+            new Date(alert.processedAt).getTime() >= startMs
           ).length
+
           setTotalUnfilteredCount(earthquakeCount + tsunamiCount)
         }
       }
@@ -783,13 +807,29 @@ export default function Dashboard() {
   // This is fetched separately to show accurate "Show All (X events)" label
 
   // Transform data for new components - combine earthquake and tsunami alerts
-  // Apply magnitude filter to map events (only when not showing all)
+  // Apply magnitude and time filters to map events
   const mapEvents = useMemo(() => {
-    // Earthquake alerts - filter then deduplicate by earthquakeId
+    // Resolve start time (ms) from timeFilter
+    const startMs = (() => {
+      const now = Date.now()
+      switch (timeFilter) {
+        case '24h':
+          return now - 24 * 60 * 60 * 1000
+        case '7d':
+          return now - 7 * 24 * 60 * 60 * 1000
+        case '30d':
+          return now - 30 * 24 * 60 * 60 * 1000
+        default:
+          return now - 30 * 24 * 60 * 60 * 1000
+      }
+    })()
+
+    // Earthquake alerts - filter by coords, time window, and magnitude (unless Show All)
     const filtered = recentAlerts
       .filter(alert => 
         alert.latitude != null && 
         alert.longitude != null &&
+        new Date(alert.timestamp).getTime() >= startMs &&
         (showAllEvents || alert.magnitude >= minMagnitude)
       )
 
@@ -856,9 +896,13 @@ export default function Dashboard() {
       primarySource: e.primarySource
     }))
     
-    // Tsunami alerts
+    // Tsunami alerts (time-filtered)
     const tsunamiEvents = tsunamiAlerts
-      .filter(alert => alert.latitude != null && alert.longitude != null)
+      .filter(alert => 
+        alert.latitude != null && 
+        alert.longitude != null &&
+        new Date(alert.processedAt).getTime() >= startMs
+      )
       .map(alert => ({
         id: alert.id,
         lat: alert.latitude!,
@@ -872,7 +916,7 @@ export default function Dashboard() {
       }))
     
     return [...earthquakeEvents, ...tsunamiEvents]
-  }, [recentAlerts, tsunamiAlerts, minMagnitude, showAllEvents])  // Add dependencies
+  }, [recentAlerts, tsunamiAlerts, minMagnitude, showAllEvents, timeFilter])
 
   const keyMetrics = useMemo(() => [
     {
@@ -944,21 +988,6 @@ export default function Dashboard() {
       }))
   }, [recentAlerts])
 
-  const playbackEvents = useMemo(() => {
-    return timelineEvents.map(event => ({
-      id: event.id,
-      timestamp: event.timestamp,
-      type: event.type === 'earthquake' ? 'detection' as const : 'detection' as const,
-      title: event.title,
-      description: event.subtitle,
-      severity: event.success ? 'success' as const : 'error' as const,
-      metadata: {
-        type: event.type,
-        status: event.status
-      }
-    }))
-  }, [timelineEvents])
-
   if (loading) {
     return (
       <AuthGuard>
@@ -971,22 +1000,6 @@ export default function Dashboard() {
           </div>
         </AppLayout>
       </AuthGuard>
-    )
-  }
-
-  const getTimelineIcon = (type: 'earthquake' | 'tsunami') => {
-    if (type === 'earthquake') {
-      return (
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10 text-red-600">
-          <Activity className="h-5 w-5" />
-        </div>
-      )
-    }
-
-    return (
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
-        <Waves className="h-5 w-5" />
-      </div>
     )
   }
 
@@ -1065,6 +1078,25 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Maritime Intelligence Widget - Shows for M6.0+ earthquakes or tsunami warnings */}
+        {(recentAlerts.some(a => a.magnitude >= 6.0) || criticalTsunamiAlert) && (
+          <MaritimeIntelligenceWidget
+            earthquakeData={
+              recentAlerts.length > 0
+                ? {
+                    magnitude: recentAlerts[0].magnitude,
+                    location: recentAlerts[0].location,
+                    latitude: recentAlerts[0].latitude || 0,
+                    longitude: recentAlerts[0].longitude || 0,
+                    timestamp: new Date(recentAlerts[0].timestamp),
+                    tsunamiWarning: !!criticalTsunamiAlert
+                  }
+                : undefined
+            }
+            autoFetch={false}
+          />
         )}
 
         {/* Phase 1: Global Event Map + Unified Incident Timeline */}
@@ -1156,45 +1188,10 @@ export default function Dashboard() {
               height="500px"
             />
           </div>
-          <div className="h-[500px] overflow-hidden">
-            <div className="card h-full">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-slate-900">Unified Incident Timeline</h3>
-                <span className="text-xs font-medium text-slate-500">Last 24 hours</span>
-              </div>
-              <div className="space-y-3 overflow-y-auto" style={{maxHeight: 'calc(500px - 60px)'}}>
-                {timelineEvents.length ? (
-                  timelineEvents.slice(0, 10).map((event) => (
-                    <div key={event.id} className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/90 p-3 shadow-sm">
-                      {getTimelineIcon(event.type)}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 truncate">{event.title}</p>
-                            <p className="text-xs text-slate-500 truncate">{event.subtitle}</p>
-                          </div>
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${event.success ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                            {event.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400 mt-1">
-                          {event.timestamp.toLocaleString()}
-                        </p>
-                        {event.details && (
-                          <p className="mt-1 text-xs text-rose-600 truncate">{event.details}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12 text-slate-500">
-                    <Activity className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                    <p className="text-sm">No incidents in last 24 hours</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <UnifiedIncidentTimeline 
+            events={timelineEvents} 
+            height="500px" 
+          />
         </div>
 
         {/* Phase 1: Key Metrics Dashboard */}
@@ -1202,6 +1199,24 @@ export default function Dashboard() {
 
         {/* Delivery Status Widget */}
         <DeliveryStatusWidget />
+
+        {/* New Usability Widgets */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <ActiveContactsWidget />
+          <FeedStatusWidget />
+          <ChannelStatusWidget />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          <EventsByTypeWidget />
+          <LastCheckWidget />
+          <AlertsSentWidget />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <TestingControlsWidget />
+          <AuditTrailWidget />
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           {monitoringSummary.map((item) => (
@@ -1503,14 +1518,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-
-        {/* Phase 2: Event Timeline Playback */}
-        {playbackEvents.length > 0 && (
-          <EventTimelinePlayback
-            events={playbackEvents}
-            autoPlay={false}
-          />
-        )}
       </div>
 
       {/* Phase 2: Quick Action Command Palette (Floating) */}

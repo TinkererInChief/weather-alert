@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { WhatsAppService } from '@/lib/services/whatsapp-service'
 import { db } from '@/lib/database'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 export async function POST() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const whatsappService = new WhatsAppService()
     const contacts = await db.getActiveContacts()
@@ -74,6 +79,10 @@ export async function POST() {
 }
 
 export async function GET() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const contacts = await db.getActiveContacts()
     const whatsappContacts = contacts.filter(c => c.whatsapp || c.phone)

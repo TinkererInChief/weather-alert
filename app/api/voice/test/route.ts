@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { voiceService, VoiceAlertType } from '@/lib/voice-service'
 import { prisma } from '@/lib/prisma'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 // Ensure Node.js runtime for Twilio SDK compatibility
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const body = await request.json()
     const { phoneNumber, contactName } = body
@@ -67,6 +72,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     // Safe diagnostics - do not leak secrets
     const sidOk = !!process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_ACCOUNT_SID.startsWith('AC')

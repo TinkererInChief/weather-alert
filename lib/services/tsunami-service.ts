@@ -1,5 +1,4 @@
-import axios from 'axios'
-import xml2js from 'xml2js'
+import axios, { AxiosError } from 'axios'
 import { prisma } from '../prisma'
 
 export interface TsunamiAlert {
@@ -19,6 +18,20 @@ export interface TsunamiAlert {
 export class TsunamiService {
   private static instance: TsunamiService
   private processedAlerts: Set<string> = new Set()
+  
+  // Request throttling / caching
+  private lastFetchAt = 0
+  private nextAllowedFetchAt = 0
+  private backoffMs = 0
+  private readonly ttlMs = parseInt(process.env.TSUNAMI_POLL_TTL_MS || '300000', 10) // 5 minutes
+  private readonly maxBackoffMs = parseInt(process.env.TSUNAMI_POLL_MAX_BACKOFF_MS || '3600000', 10) // 60 minutes
+  private lastSuccessfulAlerts: TsunamiAlert[] = []
+  private lastErrorLogAt = 0
+  private readonly errorLogIntervalMs = 5 * 60 * 1000
+  private noaaLastModified?: string
+  private noaaEtag?: string
+  private ptwcLastModified?: string
+  private ptwcEtag?: string
 
   static getInstance(): TsunamiService {
     if (!TsunamiService.instance) {
@@ -30,24 +43,37 @@ export class TsunamiService {
   // Fetch alerts from NOAA National Weather Service
   async fetchNOAAAlerts(): Promise<TsunamiAlert[]> {
     try {
-      const response = await axios.get(
-        'https://api.weather.gov/alerts?event=Tsunami',
-        {
-          timeout: 10000,
-          headers: {
-            'User-Agent': 'Emergency Alert System (emergency-alerts@yourdomain.com)'
-          }
-        }
-      )
+      const userAgent = process.env.NWS_USER_AGENT || process.env.EXTERNAL_REQUEST_USER_AGENT || 'weather-alert/1.0 (+https://weather-alert.app; contact@weather-alert.app)'
+      const headers: Record<string, string> = {
+        'User-Agent': userAgent,
+        'Accept': 'application/geo+json'
+      }
+      if (this.noaaLastModified) headers['If-Modified-Since'] = this.noaaLastModified
+      if (this.noaaEtag) headers['If-None-Match'] = this.noaaEtag
+
+      const response = await axios.get('https://api.weather.gov/alerts', {
+        params: { event: 'Tsunami' },
+        timeout: 10000,
+        headers,
+        validateStatus: (status) => (status >= 200 && status < 300) || status === 304
+      })
+
+      if (response.status === 304) {
+        return []
+      }
 
       if (response.data?.features) {
+        // Cache conditional headers for next requests
+        const lm = (response.headers as any)['last-modified'] as string | undefined
+        const et = (response.headers as any)['etag'] as string | undefined
+        if (lm) this.noaaLastModified = lm
+        if (et) this.noaaEtag = et
         return this.parseNOAAAlerts(response.data.features)
       }
 
       return []
     } catch (error) {
-      console.error('Error fetching NOAA tsunami alerts:', error)
-      return []
+      throw error
     }
   }
 
@@ -55,25 +81,36 @@ export class TsunamiService {
   async fetchPTWCAlerts(): Promise<TsunamiAlert[]> {
     try {
       // PTWC provides JSON feed
-      const response = await axios.get(
-        'https://www.tsunami.gov/events_json/events.json',
-        {
-          timeout: 10000,
-          headers: {
-            'User-Agent': 'Emergency Alert System'
-          }
-        }
-      )
+      const userAgent = process.env.PTWC_USER_AGENT || process.env.EXTERNAL_REQUEST_USER_AGENT || 'weather-alert/1.0 (+https://weather-alert.app; contact@weather-alert.app)'
+      const headers: Record<string, string> = {
+        'User-Agent': userAgent,
+        'Accept': 'application/json',
+        'Referer': 'https://www.tsunami.gov/'
+      }
+      if (this.ptwcLastModified) headers['If-Modified-Since'] = this.ptwcLastModified
+      if (this.ptwcEtag) headers['If-None-Match'] = this.ptwcEtag
+
+      const response = await axios.get('https://www.tsunami.gov/events_json/events.json', {
+        timeout: 10000,
+        headers,
+        validateStatus: (status) => (status >= 200 && status < 300) || status === 304
+      })
+
+      if (response.status === 304) {
+        return []
+      }
 
       if (response.data?.events) {
+        const lm = (response.headers as any)['last-modified'] as string | undefined
+        const et = (response.headers as any)['etag'] as string | undefined
+        if (lm) this.ptwcLastModified = lm
+        if (et) this.ptwcEtag = et
         return this.parsePTWCAlerts(response.data.events)
       }
 
       return []
     } catch (error) {
-      console.error('Error fetching PTWC tsunami alerts:', error)
-      // PTWC might not always be available, so we continue with other sources
-      return []
+      throw error
     }
   }
 
@@ -259,24 +296,60 @@ export class TsunamiService {
 
   // Get new tsunami alerts (not processed yet)
   async getNewTsunamiAlerts(): Promise<TsunamiAlert[]> {
-    const [noaaAlerts, ptwcAlerts] = await Promise.all([
-      this.fetchNOAAAlerts(),
-      this.fetchPTWCAlerts()
-    ])
+    const now = Date.now()
+    if (now < this.nextAllowedFetchAt) {
+      // Respect backoff/TTL; do not hit upstream
+      return []
+    }
 
-    const allAlerts = [...noaaAlerts, ...ptwcAlerts]
-    
-    // Filter out already processed alerts
-    const newAlerts = allAlerts.filter(alert => {
-      return !this.processedAlerts.has(alert.id)
-    })
+    try {
+      const settled = await Promise.allSettled([
+        this.fetchNOAAAlerts(),
+        this.fetchPTWCAlerts()
+      ])
 
-    // Mark as processed
-    newAlerts.forEach(alert => {
-      this.processedAlerts.add(alert.id)
-    })
+      const noaaAlerts = settled[0].status === 'fulfilled' ? settled[0].value : []
+      const ptwcAlerts = settled[1].status === 'fulfilled' ? settled[1].value : []
 
-    return newAlerts
+      const allAlerts = [...noaaAlerts, ...ptwcAlerts]
+
+      // Filter out already processed alerts
+      const newAlerts = allAlerts.filter(alert => !this.processedAlerts.has(alert.id))
+
+      // Mark as processed
+      newAlerts.forEach(alert => this.processedAlerts.add(alert.id))
+
+      this.lastSuccessfulAlerts = allAlerts
+      this.lastFetchAt = now
+      this.backoffMs = 0
+      this.nextAllowedFetchAt = now + this.ttlMs
+
+      return newAlerts
+    } catch (wrapped) {
+      // Determine if this is an Axios error and status code (best-effort)
+      const err = (wrapped as any)?.error ?? wrapped
+      const src = (wrapped as any)?.source || 'unknown'
+      const status = (err as AxiosError)?.response?.status
+
+      // 403/429 -> exponential backoff
+      if (status === 403 || status === 429) {
+        this.backoffMs = Math.min(this.backoffMs ? this.backoffMs * 2 : 10 * 60 * 1000, this.maxBackoffMs)
+        this.nextAllowedFetchAt = now + this.backoffMs
+        if (now - this.lastErrorLogAt >= this.errorLogIntervalMs) {
+          console.warn(`Tsunami upstream ${src} returned ${status}. Backing off for ${Math.round(this.backoffMs / 60000)}m.`)
+          this.lastErrorLogAt = now
+        }
+      } else {
+        // Generic failure -> respect normal TTL to avoid hammering
+        this.nextAllowedFetchAt = now + this.ttlMs
+        if (now - this.lastErrorLogAt >= this.errorLogIntervalMs) {
+          console.warn(`Tsunami upstream ${src} failed. Using TTL ${Math.round(this.ttlMs / 60000)}m before retry.`)
+          this.lastErrorLogAt = now
+        }
+      }
+
+      return []
+    }
   }
 
   // Store tsunami alert in database

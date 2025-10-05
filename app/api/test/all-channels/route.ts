@@ -4,8 +4,13 @@ import { WhatsAppService } from '@/lib/services/whatsapp-service'
 import { voiceService, VoiceAlertType } from '@/lib/voice-service'
 import { EmailService } from '@/lib/services/email-service'
 import { db } from '@/lib/database'
+import { protectTestEndpoint } from '@/lib/test-protection'
 
 export async function POST(request: NextRequest) {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const body = await request.json()
     const { includeVoice = true, includeWhatsApp = true, includeSMS = true, includeEmail = true } = body
@@ -237,6 +242,10 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
+  // Protect test endpoint in production
+  const protection = protectTestEndpoint()
+  if (protection) return protection
+  
   try {
     const contacts = await db.getActiveContacts()
     

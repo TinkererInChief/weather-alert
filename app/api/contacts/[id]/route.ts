@@ -1,13 +1,31 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { SMSService } from '@/lib/sms-service'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+type RouteContext = {
+  params: {
+    id: string
+  }
+}
+
+/**
+ * PUT /api/contacts/[id]
+ * Update a contact
+ */
+export async function PUT(request: NextRequest, context: RouteContext) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const contactId = context.params.id
     const { name, phone, email, whatsapp } = await request.json()
-    const contactId = params.id
     
     if (!name || !phone) {
       return NextResponse.json(
@@ -108,15 +126,25 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+/**
+ * DELETE /api/contacts/[id]
+ * Delete a contact
+ */
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    const contactId = params.id
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const contactId = context.params.id
     
     // Delete contact using Prisma
-    const { prisma } = await import('@/lib/prisma')
+    const { prisma } = await import("@/lib/prisma")
     await prisma.contact.delete({
       where: { id: contactId }
     })
@@ -126,17 +154,6 @@ export async function DELETE(
       message: 'Contact deleted successfully'
     })
   } catch (error: any) {
-    // Handle contact not found
-    if (error.code === 'P2025') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Contact not found'
-        },
-        { status: 404 }
-      )
-    }
-    
     return NextResponse.json(
       {
         success: false,
@@ -147,15 +164,25 @@ export async function DELETE(
   }
 }
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+/**
+ * GET /api/contacts/[id]
+ * Get a single contact
+ */
+export async function GET(request: NextRequest, context: RouteContext) {
   try {
-    const contactId = params.id
+    // Check authentication
+    const session = await getServerSession(authOptions)
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const contactId = context.params.id
     
     // Get contact using Prisma
-    const { prisma } = await import('@/lib/prisma')
+    const { prisma } = await import("@/lib/prisma")
     const contact = await prisma.contact.findUnique({
       where: { id: contactId }
     })

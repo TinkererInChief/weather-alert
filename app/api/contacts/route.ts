@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/database'
 import { SMSService } from '@/lib/sms-service'
+import { Permission, withPermission, logAudit } from '@/lib/rbac'
 
-export async function GET() {
+/**
+ * GET /api/contacts
+ * List all contacts (requires VIEW_CONTACTS permission)
+ */
+export const GET = withPermission(Permission.VIEW_CONTACTS, async (req, session) => {
   try {
     const contacts = await db.getAllContacts()
     
@@ -19,9 +24,13 @@ export async function GET() {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: Request) {
+/**
+ * POST /api/contacts
+ * Create a new contact (requires CREATE_CONTACTS permission)
+ */
+export const POST = withPermission(Permission.CREATE_CONTACTS, async (request, session) => {
   try {
     const { name, phone, email, whatsapp } = await request.json()
     
@@ -111,4 +120,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
+})

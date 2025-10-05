@@ -21,6 +21,14 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
     const success = searchParams.get('success')
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
+    const coordsOnly = ((): boolean => {
+      const raw = searchParams.get('coordsOnly')
+      return raw === 'true' || raw === '1'
+    })()
+    const distinctByEarthquake = ((): boolean => {
+      const raw = searchParams.get('distinctByEarthquake')
+      return raw === 'true' || raw === '1'
+    })()
     
     // Build where clause
     const where: any = {}
@@ -46,6 +54,11 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
         where.timestamp.lte = new Date(endDate)
       }
     }
+
+    if (coordsOnly) {
+      where.latitude = { not: null }
+      where.longitude = { not: null }
+    }
     
     // Fetch alerts with magnitude-first ordering to prioritize critical events
     const [alerts, total] = await Promise.all([
@@ -61,6 +74,56 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
       prisma.alertLog.count({ where })
     ])
     
+    // Meta counts (distinct earthquakeId and coords-only distinct)
+    // Keep backward compatibility: existing pagination.total remains the row count above
+    let totalDistinct = 0
+    let totalDistinctWithCoords = 0
+    try {
+      const distinctGroups = await prisma.alertLog.groupBy({
+        by: ['earthquakeId'],
+        where: {
+          // Use the same filter but without coords constraint
+          ...(minMagnitude ? { magnitude: { gte: parseFloat(minMagnitude) } } : {}),
+          ...(maxMagnitude ? { magnitude: { lte: parseFloat(maxMagnitude) } } : {}),
+          ...(success !== null && success !== undefined && success !== '' ? { success: success === 'true' } : {}),
+          ...(startDate || endDate
+            ? {
+                timestamp: {
+                  ...(startDate ? { gte: new Date(startDate) } : {}),
+                  ...(endDate ? { lte: new Date(endDate) } : {}),
+                },
+              }
+            : {}),
+        },
+        _count: { earthquakeId: true },
+      })
+      totalDistinct = distinctGroups.length
+
+      const distinctWithCoordsGroups = await prisma.alertLog.groupBy({
+        by: ['earthquakeId'],
+        where: {
+          ...(minMagnitude ? { magnitude: { gte: parseFloat(minMagnitude) } } : {}),
+          ...(maxMagnitude ? { magnitude: { lte: parseFloat(maxMagnitude) } } : {}),
+          ...(success !== null && success !== undefined && success !== '' ? { success: success === 'true' } : {}),
+          ...(startDate || endDate
+            ? {
+                timestamp: {
+                  ...(startDate ? { gte: new Date(startDate) } : {}),
+                  ...(endDate ? { lte: new Date(endDate) } : {}),
+                },
+              }
+            : {}),
+          latitude: { not: null },
+          longitude: { not: null },
+        },
+        _count: { earthquakeId: true },
+      })
+      totalDistinctWithCoords = distinctWithCoordsGroups.length
+    } catch (e) {
+      // Fall back silently; meta will remain 0 if groupBy fails
+      console.warn('alerts/history: distinct meta computation failed', e)
+    }
+    
     return NextResponse.json({
       success: true,
       data: {
@@ -70,6 +133,15 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
           limit,
           total,
           totalPages: Math.ceil(total / limit)
+        },
+        meta: {
+          total, // raw rows matching filter
+          totalDistinct,
+          totalDistinctWithCoords,
+          // If client asks for distinctByEarthquake and coordsOnly, they can use totalDistinctWithCoords as the denominator
+          // This keeps the response backward compatible while enabling robust counts
+          requestedDistinctByEarthquake: distinctByEarthquake,
+          requestedCoordsOnly: coordsOnly,
         }
       }
     })

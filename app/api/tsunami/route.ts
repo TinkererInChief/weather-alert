@@ -16,7 +16,8 @@ export async function GET() {
         data: {
           alertCount: 0,
           alerts: [],
-          sources: ['noaa', 'ptwc']
+          sources: ['noaa', 'ptwc'],
+          lastChecked: new Date().toISOString()
         }
       })
     }
