@@ -40,11 +40,13 @@ export default function AuditTrailLogger({ entries, onExport }: AuditTrailLogger
   const [filterAction, setFilterAction] = useState<AuditAction | 'all'>('all')
   const [filterSeverity, setFilterSeverity] = useState<'all' | 'info' | 'warning' | 'critical'>('all')
 
+  const lower = (v?: string | null) => (v ?? '').toLowerCase()
+
   const filteredEntries = entries.filter(entry => {
     const matchesSearch = 
-      entry.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      entry.user.email.toLowerCase().includes(searchQuery.toLowerCase())
+      lower(entry.description).includes(lower(searchQuery)) ||
+      lower(entry.user.name).includes(lower(searchQuery)) ||
+      lower(entry.user.email).includes(lower(searchQuery))
     
     const matchesAction = filterAction === 'all' || entry.action === filterAction
     const matchesSeverity = filterSeverity === 'all' || entry.severity === filterSeverity

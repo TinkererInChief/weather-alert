@@ -72,29 +72,31 @@ export default function EventsByTypeWidget() {
         const recentTsunamis = (tsunamiData.data?.alerts || [])
           .filter((alert: any) => new Date(alert.time || alert.eventTime).getTime() >= since)
 
+        const lower = (val?: string) => (val ?? '').toLowerCase()
         const bySeverity = {
-          watch: recentTsunamis.filter((a: any) => 
-            a.severity?.toLowerCase().includes('watch') || a.type?.toLowerCase().includes('watch')
+          watch: recentTsunamis.filter((a: any) =>
+            lower(a.severity).includes('watch') || lower(a.type).includes('watch')
           ).length,
-          advisory: recentTsunamis.filter((a: any) => 
-            a.severity?.toLowerCase().includes('advisory') || a.type?.toLowerCase().includes('advisory')
+          advisory: recentTsunamis.filter((a: any) =>
+            lower(a.severity).includes('advisory') || lower(a.type).includes('advisory')
           ).length,
-          warning: recentTsunamis.filter((a: any) => 
-            a.severity?.toLowerCase().includes('warning') || a.type?.toLowerCase().includes('warning')
+          warning: recentTsunamis.filter((a: any) =>
+            lower(a.severity).includes('warning') || lower(a.type).includes('warning')
           ).length,
         }
 
+        // Update state
         setEvents({
           earthquakes: {
             total: recentEarthquakes.length,
-            byMagnitude
+            byMagnitude,
           },
           tsunamis: {
             total: recentTsunamis.length,
-            bySeverity
+            bySeverity,
           },
           trend: 'stable', // TODO: Calculate from previous period
-          trendValue: 0
+          trendValue: 0,
         })
         setError(null)
       } catch (e) {

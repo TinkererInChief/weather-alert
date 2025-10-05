@@ -97,12 +97,14 @@ export default function QuickActionPalette({ actions = [], onActionExecute }: Qu
 
   const allActions = [...defaultActions, ...actions]
 
+  const lower = (v?: string | null) => (v ?? '').toLowerCase()
+
   const filteredActions = search.trim() === ''
     ? allActions
     : allActions.filter(action =>
-        action.label.toLowerCase().includes(search.toLowerCase()) ||
-        action.description?.toLowerCase().includes(search.toLowerCase()) ||
-        action.category.toLowerCase().includes(search.toLowerCase())
+        lower(action.label).includes(lower(search)) ||
+        lower(action.description).includes(lower(search)) ||
+        lower(action.category).includes(lower(search))
       )
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {

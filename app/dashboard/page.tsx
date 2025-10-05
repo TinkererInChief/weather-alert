@@ -751,7 +751,7 @@ export default function Dashboard() {
   }
 
   const criticalTsunamiAlert = useMemo(() => {
-    return tsunamiAlerts.find((alert) => alert.threat?.level && ['warning', 'watch'].includes(alert.threat.level.toLowerCase())) || null
+    return tsunamiAlerts.find((alert) => ['warning', 'watch'].includes(String(alert.threat?.level || '').toLowerCase())) || null
   }, [tsunamiAlerts])
 
   const mostSevereEarthquake = useMemo(() => {
@@ -779,7 +779,7 @@ export default function Dashboard() {
       title: `${alert.title}`,
       subtitle: alert.location,
       severity: alert.severity,
-      status: alert.type.toUpperCase(),
+      status: String(alert.type || 'UNKNOWN').toUpperCase(),
       success: alert.severity < 3,
       details: undefined
     }))
@@ -1063,7 +1063,7 @@ export default function Dashboard() {
                   {criticalTsunamiAlert.description}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-3 text-xs font-medium">
-                  <span className="rounded-full bg-white/20 px-3 py-1">Level: {criticalTsunamiAlert.threat.level.toUpperCase()}</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1">Level: {(criticalTsunamiAlert.threat?.level ?? 'UNKNOWN').toUpperCase()}</span>
                   <span className="rounded-full bg-white/20 px-3 py-1">Confidence: {Math.round(criticalTsunamiAlert.threat.confidence * 100)}%</span>
                   <span className="rounded-full bg-white/20 px-3 py-1">Affected: {criticalTsunamiAlert.threat.affectedRegions.join(', ')}</span>
                 </div>

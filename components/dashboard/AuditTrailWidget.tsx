@@ -89,8 +89,10 @@ export default function AuditTrailWidget() {
     return () => observer.disconnect()
   }, [handleObserver])
 
+  const lower = (v?: string | null) => (v ?? '').toLowerCase()
+
   const getActionIcon = (action: string) => {
-    const actionLower = action.toLowerCase()
+    const actionLower = lower(action)
     if (actionLower.includes('create') || actionLower.includes('add')) return Plus
     if (actionLower.includes('update') || actionLower.includes('edit')) return Edit
     if (actionLower.includes('delete') || actionLower.includes('remove')) return Trash2
@@ -100,7 +102,7 @@ export default function AuditTrailWidget() {
   }
 
   const getEntityIcon = (entityType: string) => {
-    const typeLower = entityType.toLowerCase()
+    const typeLower = lower(entityType)
     if (typeLower.includes('user')) return User
     if (typeLower.includes('contact') || typeLower.includes('group')) return Users
     if (typeLower.includes('setting')) return Settings
@@ -109,7 +111,7 @@ export default function AuditTrailWidget() {
   }
 
   const getActionColor = (action: string) => {
-    const actionLower = action.toLowerCase()
+    const actionLower = lower(action)
     if (actionLower.includes('create') || actionLower.includes('add')) return 'text-green-600 bg-green-50'
     if (actionLower.includes('update') || actionLower.includes('edit')) return 'text-blue-600 bg-blue-50'
     if (actionLower.includes('delete') || actionLower.includes('remove')) return 'text-red-600 bg-red-50'
@@ -132,8 +134,8 @@ export default function AuditTrailWidget() {
   }
 
   const formatAction = (event: AuditEvent) => {
-    const action = event.action.replace(/_/g, ' ')
-    return action.charAt(0).toUpperCase() + action.slice(1).toLowerCase()
+    const base = (event.action || '').replace(/_/g, ' ')
+    return base ? base.charAt(0).toUpperCase() + base.slice(1).toLowerCase() : ''
   }
 
   if (loading && events.length === 0) {
