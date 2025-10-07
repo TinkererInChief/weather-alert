@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import {
   Home,
@@ -44,6 +44,7 @@ export default function AppLayout({
   user = { name: 'Emergency Operator', role: 'admin', email: 'operator@emergency.gov' }
 }: AppLayoutProps) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session, status } = useSession()
 
@@ -378,8 +379,10 @@ export default function AppLayout({
                     }
                   `}
                   onClick={(e) => {
-                    // Ensure navigation happens even if there are event conflicts
+                    e.preventDefault()
                     setSidebarOpen(false)
+                    // Force navigation using router.push as fallback
+                    router.push(item.href)
                   }}
                 >
                   <Icon className={`
