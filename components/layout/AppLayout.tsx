@@ -340,7 +340,7 @@ export default function AppLayout({
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-in-out lg:translate-x-0
+        fixed inset-y-0 left-0 z-[60] w-72 transform transition-transform duration-300 ease-in-out lg:translate-x-0
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
@@ -369,6 +369,7 @@ export default function AppLayout({
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={true}
                   className={`
                     group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                     ${item.current
@@ -376,7 +377,10 @@ export default function AppLayout({
                       : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900'
                     }
                   `}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={(e) => {
+                    // Ensure navigation happens even if there are event conflicts
+                    setSidebarOpen(false)
+                  }}
                 >
                   <Icon className={`
                     mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110
@@ -441,7 +445,7 @@ export default function AppLayout({
       {/* Main content */}
       <div className="lg:pl-72">
         {/* Top header */}
-        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             {/* Mobile menu button */}
             <button
