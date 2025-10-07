@@ -584,7 +584,7 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
               </div>
             </div>
             <div className="space-y-1.5 text-xs text-white/90">
-              {hoveredEvent.magnitude && (
+              {typeof hoveredEvent.magnitude === 'number' && (
                 <p className="flex justify-between">
                   <span className="font-medium">Magnitude:</span>
                   <span className="font-semibold text-white">{hoveredEvent.magnitude.toFixed(1)}</span>

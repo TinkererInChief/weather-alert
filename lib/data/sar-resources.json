@@ -1,0 +1,277 @@
+{
+  "coastGuardStations": [
+    {
+      "id": "uscg-1",
+      "name": "US Coast Guard District 1 (Northeast)",
+      "region": "Atlantic - Northeast US",
+      "rcc": {
+        "name": "First Coast Guard District Command Center",
+        "location": "Boston, MA",
+        "coordinates": [42.3601, -71.0589]
+      },
+      "contact": {
+        "phone": "+1-617-223-8555",
+        "vhf": "Channel 16",
+        "email": "D01-SMB-RCC@uscg.mil"
+      },
+      "coverage": {
+        "latitude": [40.5, 44.5],
+        "longitude": [-74.0, -66.0]
+      },
+      "capabilities": ["SAR", "pollution response", "law enforcement", "helicopter", "cutters"],
+      "responseTime": 30
+    },
+    {
+      "id": "uscg-11",
+      "name": "US Coast Guard District 11 (California)",
+      "region": "Pacific - California",
+      "rcc": {
+        "name": "Eleventh Coast Guard District Command Center",
+        "location": "Alameda, CA",
+        "coordinates": [37.7749, -122.4194]
+      },
+      "contact": {
+        "phone": "+1-510-437-3700",
+        "vhf": "Channel 16",
+        "email": "D11-PF-RCC@uscg.mil"
+      },
+      "coverage": {
+        "latitude": [32.5, 42.0],
+        "longitude": [-124.5, -117.0]
+      },
+      "capabilities": ["SAR", "helicopter", "fast response boats", "cutters"],
+      "responseTime": 20
+    },
+    {
+      "id": "uscg-13",
+      "name": "US Coast Guard District 13 (Pacific Northwest)",
+      "region": "Pacific - Oregon/Washington",
+      "rcc": {
+        "name": "Thirteenth Coast Guard District Command Center",
+        "location": "Seattle, WA",
+        "coordinates": [47.6062, -122.3321]
+      },
+      "contact": {
+        "phone": "+1-206-220-7001",
+        "vhf": "Channel 16",
+        "email": "D13-SMB-RCC@uscg.mil"
+      },
+      "coverage": {
+        "latitude": [42.0, 49.0],
+        "longitude": [-125.0, -122.0]
+      },
+      "capabilities": ["SAR", "helicopter", "ice rescue", "cutters"],
+      "responseTime": 25
+    },
+    {
+      "id": "uscg-14",
+      "name": "US Coast Guard District 14 (Hawaii/Pacific Islands)",
+      "region": "Pacific - Hawaii",
+      "rcc": {
+        "name": "Fourteenth Coast Guard District Command Center",
+        "location": "Honolulu, HI",
+        "coordinates": [21.3099, -157.8581]
+      },
+      "contact": {
+        "phone": "+1-808-535-3333",
+        "vhf": "Channel 16",
+        "email": "D14-SMB-RCC@uscg.mil"
+      },
+      "coverage": {
+        "latitude": [15.0, 30.0],
+        "longitude": [-180.0, -150.0]
+      },
+      "capabilities": ["SAR", "long-range helicopter", "HC-130 aircraft", "cutters"],
+      "responseTime": 45
+    },
+    {
+      "id": "jcg-main",
+      "name": "Japan Coast Guard",
+      "region": "Pacific - Japan",
+      "rcc": {
+        "name": "Japan Coast Guard Operations Center",
+        "location": "Tokyo, Japan",
+        "coordinates": [35.6762, 139.6503]
+      },
+      "contact": {
+        "phone": "+81-3-3591-6361",
+        "vhf": "Channel 16",
+        "emergency": "118"
+      },
+      "coverage": {
+        "latitude": [24.0, 46.0],
+        "longitude": [123.0, 146.0]
+      },
+      "capabilities": ["SAR", "helicopter", "patrol vessels", "specialized rescue"],
+      "responseTime": 20
+    },
+    {
+      "id": "amsa-main",
+      "name": "Australian Maritime Safety Authority",
+      "region": "Pacific/Indian - Australia",
+      "rcc": {
+        "name": "AMSA RCC Australia",
+        "location": "Canberra, ACT",
+        "coordinates": [-35.2809, 149.1300]
+      },
+      "contact": {
+        "phone": "+61-2-6230-6811",
+        "vhf": "Channel 16",
+        "email": "rccaus@amsa.gov.au"
+      },
+      "coverage": {
+        "latitude": [-45.0, -10.0],
+        "longitude": [110.0, 160.0]
+      },
+      "capabilities": ["SAR", "long-range coordination", "helicopter", "fixed-wing"],
+      "responseTime": 60
+    },
+    {
+      "id": "pcg-main",
+      "name": "Philippine Coast Guard",
+      "region": "Pacific - Philippines",
+      "rcc": {
+        "name": "PCG National Headquarters",
+        "location": "Manila, Philippines",
+        "coordinates": [14.5995, 120.9842]
+      },
+      "contact": {
+        "phone": "+63-2-8527-8481",
+        "vhf": "Channel 16",
+        "emergency": "+63-2-8527-3877"
+      },
+      "coverage": {
+        "latitude": [4.5, 21.0],
+        "longitude": [116.0, 127.0]
+      },
+      "capabilities": ["SAR", "disaster response", "patrol vessels"],
+      "responseTime": 30
+    }
+  ],
+  "salvageTugs": [
+    {
+      "id": "resolve-pac",
+      "name": "Resolve Marine - Pacific Division",
+      "location": "San Diego, CA",
+      "coordinates": [32.7157, -117.1611],
+      "contact": {
+        "phone": "+1-954-764-8700",
+        "emergency": "+1-954-764-SALVAGE"
+      },
+      "fleet": [
+        {
+          "vesselName": "Resolve Pioneer",
+          "bollardPull": 205,
+          "type": "Ocean Salvage Tug"
+        }
+      ],
+      "region": "Pacific - West Coast US",
+      "responseTime": 120
+    },
+    {
+      "id": "foss-maritime",
+      "name": "Foss Maritime",
+      "location": "Seattle, WA",
+      "coordinates": [47.6062, -122.3321],
+      "contact": {
+        "phone": "+1-206-281-3800",
+        "emergency": "+1-206-281-3800"
+      },
+      "fleet": [
+        {
+          "vesselName": "Various Harbor Tugs",
+          "bollardPull": 80,
+          "type": "Harbor Tug"
+        }
+      ],
+      "region": "Pacific Northwest",
+      "responseTime": 60
+    },
+    {
+      "id": "nippon-salvage",
+      "name": "Nippon Salvage Co.",
+      "location": "Tokyo, Japan",
+      "coordinates": [35.6762, 139.6503],
+      "contact": {
+        "phone": "+81-3-3562-1821",
+        "emergency": "+81-3-3562-1821"
+      },
+      "fleet": [
+        {
+          "vesselName": "Koyo Maru",
+          "bollardPull": 180,
+          "type": "Ocean Salvage Tug"
+        }
+      ],
+      "region": "Pacific - Japan",
+      "responseTime": 90
+    }
+  ],
+  "emergencyShelters": [
+    {
+      "id": "shelter-sf",
+      "name": "San Francisco Emergency Maritime Shelter",
+      "location": "San Francisco, CA",
+      "coordinates": [37.7749, -122.4194],
+      "capacity": 200,
+      "facilities": ["medical", "communications", "supplies"],
+      "contact": {
+        "phone": "+1-415-557-4813"
+      }
+    },
+    {
+      "id": "shelter-honolulu",
+      "name": "Honolulu Harbor Emergency Center",
+      "location": "Honolulu, HI",
+      "coordinates": [21.3099, -157.8581],
+      "capacity": 500,
+      "facilities": ["medical", "communications", "supplies", "helipad"],
+      "contact": {
+        "phone": "+1-808-587-2160"
+      }
+    },
+    {
+      "id": "shelter-tokyo",
+      "name": "Tokyo Bay Emergency Response Center",
+      "location": "Tokyo, Japan",
+      "coordinates": [35.6328, 139.8811],
+      "capacity": 1000,
+      "facilities": ["medical", "communications", "supplies", "helipad", "boats"],
+      "contact": {
+        "phone": "+81-3-5253-8111"
+      }
+    }
+  ],
+  "internationalContacts": [
+    {
+      "organization": "PTWC - Pacific Tsunami Warning Center",
+      "location": "Honolulu, HI",
+      "coordinates": [21.3156, -157.9993],
+      "contact": {
+        "phone": "+1-808-725-6000",
+        "email": "ptwc@noaa.gov"
+      },
+      "service": "Tsunami monitoring and warnings for Pacific Ocean"
+    },
+    {
+      "organization": "IMO - International Maritime Organization",
+      "location": "London, UK",
+      "coordinates": [51.5074, -0.1278],
+      "contact": {
+        "phone": "+44-20-7735-7611",
+        "email": "info@imo.org"
+      },
+      "service": "Global maritime coordination"
+    },
+    {
+      "organization": "WMO - World Meteorological Organization",
+      "location": "Geneva, Switzerland",
+      "coordinates": [46.2044, 6.1432],
+      "contact": {
+        "phone": "+41-22-730-8111",
+        "email": "wmo@wmo.int"
+      },
+      "service": "Weather and sea state forecasting coordination"
+    }
+  ]
+}

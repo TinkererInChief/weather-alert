@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Activity, AlertTriangle, Waves } from 'lucide-react'
+import { Activity, AlertTriangle, Waves, Clock } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type TimeRange = '24h' | '7d' | '30d'
 type EventType = 'all' | 'earthquake' | 'tsunami'
@@ -23,7 +24,7 @@ type UnifiedIncidentTimelineProps = {
 }
 
 export default function UnifiedIncidentTimeline({ events, height = '500px' }: UnifiedIncidentTimelineProps) {
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h')
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [eventType, setEventType] = useState<EventType>('all')
 
   const filteredEvents = useMemo(() => {
@@ -67,12 +68,17 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
   }
 
   return (
-    <div className="h-full" style={{ height }}>
-      <div className="card h-full flex flex-col">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h3 className="text-lg font-semibold text-slate-900">Unified Incident Timeline</h3>
-          
-          <div className="flex flex-wrap items-center gap-2">
+    <WidgetCard
+      title="Unified Incident Timeline"
+      icon={Clock}
+      iconColor="red"
+      subtitle={`${filteredEvents.length} events • ${timeRangeLabel[timeRange]}`}
+      className="flex flex-col min-h-0 overflow-hidden"
+      noPadding
+      style={{ height }}
+    >
+      <div className="px-6 pb-4 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
             {/* Time Range Filter */}
             <div className="flex gap-1 bg-slate-100 rounded-lg p-1">
               {(['24h', '7d', '30d'] as TimeRange[]).map((range) => (
@@ -125,16 +131,12 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
                 <span className="hidden sm:inline">Tsunami</span>
               </button>
             </div>
-          </div>
         </div>
+      </div>
 
-        <div className="text-xs text-slate-500 mb-3">
-          {filteredEvents.length} {filteredEvents.length === 1 ? 'event' : 'events'} • {timeRangeLabel[timeRange]}
-        </div>
-
-        <div className="flex-1 space-y-3 overflow-y-auto">
+      <div className="flex-1 min-h-0 space-y-3 overflow-y-auto px-6 pb-6">
           {filteredEvents.length ? (
-            filteredEvents.slice(0, 20).map((event) => (
+            filteredEvents.map((event) => (
               <div key={event.id} className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/90 p-3 shadow-sm hover:shadow-md transition-shadow">
                 {getTimelineIcon(event.type)}
                 <div className="flex-1 min-w-0">
@@ -166,8 +168,7 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
               <p className="text-sm">No {eventType === 'all' ? '' : eventType} incidents in {String(timeRangeLabel[timeRange] ?? '').toLowerCase()}</p>
             </div>
           )}
-        </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }

@@ -4,6 +4,9 @@ import { useState } from 'react'
 import MaritimeIntelligenceWidget from '@/components/dashboard/MaritimeIntelligenceWidget'
 import { Ship, RefreshCw } from 'lucide-react'
 
+// This is a test page - don't statically generate it
+export const dynamic = 'force-dynamic'
+
 /**
  * Test page for Maritime Intelligence Widget
  * This demonstrates the widget with sample earthquake data

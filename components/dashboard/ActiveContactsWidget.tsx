@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Users, Phone, Mail, MessageCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { Users, Phone, Mail, MessageCircle, PhoneCall, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type ContactStats = {
   total: number
@@ -58,9 +59,8 @@ export default function ActiveContactsWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <WidgetCard title="Active Contacts" icon={Users} iconColor="purple">
         <div className="animate-pulse">
-          <div className="h-4 bg-slate-200 rounded w-32 mb-4"></div>
           <div className="h-8 bg-slate-200 rounded w-20 mb-6"></div>
           <div className="space-y-3">
             <div className="h-4 bg-slate-200 rounded"></div>
@@ -68,64 +68,74 @@ export default function ActiveContactsWidget() {
             <div className="h-4 bg-slate-200 rounded"></div>
           </div>
         </div>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-        <div className="flex items-center gap-2 text-red-600 mb-2">
-          <Users className="h-5 w-5" />
-          <h3 className="font-semibold">Active Contacts</h3>
-        </div>
+      <WidgetCard title="Active Contacts" icon={Users} iconColor="purple">
         <p className="text-sm text-red-600">{error}</p>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (!stats) return null
 
+  const pct = (num: number, den: number) => {
+    if (!den || !Number.isFinite(den)) return '0'
+    const val = Math.round((num / den) * 100)
+    return Number.isFinite(val) && val >= 0 ? String(val) : '0'
+  }
+
   const channelCoverage = [
     { 
-      icon: Phone, 
-      label: 'SMS/Voice', 
+      icon: MessageCircle, 
+      label: 'SMS', 
       count: stats.withPhone, 
-      percentage: ((stats.withPhone / stats.active) * 100).toFixed(0),
+      percentage: pct(stats.withPhone, stats.active),
       color: 'text-blue-600 bg-blue-50'
     },
     { 
       icon: Mail, 
       label: 'Email', 
       count: stats.withEmail, 
-      percentage: ((stats.withEmail / stats.active) * 100).toFixed(0),
+      percentage: pct(stats.withEmail, stats.active),
       color: 'text-green-600 bg-green-50'
     },
     { 
-      icon: MessageCircle, 
+      icon: PhoneCall, 
+      label: 'Voice', 
+      count: stats.withPhone, 
+      percentage: pct(stats.withPhone, stats.active),
+      color: 'text-orange-600 bg-orange-50'
+    },
+    { 
+      icon: Phone, 
       label: 'WhatsApp', 
       count: stats.withWhatsApp, 
-      percentage: ((stats.withWhatsApp / stats.active) * 100).toFixed(0),
+      percentage: pct(stats.withWhatsApp, stats.active),
       color: 'text-emerald-600 bg-emerald-50'
     },
   ]
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-slate-600" />
-          <h3 className="font-semibold text-slate-900">Active Contacts</h3>
-        </div>
-        {stats.trendValue !== 0 && (
+    <WidgetCard
+      title="Active Contacts"
+      icon={Users}
+      iconColor="purple"
+      subtitle={`${stats.active} / ${stats.total} total`}
+      headerAction={
+        stats.trendValue !== 0 ? (
           <div className={`flex items-center gap-1 text-xs font-medium ${
             stats.trend === 'up' ? 'text-green-600' : stats.trend === 'down' ? 'text-red-600' : 'text-slate-600'
           }`}>
             <TrendIcon className="h-3 w-3" />
             <span>{Math.abs(stats.trendValue)}%</span>
           </div>
-        )}
-      </div>
+        ) : undefined
+      }
+    >
 
       <div className="mb-6">
         <div className="flex items-baseline gap-2">
@@ -168,6 +178,6 @@ export default function ActiveContactsWidget() {
           <span className="font-medium">{stats.active}</span> contacts can receive emergency notifications
         </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }

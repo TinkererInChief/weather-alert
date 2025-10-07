@@ -125,16 +125,21 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
       successful: bigint
     }>>`
       SELECT 
-        CASE 
-          WHEN magnitude < 5.0 THEN '< 5.0'
-          WHEN magnitude >= 5.0 AND magnitude < 6.0 THEN '5.0 - 5.9'
-          WHEN magnitude >= 6.0 AND magnitude < 7.0 THEN '6.0 - 6.9'
-          ELSE '>= 7.0'
-        END as magnitude_range,
+        magnitude_range,
         COUNT(*)::int as total,
         COUNT(CASE WHEN success = true THEN 1 END)::int as successful
-      FROM "alert_logs"
-      WHERE "timestamp" >= ${startDate}
+      FROM (
+        SELECT 
+          CASE 
+            WHEN magnitude < 5.0 THEN '< 5.0'
+            WHEN magnitude >= 5.0 AND magnitude < 6.0 THEN '5.0 - 5.9'
+            WHEN magnitude >= 6.0 AND magnitude < 7.0 THEN '6.0 - 6.9'
+            ELSE '>= 7.0'
+          END as magnitude_range,
+          success
+        FROM "alert_logs"
+        WHERE "timestamp" >= ${startDate}
+      ) AS t
       GROUP BY magnitude_range
       ORDER BY 
         CASE magnitude_range

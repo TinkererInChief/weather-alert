@@ -20,7 +20,7 @@ export type MaritimeIntelligence = {
     phone: string
     vhf?: string
   }>
-  historicalContext: string
+  historicalContext: string | null
   shippingRoutes: {
     affected: string[]
     alternatives: string[]
@@ -367,26 +367,37 @@ If you can't find current information, state "No current reports found" and prov
     // Enhanced fallback based on earthquake magnitude and tsunami status
     if (guidance.length === 0) {
       const isTsunami = eventData.tsunamiWarning || eventData.magnitude >= 7.0
+      const nearbyPorts = this.findNearbyPorts(eventData.latitude, eventData.longitude, 500)
+      const portNames = nearbyPorts.slice(0, 2).map(p => p.name).join(' and ')
       
       if (isTsunami) {
         guidance.push(
           {
             situation: 'Vessels in port',
-            recommendation: `Stay moored if in deep harbor (>10m). Evacuate if in shallow port (<10m). Await port authority instructions on VHF 16.`
+            recommendation: `Stay moored if in deep harbor (>10m depth). Evacuate to open water if in shallow port (<10m depth). Monitor port authority instructions on VHF 16.`
           },
           {
             situation: 'Vessels approaching port (<50nm)',
-            recommendation: `Do NOT enter port. Head to deep water (>200m depth). Maintain distance from coast until tsunami warning lifted.`
+            recommendation: `Do NOT enter port. Proceed to deep water (>200m depth) at maximum safe speed. Maintain 50+ nautical miles from coast until tsunami warning is lifted.`
           },
           {
             situation: 'Vessels in coastal waters',
-            recommendation: `Immediately proceed to deep water (>200m depth) at full speed. Head perpendicular to shore. Tsunami waves are smaller in deep ocean.`
+            recommendation: `URGENT: Proceed to deep water (>200m depth) immediately. Head perpendicular to coastline at full speed. Tsunami waves decrease significantly in deep ocean.`
+          },
+          {
+            situation: 'Vessels in deep ocean (>200m depth)',
+            recommendation: `Maintain current position. Tsunami waves are minimal in deep water (<1m). Monitor VHF 16 for updates. Do NOT approach coastal areas.`
           }
         )
       } else {
+        // Provide specific guidance based on magnitude without generic "General guidance" label
+        const magnitudeGuidance = eventData.magnitude >= 6.0 
+          ? `M${eventData.magnitude} earthquake detected near ${eventData.location}. ${portNames ? `Ports ${portNames} may experience operational delays.` : 'Nearby ports may experience delays.'} Monitor VHF 16 for maritime safety bulletins. Avoid affected coastal areas within 50nm. No tsunami threat at this time.`
+          : `M${eventData.magnitude} earthquake near ${eventData.location}. Minimal maritime impact expected. Continue normal operations while monitoring VHF 16 for updates.`
+        
         guidance.push({
-          situation: 'General guidance',
-          recommendation: `Monitor official channels (VHF 16), avoid affected coastal areas, maintain safe depth if tsunami warning active.`
+          situation: 'All vessels in region',
+          recommendation: magnitudeGuidance
         })
       }
     }
@@ -431,21 +442,26 @@ If you can't find current information, state "No current reports found" and prov
       
       if (nearbyPorts.length > 0) {
         const nearestPort = nearbyPorts[0]
+        const topPorts = nearbyPorts.slice(0, 2)
+        
+        // Primary maritime emergency contact
         contacts.push({
-          agency: `${nearestPort.country} Maritime Emergency`,
-          phone: `VHF Channel 16 (156.8 MHz)`,
+          agency: `${nearestPort.country} Coast Guard`,
+          phone: 'VHF Channel 16 (156.8 MHz)',
           vhf: 'Channel 16'
         })
         
-        // Add nearest port authority
-        contacts.push({
-          agency: `${nearestPort.name} Authority`,
-          phone: `Contact ${nearestPort.name} on VHF 12/14`,
-          vhf: 'Channel 12/14'
+        // Add port authorities for nearest ports
+        topPorts.forEach(port => {
+          contacts.push({
+            agency: `${port.name}`,
+            phone: `VHF Channel 12/14 (Port Operations)`,
+            vhf: 'Ch 12/14'
+          })
         })
       } else {
         contacts.push({
-          agency: 'Maritime Emergency',
+          agency: 'International Maritime Emergency',
           phone: 'VHF Channel 16 (156.8 MHz)',
           vhf: 'Channel 16'
         })
@@ -455,15 +471,22 @@ If you can't find current information, state "No current reports found" and prov
     return contacts
   }
 
-  private extractHistoricalContext(text: string): string {
+  private extractHistoricalContext(text: string): string | null {
     const historicalSection = this.extractSection(text, 'HISTORICAL') ||
-                              this.extractSection(text, 'CONTEXT')
+                              this.extractSection(text, 'REFERENCE')
     
-    if (historicalSection) {
-      return this.cleanText(historicalSection.substring(0, 500))
+    if (historicalSection && historicalSection.trim().length > 20) {
+      // Only return if there's meaningful content (not just placeholder text)
+      const cleaned = this.cleanText(historicalSection.substring(0, 500))
+      if (cleaned.toLowerCase().includes('reference') || 
+          cleaned.toLowerCase().includes('no historical') ||
+          cleaned.toLowerCase().includes('no data')) {
+        return null
+      }
+      return cleaned
     }
 
-    return 'No historical data available for comparison.'
+    return null // Return null instead of placeholder text
   }
 
   private extractShippingRoutes(text: string): { affected: string[]; alternatives: string[] } {

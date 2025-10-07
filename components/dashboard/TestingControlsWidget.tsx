@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { useSession } from 'next-auth/react'
-import { Play, Square, MessageSquare, Mail, Phone, MessageCircle, Loader2, CheckCircle, XCircle, AlertTriangle, Waves, TestTube2 } from 'lucide-react'
+import { Play, Square, MessageSquare, Mail, Phone, MessageCircle, Loader2, CheckCircle, XCircle, AlertTriangle, Waves, TestTube2, Beaker } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type MonitoringStatus = {
   earthquake: boolean
@@ -143,11 +144,12 @@ export default function TestingControlsWidget() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center gap-2 mb-6">
-        <TestTube2 className="h-5 w-5 text-slate-600" />
-        <h3 className="font-semibold text-slate-900">Testing & Controls</h3>
-      </div>
+    <WidgetCard
+      title="Testing & Controls"
+      icon={Beaker}
+      iconColor="slate"
+      subtitle="Monitoring Status"
+    >
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-start gap-2">
@@ -308,6 +310,6 @@ export default function TestingControlsWidget() {
           </div>
         </div>
       )}
-    </div>
+    </WidgetCard>
   )
 }

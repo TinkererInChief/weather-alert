@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Activity, CheckCircle, AlertTriangle, XCircle, Clock, Wifi } from 'lucide-react'
+import { Activity, CheckCircle, AlertTriangle, XCircle, Clock, Wifi, Radio } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type FeedStatus = {
   id: string
@@ -19,7 +20,11 @@ type OverallHealth = {
   feeds: FeedStatus[]
 }
 
-export default function FeedStatusWidget() {
+type FeedStatusWidgetProps = {
+  refreshKey?: number
+}
+
+export default function FeedStatusWidget({ refreshKey }: FeedStatusWidgetProps = {}) {
   const [health, setHealth] = useState<OverallHealth | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,45 +32,32 @@ export default function FeedStatusWidget() {
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        setLoading(true)
+        // Only show loading on initial load, not on refresh
+        if (!health) setLoading(true)
         const response = await fetch('/api/health?detailed=true', { cache: 'no-store' })
         const data = await response.json()
         
         if (data.status) {
           const services = data.checks?.services || {}
+          const db = data.checks?.database || {}
+          const redis = data.checks?.redis || {}
+
           const feeds: FeedStatus[] = [
-            {
-              id: 'usgs',
-              name: 'USGS Earthquake Feed',
-              status: mapStatus(services.usgs?.status),
-              lastCheck: services.usgs?.lastCheck || new Date().toISOString(),
-              responseTime: services.usgs?.responseTime
-            },
-            {
-              id: 'noaa',
-              name: 'NOAA Tsunami Alerts',
-              status: mapStatus(services.noaa?.status),
-              lastCheck: services.noaa?.lastCheck || new Date().toISOString(),
-              responseTime: services.noaa?.responseTime
-            },
-            {
-              id: 'ptwc',
-              name: 'PTWC Tsunami Feed',
-              status: 'healthy', // TODO: Add PTWC to health check
-              lastCheck: new Date().toISOString()
-            }
+            { id: 'usgs', name: 'USGS Earthquake Feed', status: mapStatus(services.usgs?.status), lastCheck: new Date().toISOString(), responseTime: services.usgs?.latencyMs },
+            { id: 'noaa', name: 'NOAA Tsunami Alerts', status: mapStatus(services.noaa?.status), lastCheck: new Date().toISOString(), responseTime: services.noaa?.latencyMs },
+            { id: 'ptwc', name: 'PTWC Tsunami Feed', status: mapStatus(services.ptwc?.status), lastCheck: new Date().toISOString(), responseTime: services.ptwc?.latencyMs },
+            { id: 'emsc', name: 'EMSC Earthquake Feed', status: mapStatus(services.emsc?.status), lastCheck: new Date().toISOString(), responseTime: services.emsc?.latencyMs },
+            { id: 'jma', name: 'JMA Quick Reports', status: mapStatus(services.jma?.status), lastCheck: new Date().toISOString(), responseTime: services.jma?.latencyMs },
+            { id: 'iris', name: 'IRIS Event Service', status: mapStatus(services.iris?.status), lastCheck: new Date().toISOString(), responseTime: services.iris?.latencyMs },
+            // Infra (helps diagnose):
+            { id: 'database', name: 'Database', status: mapStatus(db.status), lastCheck: new Date().toISOString(), responseTime: db.latencyMs },
+            { id: 'redis', name: 'Redis Cache', status: mapStatus(redis.status), lastCheck: new Date().toISOString(), responseTime: redis.latencyMs },
           ]
 
           const healthyCount = feeds.filter(f => f.status === 'healthy').length
-          const overallStatus = healthyCount === feeds.length ? 'healthy' : 
-                               healthyCount > 0 ? 'degraded' : 'critical'
+          const overallStatus = healthyCount === feeds.length ? 'healthy' : healthyCount > 0 ? 'degraded' : 'critical'
 
-          setHealth({
-            status: overallStatus,
-            healthyCount,
-            totalCount: feeds.length,
-            feeds
-          })
+          setHealth({ status: overallStatus, healthyCount, totalCount: feeds.length, feeds })
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to fetch feed status')
@@ -78,7 +70,7 @@ export default function FeedStatusWidget() {
     // Refresh every 30 seconds
     const interval = setInterval(fetchHealth, 30 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const mapStatus = (status: any): 'healthy' | 'warning' | 'critical' | 'unknown' => {
     if (status === 'ok' || status === 'healthy') return 'healthy'
@@ -127,9 +119,8 @@ export default function FeedStatusWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <WidgetCard title="Data Feed Status" icon={Radio} iconColor="green" subtitle="Real-time earthquake data sources">
         <div className="animate-pulse">
-          <div className="h-4 bg-slate-200 rounded w-32 mb-4"></div>
           <div className="h-16 bg-slate-200 rounded mb-4"></div>
           <div className="space-y-3">
             <div className="h-12 bg-slate-200 rounded"></div>
@@ -137,36 +128,33 @@ export default function FeedStatusWidget() {
             <div className="h-12 bg-slate-200 rounded"></div>
           </div>
         </div>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-        <div className="flex items-center gap-2 text-red-600 mb-2">
-          <Activity className="h-5 w-5" />
-          <h3 className="font-semibold">Feed Status</h3>
-        </div>
+      <WidgetCard title="Data Feed Status" icon={Radio} iconColor="green" subtitle="Real-time earthquake data sources">
         <p className="text-sm text-red-600">{error}</p>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (!health) return null
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-slate-600" />
-          <h3 className="font-semibold text-slate-900">Data Feed Status</h3>
-        </div>
+    <WidgetCard
+      title="Data Feed Status"
+      icon={Radio}
+      iconColor="green"
+      subtitle="Real-time earthquake data sources"
+      headerAction={
         <div className={`px-3 py-1 rounded-full text-xs font-medium ${getOverallStatusColor(health.status)}`}>
           {health.status === 'healthy' ? '● All Systems Operational' :
            health.status === 'degraded' ? '● Partial Outage' : '● Service Disruption'}
         </div>
-      </div>
+      }
+    >
 
       <div className="mb-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
         <div className="flex items-center justify-between">
@@ -221,6 +209,6 @@ export default function FeedStatusWidget() {
           Auto-refreshing every 30 seconds
         </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }

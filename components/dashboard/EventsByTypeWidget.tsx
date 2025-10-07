@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { AlertTriangle, Waves, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { AlertTriangle, Waves, TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type TimeRange = '24h' | '7d' | '30d'
 
@@ -28,13 +29,124 @@ type EventBreakdown = {
   trendValue: number
 }
 
-export default function EventsByTypeWidget() {
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h')
+type ExternalEarthquake = {
+  magnitude: number
+  timestamp?: string
+  time?: string
+  createdAt?: string
+}
+
+type ExternalTsunami = {
+  severity?: string | number
+  type?: string
+  category?: string
+  urgency?: string
+  threat?: { level?: string }
+  processedAt?: string
+  eventTime?: string
+  time?: string
+}
+
+type EventsByTypeWidgetProps = {
+  earthquakes?: ExternalEarthquake[]
+  tsunamis?: ExternalTsunami[]
+  timeRangeExternal?: TimeRange
+  refreshKey?: number
+}
+
+export default function EventsByTypeWidget({
+  earthquakes,
+  tsunamis,
+  timeRangeExternal,
+  refreshKey,
+}: EventsByTypeWidgetProps = {}) {
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d')
   const [events, setEvents] = useState<EventBreakdown | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Keep internal timeRange in sync with external control (dashboard filter)
   useEffect(() => {
+    if (timeRangeExternal && timeRangeExternal !== timeRange) {
+      setTimeRange(timeRangeExternal)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRangeExternal])
+
+  // Compute from external data (preferred for real-time updates)
+  useEffect(() => {
+    const hasExternal = (earthquakes && earthquakes.length >= 0) || (tsunamis && tsunamis.length >= 0)
+    if (!hasExternal) return
+
+    const computeFromProps = async () => {
+      try {
+        setLoading(true)
+
+        const now = Date.now()
+        const timeWindows = {
+          '24h': 24 * 60 * 60 * 1000,
+          '7d': 7 * 24 * 60 * 60 * 1000,
+          '30d': 30 * 24 * 60 * 60 * 1000,
+        }
+        const since = now - timeWindows[timeRange]
+
+        const quakes = (earthquakes || []).filter((a) => {
+          const t = a.timestamp || a.time || a.createdAt
+          return t ? new Date(t).getTime() >= since : true
+        })
+
+        const byMagnitude = {
+          minor: quakes.filter((a) => a.magnitude < 4.0).length,
+          light: quakes.filter((a) => a.magnitude >= 4.0 && a.magnitude < 5.0).length,
+          moderate: quakes.filter((a) => a.magnitude >= 5.0 && a.magnitude < 6.0).length,
+          strong: quakes.filter((a) => a.magnitude >= 6.0 && a.magnitude < 7.0).length,
+          major: quakes.filter((a) => a.magnitude >= 7.0).length,
+        }
+
+        const lower = (val: unknown) => String(val ?? '').toLowerCase()
+        const tsu = (tsunamis || []).filter((a) => {
+          const t = a.processedAt || a.eventTime || a.time
+          return t ? new Date(t).getTime() >= since : true
+        })
+        const has = (a: ExternalTsunami, term: string) => {
+          const fields: Array<string | number | undefined> = [
+            a.severity,
+            a.type,
+            a.category,
+            a.urgency,
+            a.threat?.level,
+          ]
+          return fields.some((v) => lower(v).includes(term))
+        }
+
+        const bySeverity = {
+          watch: tsu.filter((a) => has(a, 'watch')).length,
+          advisory: tsu.filter((a) => has(a, 'advisory')).length,
+          warning: tsu.filter((a) => has(a, 'warning')).length,
+        }
+
+        setEvents({
+          earthquakes: { total: quakes.length, byMagnitude },
+          tsunamis: { total: tsu.length, bySeverity },
+          trend: 'stable',
+          trendValue: 0,
+        })
+        setError(null)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to compute event statistics')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    computeFromProps()
+    // Recompute when refreshKey changes or timeRange changes
+  }, [earthquakes, tsunamis, timeRange, refreshKey])
+
+  // Fallback: self-fetch when external data is not provided
+  useEffect(() => {
+    const hasExternal = (earthquakes && earthquakes.length >= 0) || (tsunamis && tsunamis.length >= 0)
+    if (hasExternal) return
     const fetchEvents = async () => {
       try {
         setLoading(true)
@@ -110,7 +222,7 @@ export default function EventsByTypeWidget() {
     // Refresh every 5 minutes
     const interval = setInterval(fetchEvents, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [timeRange])
+  }, [timeRange, earthquakes, tsunamis])
 
   const TrendIcon = events?.trend === 'up' ? TrendingUp : events?.trend === 'down' ? TrendingDown : Minus
 
@@ -136,43 +248,45 @@ export default function EventsByTypeWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <WidgetCard title="Events by Type & Severity" icon={BarChart3} iconColor="red" className="h-full">
         <div className="animate-pulse">
-          <div className="h-4 bg-slate-200 rounded w-40 mb-4"></div>
           <div className="h-10 bg-slate-200 rounded w-48 mb-6"></div>
           <div className="space-y-4">
             <div className="h-20 bg-slate-200 rounded"></div>
             <div className="h-20 bg-slate-200 rounded"></div>
           </div>
         </div>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-        <h3 className="font-semibold text-slate-900 mb-2">Events by Type</h3>
+      <WidgetCard title="Events by Type & Severity" icon={BarChart3} iconColor="red" className="h-full">
         <p className="text-sm text-red-600">{error}</p>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (!events) return null
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="font-semibold text-slate-900">Events by Type & Severity</h3>
-        {events.trendValue !== 0 && (
+    <WidgetCard
+      title="Events by Type & Severity"
+      icon={BarChart3}
+      iconColor="red"
+      className="flex flex-col h-full"
+      headerAction={
+        events.trendValue !== 0 ? (
           <div className={`flex items-center gap-1 text-xs font-medium ${
             events.trend === 'up' ? 'text-orange-600' : events.trend === 'down' ? 'text-green-600' : 'text-slate-600'
           }`}>
             <TrendIcon className="h-3 w-3" />
             <span>{Math.abs(events.trendValue)}%</span>
           </div>
-        )}
-      </div>
+        ) : undefined
+      }
+    >
 
       {/* Time Range Selector */}
       <div className="flex gap-2 mb-6">
@@ -191,7 +305,7 @@ export default function EventsByTypeWidget() {
         ))}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 flex-1">
         {/* Earthquakes */}
         <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
           <div className="flex items-center justify-between mb-3">
@@ -246,11 +360,11 @@ export default function EventsByTypeWidget() {
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="mt-4 pt-4 border-t border-slate-100 flex-shrink-0">
         <div className="text-xs text-slate-500 text-center">
           Total: {events.earthquakes.total + events.tsunamis.total} events in {timeRange === '24h' ? '24 hours' : timeRange === '7d' ? '7 days' : '30 days'}
         </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }

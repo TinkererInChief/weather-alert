@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { MessageSquare, Mail, Phone, MessageCircle, CheckCircle, AlertTriangle, XCircle, Clock } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type ChannelStatus = {
   id: string
@@ -14,7 +15,12 @@ type ChannelStatus = {
   successRate?: number
 }
 
-export default function ChannelStatusWidget() {
+type ChannelStatusWidgetProps = {
+  timeRangeExternal?: '24h' | '7d' | '30d'
+  refreshKey?: number
+}
+
+export default function ChannelStatusWidget({ timeRangeExternal = '24h', refreshKey }: ChannelStatusWidgetProps = {}) {
   const [channels, setChannels] = useState<ChannelStatus[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -22,49 +28,54 @@ export default function ChannelStatusWidget() {
   useEffect(() => {
     const fetchChannelStatus = async () => {
       try {
-        setLoading(true)
+        // Only show loading on initial load, not on refresh
+        if (channels.length === 0) setLoading(true)
         
         // Fetch health data for channel status
         const healthResponse = await fetch('/api/health?detailed=true', { cache: 'no-store' })
         const healthData = await healthResponse.json()
         const services = healthData.checks?.services || {}
 
-        // Fetch recent delivery stats for success rates
-        const deliveryResponse = await fetch('/api/delivery/stats?range=24h', { cache: 'no-store' })
+        // Fetch recent delivery stats for success rates (sync with dashboard filter)
+        const deliveryResponse = await fetch(`/api/delivery/stats?range=${encodeURIComponent(timeRangeExternal)}`, { cache: 'no-store' })
         const deliveryData = await deliveryResponse.json()
+
+        const byChannel = deliveryData?.stats?.byChannel || {
+          sms: { sent: 0, delivered: 0, read: 0, failed: 0 },
+          email: { sent: 0, delivered: 0, read: 0, failed: 0 },
+          whatsapp: { sent: 0, delivered: 0, read: 0, failed: 0 },
+          voice: { sent: 0, delivered: 0, read: 0, failed: 0 }
+        }
+        const totalOf = (s: { sent: number; delivered: number; read: number; failed: number }) => s.sent + s.delivered + s.read + s.failed
 
         const channelStatuses: ChannelStatus[] = [
           {
             id: 'sms',
             name: 'SMS',
             icon: MessageSquare,
-            status: getChannelStatus(services.sms?.status),
-            lastSuccessful: deliveryData?.data?.byChannel?.sms?.lastSuccessful,
-            successRate: deliveryData?.data?.byChannel?.sms?.successRate
+            status: getChannelStatus(services.twilio?.status),
+            successRate: (() => { const s = byChannel.sms; const t = totalOf(s); return t ? (s.delivered / t) * 100 : 0 })()
           },
           {
             id: 'email',
             name: 'Email',
             icon: Mail,
-            status: getChannelStatus(services.email?.status),
-            lastSuccessful: deliveryData?.data?.byChannel?.email?.lastSuccessful,
-            successRate: deliveryData?.data?.byChannel?.email?.successRate
+            status: getChannelStatus(services.sendgrid?.status),
+            successRate: (() => { const s = byChannel.email; const t = totalOf(s); return t ? (s.delivered / t) * 100 : 0 })()
           },
           {
             id: 'voice',
             name: 'Voice',
             icon: Phone,
-            status: getChannelStatus(services.voice?.status),
-            lastSuccessful: deliveryData?.data?.byChannel?.voice?.lastSuccessful,
-            successRate: deliveryData?.data?.byChannel?.voice?.successRate
+            status: getChannelStatus(services.twilio?.status),
+            successRate: (() => { const s = byChannel.voice; const t = totalOf(s); return t ? (s.delivered / t) * 100 : 0 })()
           },
           {
             id: 'whatsapp',
             name: 'WhatsApp',
             icon: MessageCircle,
-            status: getChannelStatus(services.whatsapp?.status),
-            lastSuccessful: deliveryData?.data?.byChannel?.whatsapp?.lastSuccessful,
-            successRate: deliveryData?.data?.byChannel?.whatsapp?.successRate
+            status: getChannelStatus(services.twilio?.status),
+            successRate: (() => { const s = byChannel.whatsapp; const t = totalOf(s); return t ? (s.delivered / t) * 100 : 0 })()
           },
         ]
 
@@ -81,7 +92,7 @@ export default function ChannelStatusWidget() {
     // Refresh every 60 seconds
     const interval = setInterval(fetchChannelStatus, 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [timeRangeExternal, refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const getChannelStatus = (status: any): 'configured' | 'working' | 'error' | 'unconfigured' => {
     if (!status) return 'unconfigured'
@@ -147,9 +158,8 @@ export default function ChannelStatusWidget() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <WidgetCard title="Notification Channels" icon={MessageSquare} iconColor="green">
         <div className="animate-pulse">
-          <div className="h-4 bg-slate-200 rounded w-40 mb-4"></div>
           <div className="space-y-3">
             <div className="h-16 bg-slate-200 rounded"></div>
             <div className="h-16 bg-slate-200 rounded"></div>
@@ -157,29 +167,34 @@ export default function ChannelStatusWidget() {
             <div className="h-16 bg-slate-200 rounded"></div>
           </div>
         </div>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-        <h3 className="font-semibold text-slate-900 mb-2">Notification Channels</h3>
+      <WidgetCard title="Notification Channels" icon={MessageSquare} iconColor="green">
         <p className="text-sm text-red-600">{error}</p>
-      </div>
+      </WidgetCard>
     )
   }
 
   const workingCount = channels.filter(c => c.status === 'working' || c.status === 'configured').length
+  const operational = workingCount === channels.length
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-900">Notification Channels</h3>
-        <div className="text-xs font-medium text-slate-600">
+    <WidgetCard
+      title="Notification Channels"
+      icon={MessageSquare}
+      iconColor="green"
+      headerAction={
+        <span className={`text-xs px-2 py-1 rounded-full ${
+          operational ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+        }`}>
           {workingCount}/{channels.length} Operational
-        </div>
-      </div>
+        </span>
+      }
+    >
 
       <div className="space-y-3">
         {channels.map((channel) => {
@@ -239,6 +254,6 @@ export default function ChannelStatusWidget() {
           Last 24 hours performance
         </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }

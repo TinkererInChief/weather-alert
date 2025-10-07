@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Clock, Send, Eye, Mail, MessageSquare, Phone, TrendingUp } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Send, Eye, Mail, MessageSquare, Phone } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type DeliveryStats = {
   total: number
@@ -18,17 +19,30 @@ type DeliveryStats = {
   }
 }
 
-export default function DeliveryStatusWidget() {
+type DeliveryStatusWidgetProps = {
+  timeRangeExternal?: '24h' | '7d' | '30d'
+  refreshKey?: number
+}
+
+export default function DeliveryStatusWidget({ timeRangeExternal, refreshKey }: DeliveryStatusWidgetProps = {}) {
   const [stats, setStats] = useState<DeliveryStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h')
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('30d')
+
+  // Sync with external dashboard time filter if provided
+  useEffect(() => {
+    if (timeRangeExternal && timeRangeExternal !== timeRange) {
+      setTimeRange(timeRangeExternal)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeRangeExternal])
 
   useEffect(() => {
     fetchDeliveryStats()
     // Refresh every 30 seconds
     const interval = setInterval(fetchDeliveryStats, 30000)
     return () => clearInterval(interval)
-  }, [timeRange])
+  }, [timeRange, refreshKey])
 
   const fetchDeliveryStats = async () => {
     try {
@@ -46,7 +60,7 @@ export default function DeliveryStatusWidget() {
 
   if (loading || !stats) {
     return (
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <WidgetCard title="Delivery Status" icon={Send} iconColor="orange" subtitle="Real-time notification delivery metrics">
         <div className="animate-pulse space-y-4">
           <div className="h-6 bg-slate-200 rounded w-1/3"></div>
           <div className="space-y-3">
@@ -54,7 +68,7 @@ export default function DeliveryStatusWidget() {
             <div className="h-4 bg-slate-200 rounded w-5/6"></div>
           </div>
         </div>
-      </div>
+      </WidgetCard>
     )
   }
 
@@ -62,15 +76,17 @@ export default function DeliveryStatusWidget() {
   const readRate = stats.delivered > 0 ? ((stats.read / stats.delivered) * 100).toFixed(1) : '0'
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-      {/* Header */}
-      <div className="p-6 border-b border-slate-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-600" />
-            Delivery Status
-          </h3>
-          <div className="flex gap-2">
+    <WidgetCard
+      title="Delivery Status"
+      icon={Send}
+      iconColor="orange"
+      subtitle="Real-time notification delivery metrics"
+      className="flex-1 flex flex-col"
+      noPadding
+    >
+      {/* Time Range Selector */}
+      <div className="px-6 pb-4 border-b border-slate-200">
+        <div className="flex gap-2">
             <button
               onClick={() => setTimeRange('24h')}
               className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
@@ -101,10 +117,11 @@ export default function DeliveryStatusWidget() {
             >
               30d
             </button>
-          </div>
         </div>
+      </div>
 
-        {/* Overall Stats */}
+      {/* Overall Stats */}
+      <div className="px-6 py-4">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-slate-900">{stats.total}</div>
@@ -144,7 +161,7 @@ export default function DeliveryStatusWidget() {
       </div>
 
       {/* Channel Breakdown */}
-      <div className="p-6">
+      <div className="p-6 flex-1">
         <h4 className="text-sm font-semibold text-slate-700 mb-4">By Channel</h4>
         <div className="space-y-4">
           {/* SMS */}
@@ -180,7 +197,7 @@ export default function DeliveryStatusWidget() {
           />
         </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }
 

@@ -14,6 +14,7 @@ import {
   Users,
   Zap
 } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type ActivityType = 
   | 'earthquake_detected' 
@@ -121,13 +122,14 @@ export default function RealTimeActivityFeed({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-200">
-        <div>
-          <h3 className="text-lg font-semibold text-slate-900">Live Activity Feed</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Real-time system events and notifications</p>
-        </div>
+    <WidgetCard
+      title="System Status Feed"
+      icon={Activity}
+      iconColor="emerald"
+      subtitle="Real-time system events and notifications"
+      className="h-full flex flex-col"
+      noPadding
+      headerAction={
         <button
           onClick={() => setIsPaused(!isPaused)}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -138,10 +140,10 @@ export default function RealTimeActivityFeed({
         >
           {isPaused ? 'Paused' : 'Live'}
         </button>
-      </div>
-
+      }
+    >
       {/* Activity List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="h-full overflow-y-auto">
         {activities.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <Activity className="h-12 w-12 text-slate-300 mb-3" />
@@ -214,6 +216,6 @@ export default function RealTimeActivityFeed({
           </div>
         )}
       </div>
-    </div>
+    </WidgetCard>
   )
 }

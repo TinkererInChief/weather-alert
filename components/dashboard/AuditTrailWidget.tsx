@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { Shield, User, Users, Settings, AlertTriangle, Trash2, Edit, Plus, Eye, FileText } from 'lucide-react'
+import WidgetCard from './WidgetCard'
 
 type AuditEvent = {
   id: string
@@ -140,42 +141,38 @@ export default function AuditTrailWidget() {
 
   if (loading && events.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <WidgetCard title="Audit Trail" icon={Shield} iconColor="yellow" subtitle="Security event log">
         <div className="animate-pulse">
-          <div className="h-4 bg-slate-200 rounded w-32 mb-4"></div>
           <div className="space-y-3">
             {[1, 2, 3, 4, 5].map(i => (
               <div key={i} className="h-16 bg-slate-200 rounded"></div>
             ))}
           </div>
         </div>
-      </div>
+      </WidgetCard>
     )
   }
 
   if (error) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-red-200 p-6">
-        <div className="flex items-center gap-2 text-red-600 mb-2">
-          <Shield className="h-5 w-5" />
-          <h3 className="font-semibold">Audit Trail</h3>
-        </div>
+      <WidgetCard title="Audit Trail" icon={Shield} iconColor="yellow" subtitle="Security event log">
         <p className="text-sm text-red-600">{error}</p>
-      </div>
+      </WidgetCard>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-slate-600" />
-          <h3 className="font-semibold text-slate-900">Audit Trail</h3>
-        </div>
-        <div className="text-xs text-slate-500">
-          Live • Last 100 events
-        </div>
-      </div>
+    <WidgetCard
+      title="Audit Trail"
+      icon={Shield}
+      iconColor="yellow"
+      subtitle={`Last ${events.length} events`}
+      headerAction={
+        <span className="text-xs text-slate-500">
+          Live • Auto-refresh
+        </span>
+      }
+    >
 
       <div className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
         {events.length === 0 ? (
@@ -260,6 +257,6 @@ export default function AuditTrailWidget() {
           Showing {events.length} events • Auto-refreshes every 30s
         </div>
       </div>
-    </div>
+    </WidgetCard>
   )
 }

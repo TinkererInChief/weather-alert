@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { 
   AlertTriangle, 
@@ -19,7 +19,8 @@ import {
   CheckCircle2,
   Info,
   XCircle,
-  Shield 
+  Shield,
+  FileText
 } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -41,7 +42,6 @@ const GlobalEventMap = dynamic(() => import('@/components/dashboard/GlobalEventM
   )
 })
 import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
-import KeyMetricsWidget from '@/components/dashboard/KeyMetricsWidget'
 import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
 import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
 import DeliveryStatusWidget from '@/components/dashboard/DeliveryStatusWidget'
@@ -49,12 +49,12 @@ import ActiveContactsWidget from '@/components/dashboard/ActiveContactsWidget'
 import FeedStatusWidget from '@/components/dashboard/FeedStatusWidget'
 import ChannelStatusWidget from '@/components/dashboard/ChannelStatusWidget'
 import EventsByTypeWidget from '@/components/dashboard/EventsByTypeWidget'
-import LastCheckWidget from '@/components/dashboard/LastCheckWidget'
-import AlertsSentWidget from '@/components/dashboard/AlertsSentWidget'
 import AuditTrailWidget from '@/components/dashboard/AuditTrailWidget'
 import TestingControlsWidget from '@/components/dashboard/TestingControlsWidget'
 import UnifiedIncidentTimeline from '@/components/dashboard/UnifiedIncidentTimeline'
 import MaritimeIntelligenceWidget from '@/components/dashboard/MaritimeIntelligenceWidget'
+import MaritimeTestingControls from '@/components/dashboard/MaritimeTestingControls'
+import WidgetCard from '@/components/dashboard/WidgetCard'
 import { TrendingUp, Zap } from 'lucide-react'
 
 type OperationTone = 'success' | 'error' | 'info'
@@ -266,6 +266,45 @@ export default function Dashboard() {
   const [minMagnitude, setMinMagnitude] = useState<number>(3.0)
   const [showAllEvents, setShowAllEvents] = useState(false)
   const [totalUnfilteredCount, setTotalUnfilteredCount] = useState<number>(0)
+  const filterRef = useRef<HTMLDivElement | null>(null)
+  const [filtersHeight, setFiltersHeight] = useState<number>(0)
+  const filtersRO = useRef<ResizeObserver | null>(null)
+  const [refreshTick, setRefreshTick] = useState(0)
+
+  // Measure filters block height to size the timeline so its top aligns with filters
+  // and its bottom aligns with the map bottom. Use ResizeObserver so changes caused by
+  // async data (e.g., counts) update the height without requiring a window resize.
+  useEffect(() => {
+    const measure = () => {
+      const el = filterRef.current
+      if (!el) return
+      const h = el.offsetHeight
+      setFiltersHeight((prev) => (prev !== h ? h : prev))
+    }
+
+    // Initial measure after paint to avoid 0 height due to layout not settled
+    const raf = requestAnimationFrame(measure)
+
+    // Observe element size changes
+    const el = filterRef.current
+    if (el && typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => measure())
+      ro.observe(el)
+      filtersRO.current = ro
+    }
+
+    // Fallback: also listen to window resize
+    window.addEventListener('resize', measure)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', measure)
+      if (filtersRO.current) {
+        filtersRO.current.disconnect()
+        filtersRO.current = null
+      }
+    }
+  }, [timeFilter, minMagnitude, showAllEvents, totalUnfilteredCount])
 
   const logOperation = (content: string, tone: OperationTone = 'info') => {
     setOperations((prev) => [
@@ -425,6 +464,7 @@ export default function Dashboard() {
       logOperation('Failed to refresh monitoring data. Please check network connectivity.', 'error')
     } finally {
       setLoading(false)
+      setRefreshTick((t) => t + 1)
     }
   }
 
@@ -759,12 +799,14 @@ export default function Dashboard() {
     return [...recentAlerts].sort((a, b) => b.magnitude - a.magnitude)[0]
   }, [recentAlerts])
 
+  const TIMELINE_MAX = 200
+
   const timelineEvents = useMemo((): TimelineEvent[] => {
-    const earthquakeEvents = recentAlerts.slice(0, 5).map((alert) => ({
+    const earthquakeEvents = recentAlerts.map((alert) => ({
       id: `eq-${alert.id}`,
       type: 'earthquake' as const,
       timestamp: new Date(alert.timestamp),
-      title: `Magnitude ${alert.magnitude.toFixed(1)} — ${alert.location}`,
+      title: `Magnitude ${typeof alert.magnitude === 'number' ? alert.magnitude.toFixed(1) : '?' } — ${alert.location}`,
       subtitle: `${alert.contactsNotified} contacts notified`,
       severity: alert.magnitude,
       status: alert.success ? 'Delivered' : 'Delivery Issues',
@@ -772,7 +814,7 @@ export default function Dashboard() {
       details: alert.errorMessage
     }))
 
-    const tsunamiEvents = (tsunamiStats?.recentAlerts ?? []).slice(0, 5).map((alert) => ({
+    const tsunamiEvents = (tsunamiStats?.recentAlerts ?? []).map((alert) => ({
       id: `ts-${alert.id}`,
       type: 'tsunami' as const,
       timestamp: new Date(alert.timestamp),
@@ -786,7 +828,7 @@ export default function Dashboard() {
 
     return [...earthquakeEvents, ...tsunamiEvents]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-      .slice(0, 8)
+      .slice(0, TIMELINE_MAX)
   }, [recentAlerts, tsunamiStats])
 
   const monitoringActive = monitoringStatus?.isMonitoring
@@ -854,7 +896,6 @@ export default function Dashboard() {
       sources: Set<string>
       primarySource?: string
     }>()
-
     for (const a of filtered) {
       const key = a.earthquakeId || a.id
       const existing = byEqId.get(key)
@@ -864,7 +905,7 @@ export default function Dashboard() {
           lat: a.latitude!,
           lng: a.longitude!,
           magnitude: a.magnitude,
-          title: `M${a.magnitude.toFixed(1)} ${a.location}`,
+          title: `M${typeof a.magnitude === 'number' ? a.magnitude?.toFixed(1) : '?' } ${a.location}`,
           timestamp: a.timestamp,
           contactsAffected: a.contactsNotified,
           sources: new Set(a.dataSources ?? []),
@@ -876,12 +917,12 @@ export default function Dashboard() {
           existing.timestamp = a.timestamp
           existing.lat = a.latitude!
           existing.lng = a.longitude!
-          existing.title = `M${a.magnitude.toFixed(1)} ${a.location}`
+          existing.title = `M${typeof a.magnitude === 'number' ? a.magnitude.toFixed(1) : '?' } ${a.location}`
         }
         // Keep the maximum magnitude observed across sources
         if (a.magnitude > existing.magnitude) {
           existing.magnitude = a.magnitude
-          existing.title = `M${a.magnitude.toFixed(1)} ${a.location}`
+          existing.title = `M${typeof a.magnitude === 'number' ? a.magnitude.toFixed(1) : '?' } ${a.location}`
         }
         // Merge sources
         for (const s of (a.dataSources ?? [])) existing.sources.add(s)
@@ -1044,8 +1085,7 @@ export default function Dashboard() {
                 <h2 className="text-xl font-semibold text-slate-900">
                   Welcome back, {session.user.name || 'Operator'}
                 </h2>
-                <p className="text-sm text-slate-600">
-                  Authenticated via {(session.user as any)?.phone || session.user.email} • 
+                <p className="text-sm text-slate-600"> 
                   Emergency Alert Command Center
                 </p>
               </div>
@@ -1109,10 +1149,10 @@ export default function Dashboard() {
         )}
 
         {/* Phase 1: Global Event Map + Unified Incident Timeline */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-3 items-start">
           <div className="lg:col-span-2">
-            {/* Filter Controls */}
-            <div className="mb-4 space-y-3">
+            {/* Filter Controls (left column) */}
+            <div ref={filterRef} className="pb-4 space-y-3">
               {/* Time Filter */}
               <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
                 <div className="flex items-center gap-2">
@@ -1190,7 +1230,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            
+
             <GlobalEventMap
               events={mapEvents}
               totalCount={totalUnfilteredCount}
@@ -1199,27 +1239,34 @@ export default function Dashboard() {
           </div>
           <UnifiedIncidentTimeline 
             events={timelineEvents} 
-            height="500px" 
+            height={`${500 + Math.max(0, filtersHeight)}px`} 
           />
         </div>
 
-        {/* Phase 1: Key Metrics Dashboard */}
-        <KeyMetricsWidget metrics={keyMetrics} />
-
-        {/* Delivery Status Widget */}
-        <DeliveryStatusWidget />
-
-        {/* New Usability Widgets */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          <ActiveContactsWidget />
-          <FeedStatusWidget />
-          <ChannelStatusWidget />
+        {/* Events by Type & Delivery Status - 1/3 and 2/3 */}
+        <div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
+          <EventsByTypeWidget 
+            earthquakes={recentAlerts}
+            tsunamis={tsunamiAlerts}
+            timeRangeExternal={timeFilter}
+            refreshKey={refreshTick}
+          />
+          <div className="lg:col-span-2 flex">
+            <DeliveryStatusWidget timeRangeExternal={timeFilter} refreshKey={refreshTick} />
+          </div>
         </div>
 
+        {/* New Usability Widgets - Reduced height with scroll */}
         <div className="grid gap-6 lg:grid-cols-3">
-          <EventsByTypeWidget />
-          <LastCheckWidget />
-          <AlertsSentWidget />
+          <div className="max-h-[400px] overflow-y-auto">
+            <ActiveContactsWidget />
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <FeedStatusWidget refreshKey={refreshTick} />
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <ChannelStatusWidget timeRangeExternal={timeFilter} refreshKey={refreshTick} />
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -1227,203 +1274,20 @@ export default function Dashboard() {
           <AuditTrailWidget />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {monitoringSummary.map((item) => (
-            <div key={item.label} className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-white/90 px-5 py-4 shadow-sm">
-              <div>
-                <div className="flex items-center gap-2">
-                  <div className={`h-2 w-2 rounded-full ${item.active ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300'}`} />
-                  <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                </div>
-                <p className="mt-1 text-xs text-slate-600">{item.details}</p>
-              </div>
-              <button
-                onClick={item.cta.handler}
-                className={`btn ${item.active ? 'btn-secondary' : 'btn-primary'} whitespace-nowrap`}
-              >
-                {item.cta.label}
-              </button>
-            </div>
-          ))}
-        </div>
+        {/* Maritime Testing Controls */}
+        <MaritimeTestingControls />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Monitoring Controls</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button onClick={manualCheck} className="btn btn-secondary flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                Manual earthquake sweep
-              </button>
-              <button onClick={manualTsunamiCheck} className="btn btn-secondary flex items-center gap-2">
-                <Waves className="h-4 w-4" />
-                Manual tsunami sweep
-              </button>
-              <a href="/contacts" className="btn btn-primary flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Manage contacts
-              </a>
-              <a href="/alerts" className="btn btn-secondary flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                Earthquake history
-              </a>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Channel & Drill Tests</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <button
-                onClick={testSMSService}
-                disabled={testingService || !monitoringStatus?.smsAvailable}
-                className="btn btn-primary flex items-center gap-2 disabled:opacity-50"
-              >
-                {testingService ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Testing SMS...
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="h-4 w-4" />
-                    Test SMS
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={testVoiceService}
-                disabled={testingVoice}
-                className="btn btn-success flex items-center gap-2 disabled:opacity-50"
-              >
-                {testingVoice ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Making Call...
-                  </>
-                ) : (
-                  <>
-                    <Phone className="h-4 w-4" />
-                    Test Voice Call
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={testWhatsApp}
-                disabled={testingWhatsApp}
-                className="btn btn-success flex items-center gap-2 disabled:opacity-50"
-              >
-                {testingWhatsApp ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="h-4 w-4" />
-                    Test WhatsApp
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={testEmail}
-                disabled={testingEmail}
-                className="btn btn-primary flex items-center gap-2 disabled:opacity-50"
-              >
-                {testingEmail ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="h-4 w-4" />
-                    Test Email
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={testMultiChannel}
-                disabled={testingMultiChannel}
-                className="btn btn-warning flex items-center gap-2 disabled:opacity-50"
-              >
-                {testingMultiChannel ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="h-4 w-4" />
-                    Test Multi-Channel
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={testHighSeverity}
-                disabled={testingMultiChannel}
-                className="btn btn-danger flex items-center gap-2 disabled:opacity-50"
-              >
-                {testingMultiChannel ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Running...
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-4 w-4" />
-                    High-Severity Drill
-                  </>
-                )}
-              </button>
-            </div>
-
-            <div className="mt-4 space-y-2">
-              {testResult && (
-                <div className={`alert ${testResult.includes('Test sent') ? 'alert-success' : 'alert-error'}`}>
-                  {testResult}
-                </div>
-              )}
-              {voiceResult && (
-                <div className={`alert ${voiceResult.includes('✅') ? 'alert-success' : 'alert-error'}`}>
-                  {voiceResult}
-                </div>
-              )}
-              {multiChannelResult && (
-                <div className={`alert ${multiChannelResult.includes('✅') ? 'alert-success' : 'alert-error'}`}>
-                  {multiChannelResult}
-                </div>
-              )}
-              {whatsAppResult && (
-                <div className={`alert ${whatsAppResult.includes('✅') ? 'alert-success' : 'alert-error'}`}>
-                  {whatsAppResult}
-                </div>
-              )}
-              {emailResult && (
-                <div className={`alert ${emailResult.includes('✅') ? 'alert-success' : 'alert-error'}`}>
-                  {emailResult}
-                </div>
-              )}
-              {!monitoringStatus?.smsAvailable && (
-                <div className="alert alert-warning">
-                  SMS service not configured. Add Twilio credentials to `.env.local`.
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-3">
-          <div className="card xl:col-span-2">
+          <div className="min-h-0" style={{ height: '600px' }}>
             <RealTimeActivityFeed maxItems={20} autoRefresh={true} refreshInterval={3000} />
           </div>
 
-          <div className="card">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4">Operations Log</h3>
+          <WidgetCard
+            title="Operations Log"
+            icon={FileText}
+            iconColor="slate"
+            subtitle="Operational events will appear here as actions are performed"
+          >
             <div className="space-y-3">
               {operations.length ? (
                 operations.slice(0, 8).map((log) => (
@@ -1434,99 +1298,13 @@ export default function Dashboard() {
                 ))
               ) : (
                 <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-4 text-center text-xs text-slate-500">
-                  Operational events will appear here as actions are performed.
+                  No operations logged yet
                 </div>
               )}
             </div>
-          </div>
+          </WidgetCard>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Earthquake Alert Delivery Log</h3>
-              <span className="text-xs text-slate-500">{recentAlerts.length} events tracked</span>
-            </div>
-            {recentAlerts.length ? (
-              <div className="space-y-4">
-                {recentAlerts.slice(0, 5).map((alert) => (
-                  <div key={alert.id} className="rounded-xl border border-slate-200/60 bg-slate-50 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">Magnitude {alert.magnitude.toFixed(1)} — {alert.location}</p>
-                        <p className="text-xs text-slate-500">{new Date(alert.timestamp).toLocaleString()}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-xs font-semibold ${alert.success ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {alert.success ? 'Delivered' : 'Issues'}
-                        </p>
-                        <p className="text-xs text-slate-500">{alert.contactsNotified} contacts notified</p>
-                      </div>
-                    </div>
-                    {alert.errorMessage && (
-                      <p className="mt-2 text-xs text-rose-600">{alert.errorMessage}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-slate-500">
-                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                <p>No earthquake alerts dispatched yet.</p>
-              </div>
-            )}
-          </div>
-
-          <div className="card">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900">Tsunami Alert Feed</h3>
-              <span className="text-xs text-slate-500">Active feed synchronisation</span>
-            </div>
-            {tsunamiAlerts.length ? (
-              <div className="space-y-4">
-                {tsunamiAlerts.slice(0, 4).map((alert) => (
-                  <div key={alert.id} className="rounded-xl border border-slate-200/60 bg-white/90 p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{alert.title}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5" />
-                            {alert.location}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5" />
-                            {new Date(alert.processedAt).toLocaleString()}
-                          </span>
-                        </div>
-                      </div>
-                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        alert.threat?.level?.toLowerCase() === 'warning'
-                          ? 'bg-rose-50 text-rose-600 border border-rose-100'
-                          : alert.threat?.level?.toLowerCase() === 'watch'
-                            ? 'bg-amber-50 text-amber-600 border border-amber-100'
-                            : 'bg-blue-50 text-blue-600 border border-blue-100'
-                      }`}>
-                        {alert.threat?.level?.toUpperCase() || 'UNKNOWN'}
-                      </span>
-                    </div>
-                    <p className="mt-3 text-xs text-slate-600">{alert.description}</p>
-                    <div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-                      <span className="font-semibold text-slate-900">Instructions:</span>
-                      <br />
-                      {alert.instruction}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-slate-500">
-                <Waves className="mx-auto mb-3 h-8 w-8 text-slate-300" />
-                <p>No tsunami advisories at the moment.</p>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Phase 2: Quick Action Command Palette (Floating) */}

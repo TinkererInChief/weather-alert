@@ -23,6 +23,7 @@ import {
   UserCircle,
   ShieldCheck
 } from 'lucide-react'
+import { Role, Permission, hasPermission } from '@/lib/rbac/roles'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -69,10 +70,24 @@ export default function AppLayout({
     { name: 'System Status', href: '/dashboard/status', icon: Activity, current: pathname === '/dashboard/status' },
   ]
 
-  const adminNavigation = effectiveUser.role === 'admin' ? [
-    { name: 'User Management', href: '/dashboard/users', icon: ShieldCheck, current: pathname === '/dashboard/users' },
-    { name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' },
-  ] : []
+  // Get actual user role from session
+  const userRole = (sessionUser as any)?.role as Role | undefined
+  const isSuperAdmin = userRole === Role.SUPER_ADMIN
+  const isOrgAdmin = userRole === Role.ORG_ADMIN
+  const canManageUsers = userRole && hasPermission(userRole, Permission.MANAGE_USERS)
+  const canManageSettings = userRole && hasPermission(userRole, Permission.MANAGE_SETTINGS)
+  
+  const adminNavigation = [
+    // Super Admin and Org Admin - Admin Panel (User Management, Contacts, etc.)
+    ...(canManageUsers ? [{ 
+      name: isSuperAdmin ? 'Admin Panel' : 'Organization Panel', 
+      href: '/dashboard/admin', 
+      icon: Shield, 
+      current: pathname === '/dashboard/admin' 
+    }] : []),
+    // Admin roles - Settings
+    ...(canManageSettings ? [{ name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' }] : []),
+  ]
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' })
@@ -394,7 +409,7 @@ export default function AppLayout({
                     {effectiveUser.name}
                   </p>
                   <p className="text-xs text-slate-500 truncate">
-                    {effectiveUser.role === 'admin' ? 'Administrator' : 'Viewer'} • {effectiveUser.phone || effectiveUser.email}
+                    {effectiveUser.role === 'admin' ? 'Administrator' : 'Viewer'}
                   </p>
                 </div>
               )}
