@@ -22,6 +22,7 @@ export default function EarthquakeMonitoringPage() {
   const [alerts, setAlerts] = useState([])
   const [stats, setStats] = useState({ total: 0, last24h: 0 })
   const [loading, setLoading] = useState(true)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -61,6 +62,7 @@ export default function EarthquakeMonitoringPage() {
         console.error('Failed to fetch alerts:', error)
       } finally {
         setLoading(false)
+        setIsInitialLoad(false)
       }
     }
 
@@ -360,7 +362,7 @@ export default function EarthquakeMonitoringPage() {
             }
           >
             <div className="flex-1 min-h-0 overflow-y-auto" style={{ maxHeight: '600px' }}>
-              {loading ? (
+              {loading && isInitialLoad ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                   <p className="mt-2 text-slate-600">Loading alerts...</p>
