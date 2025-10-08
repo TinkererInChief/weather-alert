@@ -91,6 +91,7 @@ export default function EventHoverCard({
         <div
           onMouseEnter={() => setOpen(true)}
           onMouseLeave={() => setOpen(false)}
+          className="transition-colors relative z-0 hover:bg-slate-100 dark:hover:bg-slate-800"
         >
           {children}
         </div>
@@ -99,23 +100,29 @@ export default function EventHoverCard({
       <AnimatePresence>
         {open && (
           <Popover.Portal forceMount>
+
             <Popover.Content
               side="right"
-              sideOffset={15}
-              align="start"
-              alignOffset={-20}
-              collisionPadding={20}
+              sideOffset={20}
+              align="center"
+              collisionPadding={{
+                top: 20,
+                right: 20,
+                bottom: 20,
+                left: 20
+              }}
               avoidCollisions={true}
-              className="z-[1000]"
+              sticky="always"
+              className="z-[9999] will-change-transform"
               onMouseEnter={() => setOpen(true)}
               onMouseLeave={() => setOpen(false)}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="w-[450px] max-h-[85vh] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden"
+                initial={{ opacity: 0, scale: 0.96, x: -8 }}
+                animate={{ opacity: 1, scale: 1, x: 0 }}
+                exit={{ opacity: 0, scale: 0.96, x: -8 }}
+                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
+                className="w-[420px] max-h-[80vh] bg-white rounded-lg shadow-2xl border border-slate-200 overflow-hidden"
                 style={{
                   boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 40px rgba(0, 0, 0, 0.05)',
                 }}
@@ -134,7 +141,7 @@ export default function EventHoverCard({
                 />
 
                 {/* Event Details - Scrollable */}
-                <div className="overflow-y-auto max-h-[calc(85vh-300px)]">
+                <div className="overflow-y-auto max-h-[calc(80vh-250px)]">
                   <EventDetails
                     event={event}
                     type={type}
@@ -143,8 +150,6 @@ export default function EventHoverCard({
                   />
                 </div>
               </motion.div>
-
-              <Popover.Arrow className="fill-white" />
             </Popover.Content>
           </Popover.Portal>
         )}

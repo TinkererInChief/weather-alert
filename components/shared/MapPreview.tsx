@@ -49,6 +49,16 @@ export default function MapPreview({
     if (!mapContainer.current) return
     if (map.current) return // Initialize map only once
 
+    // Debug: Log token status
+    if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'your_mapbox_token_here') {
+      console.warn('⚠️ Mapbox token not configured properly')
+      setError('Mapbox token not configured. Please set NEXT_PUBLIC_MAPBOX_TOKEN in your .env.local')
+      setIsLoading(false)
+      return
+    }
+
+    console.log('🗺️ Initializing map with token:', MAPBOX_TOKEN.substring(0, 20) + '...')
+
     // Calculate zoom based on magnitude
     const zoom = getZoomLevel(magnitude)
 
@@ -66,12 +76,16 @@ export default function MapPreview({
       })
 
       map.current.on('error', (e) => {
-        console.error('Mapbox error:', e)
-        setError('Map failed to load. Please check your Mapbox token.')
+        console.error('❌ Mapbox error:', e)
+        setError('Map failed to load. Check console for details.')
         setIsLoading(false)
       })
+
+      map.current.on('style.load', () => {
+        console.log('✅ Map style loaded successfully')
+      })
     } catch (err) {
-      console.error('Failed to initialize map:', err)
+      console.error('❌ Failed to initialize map:', err)
       setError('Unable to initialize map')
       setIsLoading(false)
       return
@@ -298,7 +312,7 @@ export default function MapPreview({
   }
 
   return (
-    <div className="relative w-full h-[300px] rounded-t-xl overflow-hidden bg-slate-100">
+    <div className="relative w-full h-[250px] rounded-t-lg overflow-hidden bg-slate-100">
       <div ref={mapContainer} className="w-full h-full" />
       
       {error && (

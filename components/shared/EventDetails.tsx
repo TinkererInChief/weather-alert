@@ -1,6 +1,7 @@
 'use client'
 
 import { format, formatDistanceToNow } from 'date-fns'
+import Link from 'next/link'
 import { 
   MapPin, 
   Clock, 
@@ -10,7 +11,8 @@ import {
   Users, 
   Waves,
   TrendingUp,
-  Info
+  Info,
+  ArrowRight
 } from 'lucide-react'
 import { EarthquakeEvent, TsunamiEvent, PopulationImpact, TsunamiETAData } from '@/types/event-hover'
 import { 
@@ -247,10 +249,14 @@ export default function EventDetails({
 
       {/* View Details Button */}
       <div className="border-t border-slate-200 pt-3">
-        <button className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2">
+        <Link
+          href={type === 'earthquake' ? '/dashboard/alerts' : '/dashboard/tsunami'}
+          className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
+        >
           <TrendingUp className="h-4 w-4" />
           View Full Details
-        </button>
+          <ArrowRight className="h-4 w-4" />
+        </Link>
       </div>
     </div>
   )
