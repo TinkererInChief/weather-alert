@@ -137,10 +137,16 @@ type TimelineEvent = {
   timestamp: Date
   title: string
   subtitle: string
-  severity?: number
+  severity: number
   status: string
   success: boolean
   details?: string
+  latitude?: number
+  longitude?: number
+  magnitude?: number
+  depth?: number
+  threatLevel?: string
+  ocean?: string
 }
 
 type StatsApiResponse = {
