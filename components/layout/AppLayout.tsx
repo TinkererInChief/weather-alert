@@ -68,6 +68,8 @@ export default function AppLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isCompact, setIsCompact] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const [showSearchHistory, setShowSearchHistory] = useState(false)
   const [pinnedItems, setPinnedItems] = useState<string[]>(['Dashboard', 'Earthquake'])
   const [recentItems, setRecentItems] = useState<string[]>([])
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
@@ -288,19 +290,106 @@ export default function AppLayout({
     )
   }
 
+  // Load search history from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('sidebar-search-history')
+    if (saved) {
+      try {
+        setSearchHistory(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to load search history', e)
+      }
+    }
+  }, [])
+
+  // Save search to history
+  const addToSearchHistory = (query: string) => {
+    if (!query.trim() || query.length < 2) return
+    
+    const updated = [query, ...searchHistory.filter(q => q !== query)].slice(0, 5)
+    setSearchHistory(updated)
+    localStorage.setItem('sidebar-search-history', JSON.stringify(updated))
+  }
+
+  // Fuzzy match function - calculates similarity score
+  const fuzzyMatch = (text: string, query: string): number => {
+    text = text.toLowerCase()
+    query = query.toLowerCase()
+    
+    // Exact match
+    if (text.includes(query)) return 100
+    
+    // Calculate character match score
+    let score = 0
+    let queryIndex = 0
+    
+    for (let i = 0; i < text.length && queryIndex < query.length; i++) {
+      if (text[i] === query[queryIndex]) {
+        score += 10
+        queryIndex++
+      }
+    }
+    
+    // Check if all query characters were found
+    if (queryIndex === query.length) {
+      return score
+    }
+    
+    return 0
+  }
+
+  // Highlight matching text
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim()) return text
+    
+    const lowerText = text.toLowerCase()
+    const lowerQuery = query.toLowerCase()
+    const index = lowerText.indexOf(lowerQuery)
+    
+    if (index === -1) return text
+    
+    return (
+      <>
+        {text.slice(0, index)}
+        <span className="bg-yellow-200 text-slate-900 font-semibold rounded px-0.5">
+          {text.slice(index, index + query.length)}
+        </span>
+        {text.slice(index + query.length)}
+      </>
+    )
+  }
+
   // Helper: Get all items for search
   const getAllItems = (): NavItem[] => {
     return navigationGroups.flatMap(group => group.items) as NavItem[]
   }
 
-  // Filter items by search
+  // Enhanced filter with section name search and fuzzy matching
   const filteredGroups = searchQuery
-    ? navigationGroups.map(group => ({
-        ...group,
-        items: group.items.filter(item =>
-          item.name.toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      })).filter(group => group.items.length > 0)
+    ? navigationGroups.map(group => {
+        const sectionMatch = fuzzyMatch(group.title, searchQuery) > 0
+        
+        // If section name matches, include all items from that section
+        if (sectionMatch) {
+          return {
+            ...group,
+            matchedBySection: true,
+            items: group.items
+          }
+        }
+        
+        // Otherwise, filter items by fuzzy matching
+        const matchedItems = group.items.filter(item => {
+          const score = fuzzyMatch(item.name, searchQuery)
+          return score > 0
+        })
+        
+        return {
+          ...group,
+          matchedBySection: false,
+          items: matchedItems
+        }
+      }).filter(group => group.items.length > 0)
     : navigationGroups
 
   // Get pinned items data
@@ -623,9 +712,67 @@ export default function AppLayout({
                   placeholder="Search... (⌘K)"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowSearchHistory(true)}
+                  onBlur={() => setTimeout(() => setShowSearchHistory(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchQuery.trim()) {
+                      addToSearchHistory(searchQuery)
+                      setShowSearchHistory(false)
+                    }
+                  }}
                   className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                
+                {/* Search History Dropdown */}
+                {showSearchHistory && searchHistory.length > 0 && !searchQuery && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 py-1">
+                    <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                      <span>Recent Searches</span>
+                      <button
+                        onClick={() => {
+                          setSearchHistory([])
+                          localStorage.removeItem('sidebar-search-history')
+                        }}
+                        className="text-slate-400 hover:text-red-500 text-xs normal-case"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                    {searchHistory.map((query, index) => (
+                      <button
+                        key={index}
+                        onClick={() => {
+                          setSearchQuery(query)
+                          setShowSearchHistory(false)
+                        }}
+                        className="w-full px-3 py-2 text-sm text-left hover:bg-slate-50 flex items-center gap-2 text-slate-700"
+                      >
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        {query}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+              
+              {/* Search Tips */}
+              {searchQuery && (
+                <div className="mt-2 text-xs text-slate-500">
+                  {filteredGroups.length > 0 ? (
+                    <span>✓ Found {filteredGroups.reduce((acc, g) => acc + g.items.length, 0)} result(s)</span>
+                  ) : (
+                    <span>No results - try different keywords</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -658,7 +805,7 @@ export default function AppLayout({
                           onClick={() => setSidebarOpen(false)}
                         >
                           <Icon className={`${isCompact ? 'h-5 w-5' : 'h-4 w-4 mr-3'} transition-transform group-hover:scale-110 ${(item as any).current ? 'text-white' : 'text-slate-500'}`} />
-                          <span className="flex-1">{item.name}</span>
+                          <span className="flex-1">{searchQuery ? highlightMatch(item.name, searchQuery) : item.name}</span>
                           {(item as any).badge && (
                             <span className={`
                               px-2 py-0.5 text-xs font-bold rounded-full
@@ -704,7 +851,14 @@ export default function AppLayout({
                       <div className="p-1 bg-white rounded-md shadow-sm">
                         <GroupIcon className="h-3.5 w-3.5 text-slate-600" />
                       </div>
-                      <span className="flex-1 text-left">{group.title}</span>
+                      <span className="flex-1 text-left">
+                        {searchQuery ? highlightMatch(group.title, searchQuery) : group.title}
+                        {(group as any).matchedBySection && searchQuery && (
+                          <span className="ml-2 text-[10px] font-normal text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded normal-case">
+                            Section match
+                          </span>
+                        )}
+                      </span>
                       {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-slate-500" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-500" />}
                     </button>
                   )}
@@ -740,7 +894,7 @@ export default function AppLayout({
                               `} />
                               {!isCompact && (
                                 <>
-                                  <span className="flex-1">{item.name}</span>
+                                  <span className="flex-1">{searchQuery ? highlightMatch(item.name, searchQuery) : item.name}</span>
                                   {(item as any).shortcut && (
                                     <span className="text-xs text-slate-400 font-mono ml-2">
                                       {(item as any).shortcut}
