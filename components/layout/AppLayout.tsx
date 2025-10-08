@@ -54,8 +54,8 @@ type NavItem = {
   badge?: {
     count?: number
     icon?: string
-    color: string
-    pulse: boolean
+    color?: string
+    pulse?: boolean
   }
   highlight?: boolean
 }
@@ -166,7 +166,11 @@ export default function AppLayout({
     return false
   }
 
-  const navigationGroups = [
+  const navigationGroups: Array<{
+    title: string
+    icon: any
+    items: NavItem[]
+  }> = [
     {
       title: 'Monitoring',
       icon: Activity,
