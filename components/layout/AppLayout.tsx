@@ -634,41 +634,54 @@ export default function AppLayout({
             {/* Pinned Items */}
             {!isCompact && getPinnedItemsData().length > 0 && (
               <div className="mb-4">
-                <div className="px-3 py-2.5 text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 bg-slate-50/50 rounded-lg mb-1">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <div className="px-4 py-3 text-[13px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5 bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200/60 rounded-lg mb-2 shadow-sm">
+                  <div className="p-1 bg-white rounded-md shadow-sm">
+                    <Star className="h-3.5 w-3.5 fill-yellow-500 text-yellow-500" />
+                  </div>
                   <span className="flex-1">Pinned</span>
                 </div>
                 <div className="space-y-1">
                   {getPinnedItemsData().map((item: NavItem) => {
                     const Icon = item.icon
                     return (
-                      <Link
-                        key={`pinned-${item.name}`}
-                        href={item.href}
-                        className={`
-                          group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
-                          ${(item as any).current
-                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
-                            : 'text-slate-700 hover:bg-slate-100/80'
-                          }
-                          ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
-                        `}
-                        onClick={() => setSidebarOpen(false)}
-                      >
-                        <Icon className={`h-4 w-4 mr-3 transition-transform group-hover:scale-110 ${(item as any).current ? 'text-white' : 'text-slate-500'}`} />
-                        <span className="flex-1">{item.name}</span>
-                        {(item as any).badge && (
-                          <span className={`
-                            px-2 py-0.5 text-xs font-bold rounded-full
-                            ${(item as any).badge.color === 'red' ? 'bg-red-500 text-white' :
-                              (item as any).badge.color === 'orange' ? 'bg-orange-500 text-white' :
-                              (item as any).badge.color === 'blue' ? 'bg-blue-500 text-white' : 'bg-slate-400 text-white'}
-                            ${(item as any).badge.pulse ? 'animate-pulse' : ''}
-                          `}>
-                            {(item as any).badge.count || (item as any).badge.icon}
-                          </span>
-                        )}
-                      </Link>
+                      <div key={`pinned-${item.name}`} className="relative group/pinned">
+                        <Link
+                          href={item.href}
+                          className={`
+                            group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                            ${(item as any).current
+                              ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                              : 'text-slate-700 hover:bg-slate-100/80'
+                            }
+                            ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
+                          `}
+                          onClick={() => setSidebarOpen(false)}
+                        >
+                          <Icon className={`h-4 w-4 mr-3 transition-transform group-hover:scale-110 ${(item as any).current ? 'text-white' : 'text-slate-500'}`} />
+                          <span className="flex-1">{item.name}</span>
+                          {(item as any).badge && (
+                            <span className={`
+                              px-2 py-0.5 text-xs font-bold rounded-full
+                              ${(item as any).badge.color === 'red' ? 'bg-red-500 text-white' :
+                                (item as any).badge.color === 'orange' ? 'bg-orange-500 text-white' :
+                                (item as any).badge.color === 'blue' ? 'bg-blue-500 text-white' : 'bg-slate-400 text-white'}
+                              ${(item as any).badge.pulse ? 'animate-pulse' : ''}
+                            `}>
+                              {(item as any).badge.count || (item as any).badge.icon}
+                            </span>
+                          )}
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            togglePin(item.name)
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/pinned:opacity-100 transition-all p-1.5 hover:bg-white rounded-md border border-transparent hover:border-slate-200 hover:shadow-sm z-10"
+                          title="Click to unpin"
+                        >
+                          <X className="h-3 w-3 text-slate-400 hover:text-red-500" />
+                        </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -686,11 +699,13 @@ export default function AppLayout({
                   {!isCompact && (
                     <button
                       onClick={() => toggleSection(group.title)}
-                      className="w-full px-3 py-2.5 text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 hover:text-slate-900 transition-colors bg-slate-50/50 rounded-lg mb-1"
+                      className="w-full px-4 py-3 text-[13px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5 hover:text-slate-900 transition-all bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200/60 rounded-lg mb-2 shadow-sm hover:shadow"
                     >
-                      <GroupIcon className="h-4 w-4" />
+                      <div className="p-1 bg-white rounded-md shadow-sm">
+                        <GroupIcon className="h-3.5 w-3.5 text-slate-600" />
+                      </div>
                       <span className="flex-1 text-left">{group.title}</span>
-                      {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-slate-500" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-500" />}
                     </button>
                   )}
                   {!isCollapsed && (
@@ -745,11 +760,14 @@ export default function AppLayout({
                             </Link>
                             {!isCompact && (
                               <button
-                                onClick={() => togglePin(item.name)}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity p-1"
-                                title={isPinned ? 'Unpin' : 'Pin'}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  togglePin(item.name)
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-all p-1.5 hover:bg-white rounded-md border border-transparent hover:border-slate-200 hover:shadow-sm"
+                                title={isPinned ? 'Click to unpin' : 'Click to pin'}
                               >
-                                <Star className={`h-3 w-3 ${isPinned ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
+                                <Star className={`h-3.5 w-3.5 transition-all ${isPinned ? 'fill-yellow-500 text-yellow-500' : 'text-slate-400 hover:text-yellow-500'}`} />
                               </button>
                             )}
                           </div>
@@ -766,8 +784,10 @@ export default function AppLayout({
               <>
                 {!isCompact && <div className="my-3 border-t border-slate-200/60" />}
                 {!isCompact && (
-                  <div className="px-3 py-2.5 text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 bg-slate-50/50 rounded-lg mb-1">
-                    <ShieldCheck className="h-4 w-4" />
+                  <div className="px-4 py-3 text-[13px] font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-2.5 bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200/60 rounded-lg mb-2 shadow-sm">
+                    <div className="p-1 bg-white rounded-md shadow-sm">
+                      <ShieldCheck className="h-3.5 w-3.5 text-slate-600" />
+                    </div>
                     <span className="flex-1">Admin</span>
                   </div>
                 )}
