@@ -416,7 +416,7 @@ export default function SystemStatusPage() {
           </div>
 
           {/* Service Dependency Map */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 isolate">
             <div className="p-6 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-900">Service Dependencies</h3>
               <p className="text-sm text-slate-500 mt-1">Visual topology showing service relationships and impact</p>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Database, Activity, MessageSquare, Mail, Globe, MessageCircle, Phone, Wifi, AlertCircle } from 'lucide-react'
 
 type ServiceNode = {
@@ -27,7 +27,7 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
   const containerRef = useRef<HTMLDivElement>(null)
   const [nodePositions, setNodePositions] = useState<Record<string, NodePosition>>({})
   // Define your service topology
-  const nodes: ServiceNode[] = [
+  const nodes: ServiceNode[] = useMemo(() => [
     // Layer 0: External data sources
     { id: 'usgs', name: 'USGS', icon: Globe, status: services.usgs?.status as any || 'unknown', layer: 0, dependencies: [] },
     { id: 'emsc', name: 'EMSC', icon: Globe, status: services.emsc?.status as any || 'unknown', layer: 0, dependencies: [] },
@@ -48,7 +48,7 @@ export default function ServiceDependencyMap({ services }: ServiceDependencyMapP
     { id: 'email', name: 'Email', icon: Mail, status: services.email?.status as any || 'unknown', layer: 3, dependencies: ['core', 'database'] },
     { id: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, status: services.whatsapp?.status as any || 'unknown', layer: 3, dependencies: ['core', 'database'] },
     { id: 'voice', name: 'Voice', icon: Phone, status: services.voice?.status as any || 'unknown', layer: 3, dependencies: ['core', 'database'] },
-  ]
+  ], [services])
 
   const getStatusColor = (status: string) => {
     switch (status) {

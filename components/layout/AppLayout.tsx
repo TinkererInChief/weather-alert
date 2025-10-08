@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import {
   Home,
@@ -44,7 +44,6 @@ export default function AppLayout({
   user = { name: 'Emergency Operator', role: 'admin', email: 'operator@emergency.gov' }
 }: AppLayoutProps) {
   const pathname = usePathname()
-  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { data: session, status } = useSession()
 
@@ -167,6 +166,11 @@ export default function AppLayout({
       const interval = setInterval(loadNotifications, 60000)
       return () => clearInterval(interval)
     }, [])
+
+    // Close on route change to prevent invisible overlay blocking clicks
+    useEffect(() => {
+      setIsOpen(false)
+    }, [pathname])
 
     const unreadCount = notifications.filter(n => n.unread).length
 
@@ -341,7 +345,7 @@ export default function AppLayout({
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-[60] w-72 transform transition-transform duration-300 ease-in-out lg:translate-x-0
+        fixed inset-y-0 left-0 z-[100] w-72 transform transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
@@ -370,7 +374,6 @@ export default function AppLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  prefetch={true}
                   className={`
                     group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
                     ${item.current
@@ -378,12 +381,7 @@ export default function AppLayout({
                       : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900'
                     }
                   `}
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setSidebarOpen(false)
-                    // Force navigation using router.push as fallback
-                    router.push(item.href)
-                  }}
+                  onClick={() => setSidebarOpen(false)}
                 >
                   <Icon className={`
                     mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110
@@ -448,7 +446,7 @@ export default function AppLayout({
       {/* Main content */}
       <div className="lg:pl-72">
         {/* Top header */}
-        <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
             {/* Mobile menu button */}
             <button
