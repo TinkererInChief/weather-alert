@@ -1,10 +1,14 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
+import type { FormEvent, ChangeEvent } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
-import { Users, Plus, Search, Phone, Mail, MapPin, Edit, Trash2, MessageCircle } from 'lucide-react'
+import { 
+  Users, Plus, Search, Phone, Mail, MapPin, Edit, Trash2, MessageCircle,
+  RefreshCw, Download, Upload, CheckSquare, Square, MoreVertical,
+  Filter, SortAsc, Clock, TrendingUp, UserCheck, AlertCircle, X
+} from 'lucide-react'
 import { z } from 'zod'
 
 type Contact = {
@@ -20,9 +24,20 @@ type Contact = {
   role?: string | null
 }
 
+type CSVRow = {
+  name: string
+  phone: string
+  email?: string
+  whatsapp?: string
+  location?: string
+  role?: string
+}
+
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
   const [newContact, setNewContact] = useState({ name: '', phone: '', email: '', whatsapp: '' })
@@ -34,6 +49,28 @@ export default function ContactsPage() {
   const [addErrors, setAddErrors] = useState<{ name?: string; phone?: string; email?: string; whatsapp?: string }>({})
   const [editErrors, setEditErrors] = useState<{ name?: string; phone?: string; email?: string; whatsapp?: string }>({})
   const [toasts, setToasts] = useState<Array<{ id: number; type: 'info' | 'success' | 'error'; message: string }>>([])
+  
+  // Bulk actions
+  const [selectedContacts, setSelectedContacts] = useState<Set<string>>(new Set())
+  const [showBulkActions, setShowBulkActions] = useState(false)
+  const [bulkActionInProgress, setBulkActionInProgress] = useState(false)
+  
+  // CSV import
+  const [showCSVImport, setShowCSVImport] = useState(false)
+  const [csvFile, setCSVFile] = useState<File | null>(null)
+  const [csvPreview, setCSVPreview] = useState<CSVRow[]>([])
+  const [csvImporting, setCSVImporting] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Filtering and sorting
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all')
+  const [sortBy, setSortBy] = useState<'name' | 'date'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(12)
 
   // Toast helpers
   const addToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
@@ -70,22 +107,35 @@ export default function ContactsPage() {
     return {}
   }
 
-  useEffect(() => {
-    // Fetch contacts
-    const fetchContacts = async () => {
-      try {
-        const response = await fetch('/api/contacts')
-        const data = await response.json()
-        if (data.success) {
-          setContacts(data.data || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch contacts:', error)
-      } finally {
-        setLoading(false)
+  // Fetch contacts
+  const fetchContacts = async (showLoader = true) => {
+    try {
+      if (showLoader) {
+        setLoading(true)
+      } else {
+        setRefreshing(true)
       }
+      const response = await fetch('/api/contacts', { cache: 'no-store' })
+      const data = await response.json()
+      if (data.success) {
+        setContacts(data.data || [])
+        setLastUpdated(new Date())
+      }
+    } catch (error) {
+      console.error('Failed to fetch contacts:', error)
+      addToast('Failed to fetch contacts', 'error')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
     }
+  }
 
+  // Manual refresh
+  const handleRefresh = () => {
+    fetchContacts(false)
+  }
+
+  useEffect(() => {
     fetchContacts()
   }, [])
 
@@ -182,11 +232,234 @@ export default function ContactsPage() {
     }
   }
 
-  const filteredContacts = contacts.filter((contact: Contact) =>
-    contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    contact.phone?.includes(searchTerm) ||
-    (contact.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase())
+  // CSV Export
+  const exportToCSV = () => {
+    const headers = ['Name', 'Phone', 'Email', 'WhatsApp', 'Location', 'Role', 'Status', 'Created At']
+    const rows = contacts.map(c => [
+      c.name,
+      c.phone,
+      c.email || '',
+      c.whatsapp || '',
+      c.location || '',
+      c.role || '',
+      c.active ? 'Active' : 'Inactive',
+      new Date(c.createdAt).toLocaleDateString()
+    ])
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `contacts_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    window.URL.revokeObjectURL(url)
+    addToast('Contacts exported successfully', 'success')
+  }
+
+  // CSV Import - Parse file
+  const handleCSVUpload = (file: File) => {
+    setCSVFile(file)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      const lines = text.split('\n').filter(l => l.trim())
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, '').toLowerCase())
+      
+      const parsed: CSVRow[] = []
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''))
+        const row: CSVRow = {
+          name: values[headers.indexOf('name')] || '',
+          phone: values[headers.indexOf('phone')] || '',
+          email: values[headers.indexOf('email')] || undefined,
+          whatsapp: values[headers.indexOf('whatsapp')] || undefined,
+          location: values[headers.indexOf('location')] || undefined,
+          role: values[headers.indexOf('role')] || undefined,
+        }
+        if (row.name && row.phone) {
+          parsed.push(row)
+        }
+      }
+      setCSVPreview(parsed)
+    }
+    reader.readAsText(file)
+  }
+
+  // CSV Import - Confirm and import
+  const confirmCSVImport = async () => {
+    setCSVImporting(true)
+    try {
+      const promises = csvPreview.map(row =>
+        fetch('/api/contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(row)
+        })
+      )
+      await Promise.all(promises)
+      await fetchContacts(false)
+      setShowCSVImport(false)
+      setCSVFile(null)
+      setCSVPreview([])
+      addToast(`Successfully imported ${csvPreview.length} contacts`, 'success')
+    } catch (error) {
+      addToast('Failed to import contacts', 'error')
+    } finally {
+      setCSVImporting(false)
+    }
+  }
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(true)
+  }
+
+  const handleDragLeave = () => {
+    setDragOver(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const file = e.dataTransfer.files[0]
+    if (file && file.type === 'text/csv') {
+      handleCSVUpload(file)
+    } else {
+      addToast('Please upload a CSV file', 'error')
+    }
+  }
+
+  // Bulk actions
+  const toggleSelectAll = () => {
+    if (selectedContacts.size === filteredAndSortedContacts.length) {
+      setSelectedContacts(new Set())
+    } else {
+      setSelectedContacts(new Set(filteredAndSortedContacts.map(c => c.id)))
+    }
+  }
+
+  const toggleSelectContact = (id: string) => {
+    const newSet = new Set(selectedContacts)
+    if (newSet.has(id)) {
+      newSet.delete(id)
+    } else {
+      newSet.add(id)
+    }
+    setSelectedContacts(newSet)
+  }
+
+  const bulkDelete = async () => {
+    if (selectedContacts.size === 0) return
+    if (!confirm(`Delete ${selectedContacts.size} contact(s)?`)) return
+    
+    setBulkActionInProgress(true)
+    try {
+      const promises = Array.from(selectedContacts).map(id =>
+        fetch(`/api/contacts/${id}`, { method: 'DELETE' })
+      )
+      await Promise.all(promises)
+      await fetchContacts(false)
+      setSelectedContacts(new Set())
+      setShowBulkActions(false)
+      addToast(`Successfully deleted ${promises.length} contact(s)`, 'success')
+    } catch (error) {
+      addToast('Failed to delete contacts', 'error')
+    } finally {
+      setBulkActionInProgress(false)
+    }
+  }
+
+  const bulkActivate = async () => {
+    if (selectedContacts.size === 0) return
+    setBulkActionInProgress(true)
+    try {
+      const promises = Array.from(selectedContacts).map(id => {
+        const contact = contacts.find(c => c.id === id)
+        return fetch(`/api/contacts/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...contact, active: true })
+        })
+      })
+      await Promise.all(promises)
+      await fetchContacts(false)
+      setSelectedContacts(new Set())
+      setShowBulkActions(false)
+      addToast(`Successfully activated ${promises.length} contact(s)`, 'success')
+    } catch (error) {
+      addToast('Failed to activate contacts', 'error')
+    } finally {
+      setBulkActionInProgress(false)
+    }
+  }
+
+  const bulkDeactivate = async () => {
+    if (selectedContacts.size === 0) return
+    setBulkActionInProgress(true)
+    try {
+      const promises = Array.from(selectedContacts).map(id => {
+        const contact = contacts.find(c => c.id === id)
+        return fetch(`/api/contacts/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...contact, active: false })
+        })
+      })
+      await Promise.all(promises)
+      await fetchContacts(false)
+      setSelectedContacts(new Set())
+      setShowBulkActions(false)
+      addToast(`Successfully deactivated ${promises.length} contact(s)`, 'success')
+    } catch (error) {
+      addToast('Failed to deactivate contacts', 'error')
+    } finally {
+      setBulkActionInProgress(false)
+    }
+  }
+
+  // Filtering and sorting
+  const filteredAndSortedContacts = useMemo(() => {
+    let filtered = contacts.filter((contact: Contact) => {
+      const matchesSearch = contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contact.phone?.includes(searchTerm) ||
+        (contact.email?.toLowerCase() ?? '').includes(searchTerm.toLowerCase())
+      
+      const matchesStatus = filterStatus === 'all' ? true :
+        filterStatus === 'active' ? contact.active : !contact.active
+      
+      return matchesSearch && matchesStatus
+    })
+
+    filtered.sort((a, b) => {
+      if (sortBy === 'name') {
+        const comparison = a.name.localeCompare(b.name)
+        return sortOrder === 'asc' ? comparison : -comparison
+      } else {
+        const comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        return sortOrder === 'asc' ? comparison : -comparison
+      }
+    })
+
+    return filtered
+  }, [contacts, searchTerm, filterStatus, sortBy, sortOrder])
+
+  // Pagination
+  const totalPages = Math.ceil(filteredAndSortedContacts.length / itemsPerPage)
+  const paginatedContacts = filteredAndSortedContacts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   )
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, filterStatus, sortBy, sortOrder])
 
   return (
     <AuthGuard>
@@ -197,23 +470,148 @@ export default function ContactsPage() {
         ]}
       >
         <div className="space-y-6">
-          {/* Header with Search and Add Button */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search contacts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+          {/* Header Actions */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search contacts..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                />
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
+                    className="appearance-none pl-3 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                  <Filter className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+
+                <div className="relative">
+                  <select
+                    value={`${sortBy}-${sortOrder}`}
+                    onChange={(e) => {
+                      const [newSortBy, newSortOrder] = e.target.value.split('-') as [('name' | 'date'), ('asc' | 'desc')]
+                      setSortBy(newSortBy)
+                      setSortOrder(newSortOrder)
+                    }}
+                    className="appearance-none pl-3 pr-9 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-sm"
+                  >
+                    <option value="name-asc">Name A-Z</option>
+                    <option value="name-desc">Name Z-A</option>
+                    <option value="date-desc">Newest First</option>
+                    <option value="date-asc">Oldest First</option>
+                  </select>
+                  <SortAsc className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
             </div>
-            <button onClick={() => setShowAddForm(!showAddForm)} className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Contact
-            </button>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Refresh Button */}
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="inline-flex items-center px-3 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+                title="Refresh contacts"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </button>
+
+              {/* Export CSV */}
+              <button
+                onClick={exportToCSV}
+                className="inline-flex items-center px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </button>
+
+              {/* Import CSV */}
+              <button
+                onClick={() => setShowCSVImport(true)}
+                className="inline-flex items-center px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </button>
+
+              {/* Bulk Actions */}
+              {selectedContacts.size > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowBulkActions(!showBulkActions)}
+                    className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-sm"
+                  >
+                    <CheckSquare className="h-4 w-4 mr-2" />
+                    {selectedContacts.size} Selected
+                    <MoreVertical className="h-4 w-4 ml-2" />
+                  </button>
+                  
+                  {showBulkActions && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
+                      <button
+                        onClick={bulkActivate}
+                        disabled={bulkActionInProgress}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <UserCheck className="inline h-4 w-4 mr-2" />
+                        Activate
+                      </button>
+                      <button
+                        onClick={bulkDeactivate}
+                        disabled={bulkActionInProgress}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 disabled:opacity-50"
+                      >
+                        <AlertCircle className="inline h-4 w-4 mr-2" />
+                        Deactivate
+                      </button>
+                      <div className="border-t border-slate-100 my-1" />
+                      <button
+                        onClick={bulkDelete}
+                        disabled={bulkActionInProgress}
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      >
+                        <Trash2 className="inline h-4 w-4 mr-2" />
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Add Contact */}
+              <button
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg shadow-blue-200"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Contact
+              </button>
+            </div>
           </div>
+
+          {/* Last Updated */}
+          {lastUpdated && (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <Clock className="h-4 w-4" />
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </div>
+          )}
 
           {showAddForm && (
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -279,26 +677,58 @@ export default function ContactsPage() {
             </div>
           )}
 
-          {/* Contact Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Total Contacts</p>
-                  <p className="text-2xl font-bold text-slate-900">{contacts.length}</p>
+          {/* Hero Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Total Contacts */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-3 bg-white rounded-xl shadow-sm">
+                  <Users className="h-6 w-6 text-blue-600" />
                 </div>
-                <Users className="h-8 w-8 text-blue-500" />
+                <div className="flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
+                  <TrendingUp className="h-3 w-3" />
+                  100%
+                </div>
               </div>
+              <h3 className="text-sm font-medium text-blue-900/70 mb-1">Total Contacts</h3>
+              <p className="text-3xl font-bold text-blue-900">{contacts.length}</p>
             </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-slate-600">Active Contacts</p>
-                  <p className="text-2xl font-bold text-slate-900">{contacts.filter((c: Contact) => c.active).length}</p>
+
+            {/* Active Contacts */}
+            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-3 bg-white rounded-xl shadow-sm">
+                  <UserCheck className="h-6 w-6 text-green-600" />
                 </div>
-                <Phone className="h-8 w-8 text-green-500" />
+                <div className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  Active
+                </div>
               </div>
+              <h3 className="text-sm font-medium text-green-900/70 mb-1">Active Contacts</h3>
+              <p className="text-3xl font-bold text-green-900">{contacts.filter((c: Contact) => c.active).length}</p>
+            </div>
+
+            {/* Email Contacts */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-3 bg-white rounded-xl shadow-sm">
+                  <Mail className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+              <h3 className="text-sm font-medium text-purple-900/70 mb-1">With Email</h3>
+              <p className="text-3xl font-bold text-purple-900">{contacts.filter((c: Contact) => c.email).length}</p>
+            </div>
+
+            {/* WhatsApp Contacts */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 border border-emerald-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-3 bg-white rounded-xl shadow-sm">
+                  <MessageCircle className="h-6 w-6 text-emerald-600" />
+                </div>
+              </div>
+              <h3 className="text-sm font-medium text-emerald-900/70 mb-1">With WhatsApp</h3>
+              <p className="text-3xl font-bold text-emerald-900">{contacts.filter((c: Contact) => c.whatsapp).length}</p>
             </div>
           </div>
 
@@ -360,19 +790,140 @@ export default function ContactsPage() {
             </div>
           )}
 
+          {/* CSV Import Modal */}
+          {showCSVImport && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center">
+              <div className="absolute inset-0 bg-black/40" onClick={() => setShowCSVImport(false)} />
+              <div className="relative z-10 w-full max-w-2xl bg-white rounded-xl shadow-xl border border-slate-200 p-6 m-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-slate-900">Import Contacts from CSV</h3>
+                  <button onClick={() => setShowCSVImport(false)} className="text-slate-400 hover:text-slate-600">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                {csvPreview.length === 0 ? (
+                  <div
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
+                      dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50'
+                    }`}
+                  >
+                    <Upload className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-900 font-medium mb-2">Drag and drop your CSV file here</p>
+                    <p className="text-sm text-slate-600 mb-4">or click to browse</p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".csv"
+                      onChange={(e) => e.target.files?.[0] && handleCSVUpload(e.target.files[0])}
+                      className="hidden"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Select CSV File
+                    </button>
+                    <p className="text-xs text-slate-500 mt-4">
+                      CSV should have columns: name, phone, email, whatsapp, location, role
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                      <p className="text-sm text-green-800">
+                        <strong>{csvPreview.length} contacts</strong> ready to import
+                      </p>
+                    </div>
+                    
+                    <div className="max-h-96 overflow-y-auto border border-slate-200 rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead className="bg-slate-50 sticky top-0">
+                          <tr>
+                            <th className="px-4 py-2 text-left">Name</th>
+                            <th className="px-4 py-2 text-left">Phone</th>
+                            <th className="px-4 py-2 text-left">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {csvPreview.slice(0, 10).map((row, idx) => (
+                            <tr key={idx} className="border-t border-slate-100">
+                              <td className="px-4 py-2">{row.name}</td>
+                              <td className="px-4 py-2">{row.phone}</td>
+                              <td className="px-4 py-2">{row.email || '-'}</td>
+                            </tr>
+                          ))}
+                          {csvPreview.length > 10 && (
+                            <tr className="border-t border-slate-100">
+                              <td colSpan={3} className="px-4 py-2 text-center text-slate-500">
+                                ... and {csvPreview.length - 10} more
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-4">
+                      <button
+                        onClick={() => {
+                          setCSVPreview([])
+                          setCSVFile(null)
+                        }}
+                        className="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={confirmCSVImport}
+                        disabled={csvImporting}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {csvImporting ? 'Importing...' : 'Confirm Import'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Contacts List */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200">
             <div className="p-6 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900">Contact Directory</h3>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Contact Directory</h3>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Showing {paginatedContacts.length} of {filteredAndSortedContacts.length} contacts
+                  </p>
+                </div>
+                {filteredAndSortedContacts.length > 0 && (
+                  <button
+                    onClick={toggleSelectAll}
+                    className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900"
+                  >
+                    {selectedContacts.size === filteredAndSortedContacts.length ? (
+                      <CheckSquare className="h-4 w-4" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                    Select All
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="p-6">
               {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-slate-600">Loading contacts...</p>
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-slate-600">Loading contacts...</p>
                 </div>
-              ) : filteredContacts.length === 0 ? (
+              ) : filteredAndSortedContacts.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-slate-900 mb-2">
@@ -387,14 +938,33 @@ export default function ContactsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredContacts.map((contact: Contact) => (
-                    <div key={contact.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
+                  {paginatedContacts.map((contact: Contact) => (
+                    <div 
+                      key={contact.id} 
+                      className={`relative border rounded-xl p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
+                        selectedContacts.has(contact.id) 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-slate-200 bg-white hover:border-slate-300'
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => toggleSelectContact(contact.id)}
+                        className="absolute top-4 right-4 z-10"
+                      >
+                        {selectedContacts.has(contact.id) ? (
+                          <CheckSquare className="h-5 w-5 text-blue-600" />
+                        ) : (
+                          <Square className="h-5 w-5 text-slate-400" />
+                        )}
+                      </button>
+
+                      <div className="flex items-start justify-between mb-4 pr-8">
                         <div className="flex-1">
-                          <h4 className="font-medium text-slate-900">{contact.name || 'Unknown Contact'}</h4>
-                          <p className="text-sm text-slate-600">{contact.role || 'Emergency Contact'}</p>
+                          <h4 className="font-semibold text-slate-900 text-lg">{contact.name || 'Unknown Contact'}</h4>
+                          <p className="text-sm text-slate-600 mt-1">{contact.role || 'Emergency Contact'}</p>
                         </div>
-                        <div className={`w-2 h-2 rounded-full ${contact.active ? 'bg-green-500' : 'bg-slate-300'}`} />
+                        <div className={`mt-1 w-3 h-3 rounded-full ${contact.active ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                       </div>
                       
                       <div className="space-y-2">
@@ -424,22 +994,21 @@ export default function ContactsPage() {
                         )}
                       </div>
                       
-                      {/* Group chips removed */}
 
-                      <div className="mt-4 flex items-center gap-2">
+                      <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
                         <button
                           onClick={() => startEdit(contact)}
-                          className="inline-flex items-center px-2.5 py-1.5 text-sm bg-slate-100 text-slate-700 rounded-md hover:bg-slate-200"
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
                         >
-                          <Edit className="h-3.5 w-3.5 mr-1.5" />
+                          <Edit className="h-4 w-4 mr-1.5" />
                           Edit
                         </button>
                         <button
                           onClick={() => setPendingDelete(contact)}
                           disabled={deletingContact === contact.id}
-                          className="inline-flex items-center px-2.5 py-1.5 text-sm bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-60"
+                          className="flex-1 inline-flex items-center justify-center px-3 py-2 text-sm font-medium bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
                         >
-                          <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                          <Trash2 className="h-4 w-4 mr-1.5" />
                           Delete
                         </button>
                       </div>
@@ -448,6 +1017,60 @@ export default function ContactsPage() {
                 </div>
               )}
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="p-6 border-t border-slate-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-slate-600">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum
+                        if (totalPages <= 5) {
+                          pageNum = i + 1
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i
+                        } else {
+                          pageNum = currentPage - 2 + i
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Confirm Delete Modal */}
