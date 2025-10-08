@@ -146,7 +146,9 @@ export default function TsunamiMonitoringPage() {
   const fetchAnalyticsData = async () => {
     setAnalyticsLoading(true)
     try {
-      const response = await fetch('/api/tsunami', { cache: 'no-store' })
+      // Fetch last 30 days of historical data for analytics
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const response = await fetch(`/api/tsunami?startDate=${thirtyDaysAgo}&limit=200`, { cache: 'no-store' })
       const data = await response.json()
       
       if (data.success) {
@@ -243,7 +245,9 @@ export default function TsunamiMonitoringPage() {
   // Fetch tsunami alerts with cache: 'no-store'
   const fetchAlerts = async () => {
     try {
-      const response = await fetch('/api/tsunami', { cache: 'no-store' })
+      // Fetch last 30 days of historical data to match earthquake alerts
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const response = await fetch(`/api/tsunami?startDate=${thirtyDaysAgo}&limit=200`, { cache: 'no-store' })
       const data = await response.json()
       
       if (data.success) {
