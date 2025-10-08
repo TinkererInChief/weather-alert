@@ -10,6 +10,8 @@ import {
 import TimeRangeSwitcher from '@/components/status/TimeRangeSwitcher'
 import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
+import EventHoverCard from '@/components/shared/EventHoverCard'
+import { TsunamiEvent } from '@/types/event-hover'
 
 export const dynamic = 'force-dynamic'
 
@@ -712,8 +714,32 @@ export default function TsunamiMonitoringPage() {
               ) : (
                 <>
                 <div className="space-y-4 p-6">
-                  {filteredAlerts.slice(0, livePage * ALERTS_PER_PAGE).map((alert: any, index) => (
-                    <div key={alert.id || index} className="border border-slate-200 rounded-xl p-4 hover:shadow-md transition-all">
+                  {filteredAlerts.slice(0, livePage * ALERTS_PER_PAGE).map((alert: any, index) => {
+                    const tsunamiEvent: TsunamiEvent = {
+                      id: alert.id || `tsunami-${index}`,
+                      location: alert.location || 'Unknown location',
+                      latitude: alert.latitude || alert.lat || undefined,
+                      longitude: alert.longitude || alert.lon || alert.lng || undefined,
+                      magnitude: alert.magnitude,
+                      time: alert.processedAt || alert.createdAt || alert.timestamp || alert.time,
+                      threatLevel: (alert.threat?.level || alert.urgency || 'info').toLowerCase() as 'advisory' | 'watch' | 'warning' | 'information' | 'info',
+                      ocean: alert.ocean || 'Unknown',
+                      type: alert.messageType || alert.category,
+                      eventId: alert.eventId,
+                    }
+                    
+                    return (
+                      <EventHoverCard
+                        key={alert.id || index}
+                        event={tsunamiEvent}
+                        type="tsunami"
+                        tsunamiTargetLocation={{
+                          latitude: 21.3, // Hawaii as default target
+                          longitude: -157.8,
+                          name: 'Hawaii'
+                        }}
+                      >
+                        <div className="border border-slate-200 rounded-xl p-4 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
@@ -754,8 +780,10 @@ export default function TsunamiMonitoringPage() {
                           {alert.urgency || alert.category || 'Info'}
                         </div>
                       </div>
-                    </div>
-                  ))}
+                        </div>
+                      </EventHoverCard>
+                    )
+                  })}
                 </div>
                 
                 {/* Load More Button */}
@@ -1038,40 +1066,66 @@ export default function TsunamiMonitoringPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {analyticsAlerts.slice((analyticsPage - 1) * 50, analyticsPage * 50).map((alert: any, index) => (
-                            <tr key={alert.id || index} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {new Date(alert.processedAt || alert.createdAt || alert.timestamp || alert.time).toLocaleString('en-US', {
-                                  month: 'short',
-                                  day: 'numeric',
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="text-sm text-slate-900 max-w-xs truncate">
-                                  {alert.location || 'Unknown'}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                  (alert.threat?.level || alert.urgency || '').toLowerCase().includes('warning') ? 'bg-red-100 text-red-800' :
-                                  (alert.threat?.level || alert.urgency || '').toLowerCase().includes('watch') ? 'bg-yellow-100 text-yellow-800' :
-                                  (alert.threat?.level || alert.urgency || '').toLowerCase().includes('advisory') ? 'bg-blue-100 text-blue-800' :
-                                  'bg-slate-100 text-slate-800'
-                                }`}>
-                                  {alert.threat?.level || alert.urgency || 'Info'}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {alert.ocean || 'Unknown'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {alert.messageType || 'Alert'}
-                              </td>
-                            </tr>
-                          ))}
+                          {analyticsAlerts.slice((analyticsPage - 1) * 50, analyticsPage * 50).map((alert: any, index) => {
+                            const tsunamiEvent: TsunamiEvent = {
+                              id: alert.id || `tsunami-analytics-${index}`,
+                              location: alert.location || 'Unknown',
+                              latitude: alert.latitude || alert.lat || undefined,
+                              longitude: alert.longitude || alert.lon || alert.lng || undefined,
+                              magnitude: alert.magnitude,
+                              time: alert.processedAt || alert.createdAt || alert.timestamp || alert.time,
+                              threatLevel: (alert.threat?.level || alert.urgency || 'info').toLowerCase() as 'advisory' | 'watch' | 'warning' | 'information' | 'info',
+                              ocean: alert.ocean || 'Unknown',
+                              type: alert.messageType || alert.category,
+                              eventId: alert.eventId,
+                            }
+                            
+                            return (
+                              <EventHoverCard
+                                key={alert.id || index}
+                                event={tsunamiEvent}
+                                type="tsunami"
+                                tsunamiTargetLocation={{
+                                  latitude: 21.3,
+                                  longitude: -157.8,
+                                  name: 'Hawaii'
+                                }}
+                              >
+                                <tr className="hover:bg-slate-50 transition-colors cursor-pointer">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    {new Date(alert.processedAt || alert.createdAt || alert.timestamp || alert.time).toLocaleString('en-US', {
+                                      month: 'short',
+                                      day: 'numeric',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit'
+                                    })}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-sm text-slate-900 max-w-xs truncate">
+                                      {alert.location || 'Unknown'}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      (alert.threat?.level || alert.urgency || '').toLowerCase().includes('warning') ? 'bg-red-100 text-red-800' :
+                                      (alert.threat?.level || alert.urgency || '').toLowerCase().includes('watch') ? 'bg-yellow-100 text-yellow-800' :
+                                      (alert.threat?.level || alert.urgency || '').toLowerCase().includes('advisory') ? 'bg-blue-100 text-blue-800' :
+                                      'bg-slate-100 text-slate-800'
+                                    }`}>
+                                      {alert.threat?.level || alert.urgency || 'Info'}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    {alert.ocean || 'Unknown'}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    {alert.messageType || 'Alert'}
+                                  </td>
+                                </tr>
+                              </EventHoverCard>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>

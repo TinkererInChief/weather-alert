@@ -12,6 +12,8 @@ import TimeRangeSwitcher from '@/components/status/TimeRangeSwitcher'
 import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
 import { getMagnitudeClasses } from '@/lib/utils/event-colors'
+import EventHoverCard from '@/components/shared/EventHoverCard'
+import { EarthquakeEvent } from '@/types/event-hover'
 
 export const dynamic = 'force-dynamic'
 
@@ -694,41 +696,60 @@ export default function EarthquakeMonitoringPage() {
               ) : (
                 <>
                 <div className="space-y-4 p-6">
-                  {filteredAlerts.slice(0, livePage * ALERTS_PER_PAGE).map((alert: any, index) => (
-                    <div key={index} className="border border-slate-200 rounded-lg p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="text-sm font-medium text-slate-900">
-                              Magnitude {alert.magnitude}
-                            </span>
-                            <span className="text-sm text-slate-500">•</span>
-                            <span className="text-sm text-slate-600">{alert.location}</span>
-                          </div>
-                          <p className="text-sm text-slate-600 mb-2">{alert.description}</p>
-                          <div className="flex items-center space-x-4 text-xs text-slate-500">
-                            <span className="flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {new Date(alert.timestamp).toLocaleString()}
-                            </span>
-                            {alert.location && (
-                              <span className="flex items-center">
-                                <MapPin className="h-3 w-3 mr-1" />
-                                {alert.location}
-                              </span>
-                            )}
+                  {filteredAlerts.slice(0, livePage * ALERTS_PER_PAGE).map((alert: any, index) => {
+                    const earthquakeEvent: EarthquakeEvent = {
+                      id: alert.earthquakeId || `live-${index}`,
+                      magnitude: alert.magnitude,
+                      location: alert.location,
+                      latitude: alert.latitude ?? 0,
+                      longitude: alert.longitude ?? 0,
+                      depth: alert.depth ?? 0,
+                      time: alert.timestamp,
+                      place: alert.location,
+                    }
+                    
+                    return (
+                      <EventHoverCard
+                        key={index}
+                        event={earthquakeEvent}
+                        type="earthquake"
+                      >
+                        <div className="border border-slate-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <span className="text-sm font-medium text-slate-900">
+                                  Magnitude {alert.magnitude}
+                                </span>
+                                <span className="text-sm text-slate-500">•</span>
+                                <span className="text-sm text-slate-600">{alert.location}</span>
+                              </div>
+                              <p className="text-sm text-slate-600 mb-2">{alert.description}</p>
+                              <div className="flex items-center space-x-4 text-xs text-slate-500">
+                                <span className="flex items-center">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {new Date(alert.timestamp).toLocaleString()}
+                                </span>
+                                {alert.location && (
+                                  <span className="flex items-center">
+                                    <MapPin className="h-3 w-3 mr-1" />
+                                    {alert.location}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className={`px-2 py-1 text-xs font-medium rounded ${
+                              alert.severity === 'high' ? 'bg-red-100 text-red-800' :
+                              alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {alert.severity || 'low'}
+                            </div>
                           </div>
                         </div>
-                        <div className={`px-2 py-1 text-xs font-medium rounded ${
-                          alert.severity === 'high' ? 'bg-red-100 text-red-800' :
-                          alert.severity === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
-                          {alert.severity || 'low'}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                      </EventHoverCard>
+                    )
+                  })}
                 </div>
                 
                 {/* Load More Button */}
@@ -961,47 +982,66 @@ export default function EarthquakeMonitoringPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {analyticsAlerts.map((alert) => (
-                            <tr key={alert.id} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {formatDate(alert.timestamp)}
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="text-sm text-slate-900 max-w-xs truncate">
-                                  {alert.location}
-                                </div>
-                                {alert.latitude && alert.longitude && (
-                                  <div className="text-xs text-slate-500">
-                                    {alert.latitude.toFixed(2)}°, {alert.longitude.toFixed(2)}°
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMagnitudeColor(alert.magnitude)}`}>
-                                  M{alert.magnitude.toFixed(1)}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {alert.depth ? `${alert.depth.toFixed(1)} km` : 'N/A'}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                                {alert.contactsNotified}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                {alert.success ? (
-                                  <span className="inline-flex items-center gap-1 text-green-600">
-                                    <CheckCircle className="h-4 w-4" />
-                                    <span className="text-sm">Success</span>
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 text-red-600">
-                                    <XCircle className="h-4 w-4" />
-                                    <span className="text-sm">Failed</span>
-                                  </span>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
+                          {analyticsAlerts.map((alert) => {
+                            const earthquakeEvent: EarthquakeEvent = {
+                              id: alert.id,
+                              magnitude: alert.magnitude,
+                              location: alert.location,
+                              latitude: alert.latitude ?? 0,
+                              longitude: alert.longitude ?? 0,
+                              depth: alert.depth ?? 0,
+                              time: alert.timestamp,
+                              place: alert.location,
+                            }
+                            
+                            return (
+                              <EventHoverCard
+                                key={alert.id}
+                                event={earthquakeEvent}
+                                type="earthquake"
+                              >
+                                <tr className="hover:bg-slate-50 transition-colors cursor-pointer">
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    {formatDate(alert.timestamp)}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="text-sm text-slate-900 max-w-xs truncate">
+                                      {alert.location}
+                                    </div>
+                                    {alert.latitude && alert.longitude && (
+                                      <div className="text-xs text-slate-500">
+                                        {alert.latitude.toFixed(2)}°, {alert.longitude.toFixed(2)}°
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMagnitudeColor(alert.magnitude)}`}>
+                                      M{alert.magnitude.toFixed(1)}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    {alert.depth ? `${alert.depth.toFixed(1)} km` : 'N/A'}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                    {alert.contactsNotified}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    {alert.success ? (
+                                      <span className="inline-flex items-center gap-1 text-green-600">
+                                        <CheckCircle className="h-4 w-4" />
+                                        <span className="text-sm">Success</span>
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 text-red-600">
+                                        <XCircle className="h-4 w-4" />
+                                        <span className="text-sm">Failed</span>
+                                      </span>
+                                    )}
+                                  </td>
+                                </tr>
+                              </EventHoverCard>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>
