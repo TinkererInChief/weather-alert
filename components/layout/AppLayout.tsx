@@ -648,7 +648,7 @@ export default function AppLayout({
                         <Link
                           href={item.href}
                           className={`
-                            group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                            group flex items-center ${isCompact ? 'justify-center px-2 py-3' : 'px-3 py-2'} text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
                             ${(item as any).current
                               ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
                               : 'text-slate-700 hover:bg-slate-100/80'
@@ -657,7 +657,7 @@ export default function AppLayout({
                           `}
                           onClick={() => setSidebarOpen(false)}
                         >
-                          <Icon className={`h-4 w-4 mr-3 transition-transform group-hover:scale-110 ${(item as any).current ? 'text-white' : 'text-slate-500'}`} />
+                          <Icon className={`${isCompact ? 'h-5 w-5' : 'h-4 w-4 mr-3'} transition-transform group-hover:scale-110 ${(item as any).current ? 'text-white' : 'text-slate-500'}`} />
                           <span className="flex-1">{item.name}</span>
                           {(item as any).badge && (
                             <span className={`
@@ -708,7 +708,7 @@ export default function AppLayout({
                       {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-slate-500" /> : <ChevronDown className="h-3.5 w-3.5 text-slate-500" />}
                     </button>
                   )}
-                  {!isCollapsed && (
+                  {(!isCollapsed || isCompact) && (
                     <div className="space-y-1 mt-1">
                       {group.items.map((item) => {
                         const Icon = item.icon
@@ -719,7 +719,7 @@ export default function AppLayout({
                             <Link
                               href={item.href}
                               className={`
-                                group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                                group flex items-center ${isCompact ? 'justify-center px-2 py-3' : 'px-3 py-2'} text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
                                 ${(item as any).current
                                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
                                   : 'text-slate-700 hover:bg-slate-100/80'
@@ -799,7 +799,7 @@ export default function AppLayout({
                         key={item.name}
                         href={item.href}
                         className={`
-                          group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                          group flex items-center ${isCompact ? 'justify-center px-2 py-3' : 'px-3 py-2'} text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
                           ${(item as any).current
                             ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
                             : 'text-slate-700 hover:bg-slate-100/80'
