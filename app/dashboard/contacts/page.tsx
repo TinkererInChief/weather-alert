@@ -232,6 +232,30 @@ export default function ContactsPage() {
     }
   }
 
+  // CSV Template Download
+  const downloadCSVTemplate = () => {
+    const headers = ['name', 'phone', 'email', 'whatsapp', 'location', 'role']
+    const exampleRows = [
+      ['John Doe', '+14155551234', 'john.doe@example.com', '+14155551234', 'San Francisco, CA', 'Emergency Coordinator'],
+      ['Jane Smith', '+442071234567', 'jane.smith@example.com', '+442071234567', 'London, UK', 'First Responder'],
+      ['Carlos Rodriguez', '+34912345678', '', '+34912345678', 'Madrid, Spain', 'Field Officer']
+    ]
+    
+    const csvContent = [
+      headers.join(','),
+      ...exampleRows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ].join('\n')
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'contacts_template.csv'
+    a.click()
+    window.URL.revokeObjectURL(url)
+    addToast('Template downloaded successfully', 'success')
+  }
+
   // CSV Export
   const exportToCSV = () => {
     const headers = ['Name', 'Phone', 'Email', 'WhatsApp', 'Location', 'Role', 'Status', 'Created At']
@@ -792,45 +816,98 @@ export default function ContactsPage() {
 
           {/* CSV Import Modal */}
           {showCSVImport && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/40" onClick={() => setShowCSVImport(false)} />
-              <div className="relative z-10 w-full max-w-2xl bg-white rounded-xl shadow-xl border border-slate-200 p-6 m-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-slate-900">Import Contacts from CSV</h3>
+              <div className="relative z-10 w-full max-w-3xl bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
+                <div className="flex items-center justify-between p-6 border-b border-slate-200">
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900">Import Contacts from CSV</h3>
+                    <p className="text-sm text-slate-500 mt-1">Upload a CSV file with your contact information</p>
+                  </div>
                   <button onClick={() => setShowCSVImport(false)} className="text-slate-400 hover:text-slate-600">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                
-                {csvPreview.length === 0 ? (
-                  <div
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-                      dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50'
-                    }`}
-                  >
-                    <Upload className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-900 font-medium mb-2">Drag and drop your CSV file here</p>
-                    <p className="text-sm text-slate-600 mb-4">or click to browse</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv"
-                      onChange={(e) => e.target.files?.[0] && handleCSVUpload(e.target.files[0])}
-                      className="hidden"
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Select CSV File
-                    </button>
-                    <p className="text-xs text-slate-500 mt-4">
-                      CSV should have columns: name, phone, email, whatsapp, location, role
-                    </p>
-                  </div>
+
+                <div className="p-6">
+                  {csvPreview.length === 0 ? (
+                    <>
+                      {/* Formatting Instructions */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4" />
+                          CSV Format Requirements
+                        </h4>
+                        <div className="text-sm text-blue-800 space-y-2">
+                          <div>
+                            <strong>Required Columns:</strong>
+                            <ul className="list-disc list-inside ml-2 mt-1">
+                              <li><code className="bg-white px-1 py-0.5 rounded">name</code> - Contact's full name (required)</li>
+                              <li><code className="bg-white px-1 py-0.5 rounded">phone</code> - Phone number with country code (required, e.g., +14155551234)</li>
+                            </ul>
+                          </div>
+                          <div>
+                            <strong>Optional Columns:</strong>
+                            <ul className="list-disc list-inside ml-2 mt-1">
+                              <li><code className="bg-white px-1 py-0.5 rounded">email</code> - Email address</li>
+                              <li><code className="bg-white px-1 py-0.5 rounded">whatsapp</code> - WhatsApp number with country code (e.g., +442071234567)</li>
+                              <li><code className="bg-white px-1 py-0.5 rounded">location</code> - Location or address</li>
+                              <li><code className="bg-white px-1 py-0.5 rounded">role</code> - Contact's role or title</li>
+                            </ul>
+                          </div>
+                          <div className="bg-white rounded p-2 mt-2">
+                            <strong className="text-blue-900">Phone Format:</strong> Must include country code starting with + (e.g., +1 for US, +44 for UK, +91 for India)
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Download Template Button */}
+                      <div className="flex items-center justify-center mb-6">
+                        <button
+                          onClick={downloadCSVTemplate}
+                          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg shadow-green-200"
+                        >
+                          <Download className="h-5 w-5" />
+                          Download CSV Template
+                        </button>
+                      </div>
+
+                      <div className="relative mb-4">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-slate-300"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 bg-white text-slate-500">or upload your own file</span>
+                        </div>
+                      </div>
+
+                      {/* Upload Area */}
+                      <div
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+                          dragOver ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50'
+                        }`}
+                      >
+                        <Upload className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                        <p className="text-slate-900 font-medium mb-2">Drag and drop your CSV file here</p>
+                        <p className="text-sm text-slate-600 mb-4">or click to browse</p>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".csv"
+                          onChange={(e) => e.target.files?.[0] && handleCSVUpload(e.target.files[0])}
+                          className="hidden"
+                        />
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          Select CSV File
+                        </button>
+                      </div>
+                    </>
                 ) : (
                   <div>
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
@@ -887,6 +964,7 @@ export default function ContactsPage() {
                     </div>
                   </div>
                 )}
+                </div>
               </div>
             </div>
           )}
