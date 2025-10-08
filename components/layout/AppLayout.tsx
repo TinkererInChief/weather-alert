@@ -21,7 +21,15 @@ import {
   CheckCircle,
   Loader2,
   UserCircle,
-  ShieldCheck
+  ShieldCheck,
+  ChevronDown,
+  ChevronRight,
+  Star,
+  Search,
+  Zap,
+  UserPlus,
+  PanelLeftClose,
+  PanelLeft
 } from 'lucide-react'
 import { Role, Permission, hasPermission } from '@/lib/rbac/roles'
 
@@ -37,6 +45,21 @@ interface AppLayoutProps {
   }
 }
 
+type NavItem = {
+  name: string
+  href: string
+  icon: any
+  current: boolean
+  shortcut?: string
+  badge?: {
+    count?: number
+    icon?: string
+    color: string
+    pulse: boolean
+  }
+  highlight?: boolean
+}
+
 export default function AppLayout({ 
   children, 
   title, 
@@ -45,6 +68,17 @@ export default function AppLayout({
 }: AppLayoutProps) {
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCompact, setIsCompact] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [pinnedItems, setPinnedItems] = useState<string[]>(['Dashboard', 'Earthquake'])
+  const [recentItems, setRecentItems] = useState<string[]>([])
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const [liveCounts, setLiveCounts] = useState({
+    earthquakeAlerts: 0,
+    tsunamiAlerts: 0,
+    notifications: 0,
+    systemStatus: 'healthy' as 'healthy' | 'warning' | 'critical'
+  })
   const { data: session, status } = useSession()
 
   const sessionUser = session?.user
@@ -58,15 +92,161 @@ export default function AppLayout({
   const isAuthenticated = status === 'authenticated'
   const isLoadingUser = status === 'loading'
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home, current: pathname === '/dashboard' },
-    { name: 'Earthquake Monitoring', href: '/dashboard/alerts', icon: AlertTriangle, current: pathname === '/dashboard/alerts' },
-    { name: 'Tsunami Monitoring', href: '/dashboard/tsunami', icon: Waves, current: pathname === '/dashboard/tsunami' },
-    { name: 'Contacts', href: '/dashboard/contacts', icon: UserCircle, current: pathname === '/dashboard/contacts' },
-    { name: 'Contact Groups', href: '/dashboard/groups', icon: Users, current: pathname?.startsWith('/dashboard/groups') },
-    { name: 'Notifications', href: '/dashboard/notifications', icon: Bell, current: pathname === '/dashboard/notifications' },
-    { name: 'Audit Trail', href: '/dashboard/audit', icon: Shield, current: pathname === '/dashboard/audit' },
-    { name: 'System Status', href: '/dashboard/status', icon: Activity, current: pathname === '/dashboard/status' },
+  // Fetch live counts for badges
+  useEffect(() => {
+    const fetchLiveCounts = async () => {
+      try {
+        const [alertsRes, notificationsRes, healthRes] = await Promise.all([
+          fetch('/api/alerts/stats', { cache: 'no-store' }).catch(() => null),
+          fetch('/api/notifications', { cache: 'no-store' }).catch(() => null),
+          fetch('/api/health', { cache: 'no-store' }).catch(() => null)
+        ])
+
+        const alertsData = alertsRes ? await alertsRes.json() : null
+        const notificationsData = notificationsRes ? await notificationsRes.json() : null
+        const healthData = healthRes ? await healthRes.json() : null
+
+        setLiveCounts({
+          earthquakeAlerts: alertsData?.data?.activeAlerts || 0,
+          tsunamiAlerts: alertsData?.data?.tsunamiAlerts || 0,
+          notifications: notificationsData?.data?.unreadCount || 0,
+          systemStatus: healthData?.status || 'healthy'
+        })
+      } catch (error) {
+        console.error('Failed to fetch live counts:', error)
+      }
+    }
+
+    fetchLiveCounts()
+    const interval = setInterval(fetchLiveCounts, 30000) // Refresh every 30s
+    return () => clearInterval(interval)
+  }, [])
+
+  // Track recent items
+  useEffect(() => {
+    const currentPage = pathname.split('/').pop() || 'dashboard'
+    setRecentItems(prev => {
+      const filtered = prev.filter(item => item !== currentPage)
+      return [currentPage, ...filtered].slice(0, 3)
+    })
+  }, [pathname])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.metaKey || e.ctrlKey) {
+        switch (e.key) {
+          case '1': e.preventDefault(); window.location.href = '/dashboard'; break
+          case '2': e.preventDefault(); window.location.href = '/dashboard/alerts'; break
+          case '3': e.preventDefault(); window.location.href = '/dashboard/tsunami'; break
+          case 'k': e.preventDefault(); document.getElementById('sidebar-search')?.focus(); break
+          case 'b': e.preventDefault(); setIsCompact(!isCompact); break
+        }
+      }
+    }
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [isCompact])
+
+  // Context-aware highlighting
+  const isWorkingHours = () => {
+    const hour = new Date().getHours()
+    return hour >= 8 && hour <= 18
+  }
+
+  const shouldHighlight = (itemName: string) => {
+    // Highlight active alerts during working hours
+    if (isWorkingHours() && (itemName === 'Earthquake' || itemName === 'Tsunami')) {
+      return liveCounts.earthquakeAlerts > 0 || liveCounts.tsunamiAlerts > 0
+    }
+    // Highlight system status when degraded
+    if (itemName === 'System Status' && liveCounts.systemStatus !== 'healthy') {
+      return true
+    }
+    return false
+  }
+
+  const navigationGroups = [
+    {
+      title: 'Monitoring',
+      icon: Activity,
+      items: [
+        { 
+          name: 'Dashboard', 
+          href: '/dashboard', 
+          icon: Home, 
+          current: pathname === '/dashboard',
+          shortcut: '⌘1'
+        },
+        { 
+          name: 'Earthquake', 
+          href: '/dashboard/alerts', 
+          icon: AlertTriangle, 
+          current: pathname === '/dashboard/alerts',
+          shortcut: '⌘2',
+          badge: liveCounts.earthquakeAlerts > 0 ? { count: liveCounts.earthquakeAlerts, color: 'red', pulse: true } : undefined,
+          highlight: shouldHighlight('Earthquake')
+        },
+        { 
+          name: 'Tsunami', 
+          href: '/dashboard/tsunami', 
+          icon: Waves, 
+          current: pathname === '/dashboard/tsunami',
+          shortcut: '⌘3',
+          badge: liveCounts.tsunamiAlerts > 0 ? { count: liveCounts.tsunamiAlerts, color: 'orange', pulse: true } : undefined,
+          highlight: shouldHighlight('Tsunami')
+        },
+      ]
+    },
+    {
+      title: 'Communications',
+      icon: Bell,
+      items: [
+        { 
+          name: 'Contacts', 
+          href: '/dashboard/contacts', 
+          icon: UserCircle, 
+          current: pathname === '/dashboard/contacts'
+        },
+        { 
+          name: 'Groups', 
+          href: '/dashboard/groups', 
+          icon: Users, 
+          current: pathname?.startsWith('/dashboard/groups')
+        },
+        { 
+          name: 'Notifications', 
+          href: '/dashboard/notifications', 
+          icon: Bell, 
+          current: pathname === '/dashboard/notifications',
+          badge: liveCounts.notifications > 0 ? { count: liveCounts.notifications, color: 'blue', pulse: false } : undefined
+        },
+      ]
+    },
+    {
+      title: 'System',
+      icon: Shield,
+      items: [
+        { 
+          name: 'Audit Trail', 
+          href: '/dashboard/audit', 
+          icon: Shield, 
+          current: pathname === '/dashboard/audit'
+        },
+        { 
+          name: 'System Status', 
+          href: '/dashboard/status', 
+          icon: Activity, 
+          current: pathname === '/dashboard/status',
+          badge: liveCounts.systemStatus !== 'healthy' ? { 
+            icon: liveCounts.systemStatus === 'warning' ? '⚠️' : '🔴', 
+            color: liveCounts.systemStatus === 'warning' ? 'yellow' : 'red',
+            pulse: liveCounts.systemStatus === 'critical'
+          } : { icon: '✓', color: 'green', pulse: false },
+          highlight: shouldHighlight('System Status')
+        },
+      ]
+    }
   ]
 
   // Get actual user role from session
@@ -87,6 +267,49 @@ export default function AppLayout({
     // Admin roles - Settings
     ...(canManageSettings ? [{ name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' }] : []),
   ]
+
+  // Quick Actions
+  const quickActions = [
+    { name: 'Send Alert', icon: Zap, action: () => window.location.href = '/dashboard/alerts' },
+    { name: 'Add Contact', icon: UserPlus, action: () => window.location.href = '/dashboard/contacts' },
+  ]
+
+  // Helper: Toggle section collapse
+  const toggleSection = (sectionTitle: string) => {
+    setCollapsedSections(prev => ({
+      ...prev,
+      [sectionTitle]: !prev[sectionTitle]
+    }))
+  }
+
+  // Helper: Toggle pin item
+  const togglePin = (itemName: string) => {
+    setPinnedItems(prev =>
+      prev.includes(itemName)
+        ? prev.filter(name => name !== itemName)
+        : [...prev, itemName]
+    )
+  }
+
+  // Helper: Get all items for search
+  const getAllItems = (): NavItem[] => {
+    return navigationGroups.flatMap(group => group.items) as NavItem[]
+  }
+
+  // Filter items by search
+  const filteredGroups = searchQuery
+    ? navigationGroups.map(group => ({
+        ...group,
+        items: group.items.filter(item =>
+          item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      })).filter(group => group.items.length > 0)
+    : navigationGroups
+
+  // Get pinned items data
+  const getPinnedItemsData = (): NavItem[] => {
+    return getAllItems().filter(item => pinnedItems.includes(item.name))
+  }
 
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' })
@@ -344,106 +567,329 @@ export default function AppLayout({
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-[100] w-72 transform transition-transform duration-300 ease-in-out lg:translate-x-0 pointer-events-auto
+        fixed inset-y-0 left-0 z-[100] transform transition-all duration-300 ease-in-out lg:translate-x-0 pointer-events-auto
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isCompact ? 'w-20' : 'w-72'}
       `}>
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
           {/* Logo */}
-          <div className="flex h-16 shrink-0 items-center px-6 border-b border-slate-200/60">
+          <div className="flex h-16 shrink-0 items-center px-6 border-b border-slate-200/60 justify-between">
             <Link href="/dashboard" className="flex items-center space-x-3 group">
               <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow">
                 <Shield className="h-5 w-5 text-white" />
               </div>
-              <div>
-                <div className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                  Emergency Alert
+              {!isCompact && (
+                <div>
+                  <div className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                    Emergency Alert
+                  </div>
+                  <div className="text-xs text-slate-500 -mt-1">
+                    Command Center
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500 -mt-1">
-                  Command Center
-                </div>
-              </div>
+              )}
             </Link>
+            {!isCompact && (
+              <button
+                onClick={() => setIsCompact(true)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                title="Collapse sidebar (⌘B)"
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
+            )}
+            {isCompact && (
+              <button
+                onClick={() => setIsCompact(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors absolute top-3 right-3"
+                title="Expand sidebar (⌘B)"
+              >
+                <PanelLeft className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
+          {/* Search Bar */}
+          {!isCompact && (
+            <div className="px-4 py-3 border-b border-slate-200/60">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  id="sidebar-search"
+                  type="text"
+                  placeholder="Search... (⌘K)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            {[...navigation, ...adminNavigation].map((item) => {
-              const Icon = item.icon
+          <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+            {/* Pinned Items */}
+            {!isCompact && getPinnedItemsData().length > 0 && (
+              <div className="mb-4">
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  Pinned
+                </div>
+                <div className="space-y-1">
+                  {getPinnedItemsData().map((item: NavItem) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={`pinned-${item.name}`}
+                        href={item.href}
+                        className={`
+                          group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                          ${(item as any).current
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                            : 'text-slate-700 hover:bg-slate-100/80'
+                          }
+                          ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
+                        `}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <Icon className={`h-4 w-4 mr-3 transition-transform group-hover:scale-110 ${(item as any).current ? 'text-white' : 'text-slate-500'}`} />
+                        <span className="flex-1">{item.name}</span>
+                        {(item as any).badge && (
+                          <span className={`
+                            px-2 py-0.5 text-xs font-bold rounded-full
+                            ${(item as any).badge.color === 'red' ? 'bg-red-500 text-white' :
+                              (item as any).badge.color === 'orange' ? 'bg-orange-500 text-white' :
+                              (item as any).badge.color === 'blue' ? 'bg-blue-500 text-white' : 'bg-slate-400 text-white'}
+                            ${(item as any).badge.pulse ? 'animate-pulse' : ''}
+                          `}>
+                            {(item as any).badge.count || (item as any).badge.icon}
+                          </span>
+                        )}
+                      </Link>
+                    )
+                  })}
+                </div>
+                <div className="my-3 border-t border-slate-200/60" />
+              </div>
+            )}
+
+            {/* Grouped Navigation */}
+            {filteredGroups.map((group) => {
+              const GroupIcon = group.icon
+              const isCollapsed = collapsedSections[group.title]
+
               return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`
-                    group flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200
-                    ${item.current
-                      ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-200'
-                      : 'text-slate-700 hover:bg-slate-100/80 hover:text-slate-900'
-                    }
-                  `}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <Icon className={`
-                    mr-3 h-5 w-5 transition-transform duration-200 group-hover:scale-110
-                    ${item.current ? 'text-white' : 'text-slate-500 group-hover:text-slate-700'}
-                  `} />
-                  {item.name}
-                  
-                  {item.current && (
-                    <div className="ml-auto w-2 h-2 bg-white rounded-full animate-pulse" />
+                <div key={group.title} className="mb-3">
+                  {!isCompact && (
+                    <button
+                      onClick={() => toggleSection(group.title)}
+                      className="w-full px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2 hover:text-slate-700 transition-colors"
+                    >
+                      <GroupIcon className="h-3 w-3" />
+                      {group.title}
+                      {isCollapsed ? <ChevronRight className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+                    </button>
                   )}
-                </Link>
+                  {!isCollapsed && (
+                    <div className="space-y-1 mt-1">
+                      {group.items.map((item) => {
+                        const Icon = item.icon
+                        const isPinned = pinnedItems.includes(item.name)
+
+                        return (
+                          <div key={item.name} className="relative group/item">
+                            <Link
+                              href={item.href}
+                              className={`
+                                group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                                ${(item as any).current
+                                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                                  : 'text-slate-700 hover:bg-slate-100/80'
+                                }
+                                ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
+                              `}
+                              onClick={() => setSidebarOpen(false)}
+                              title={isCompact ? item.name : undefined}
+                            >
+                              <Icon className={`
+                                ${isCompact ? 'h-5 w-5' : 'h-4 w-4 mr-3'} 
+                                transition-transform group-hover:scale-110
+                                ${(item as any).current ? 'text-white' : 'text-slate-500'}
+                              `} />
+                              {!isCompact && (
+                                <>
+                                  <span className="flex-1">{item.name}</span>
+                                  {(item as any).shortcut && (
+                                    <span className="text-xs text-slate-400 font-mono ml-2">
+                                      {(item as any).shortcut}
+                                    </span>
+                                  )}
+                                  {(item as any).badge && (
+                                    <span className={`
+                                      px-2 py-0.5 text-xs font-bold rounded-full ml-2
+                                      ${(item as any).badge.color === 'red' ? 'bg-red-500 text-white' :
+                                        (item as any).badge.color === 'orange' ? 'bg-orange-500 text-white' :
+                                        (item as any).badge.color === 'yellow' ? 'bg-yellow-500 text-white' :
+                                        (item as any).badge.color === 'blue' ? 'bg-blue-500 text-white' :
+                                        (item as any).badge.color === 'green' ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'}
+                                      ${(item as any).badge.pulse ? 'animate-pulse' : ''}
+                                    `}>
+                                      {(item as any).badge.count || (item as any).badge.icon}
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </Link>
+                            {!isCompact && (
+                              <button
+                                onClick={() => togglePin(item.name)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover/item:opacity-100 transition-opacity p-1"
+                                title={isPinned ? 'Unpin' : 'Pin'}
+                              >
+                                <Star className={`h-3 w-3 ${isPinned ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               )
             })}
+
+            {/* Admin Navigation */}
+            {adminNavigation.length > 0 && (
+              <>
+                {!isCompact && <div className="my-3 border-t border-slate-200/60" />}
+                {!isCompact && (
+                  <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                    <ShieldCheck className="h-3 w-3" />
+                    Admin
+                  </div>
+                )}
+                <div className="space-y-1">
+                  {adminNavigation.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`
+                          group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 hover:scale-[1.02]
+                          ${(item as any).current
+                            ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
+                            : 'text-slate-700 hover:bg-slate-100/80'
+                          }
+                        `}
+                        onClick={() => setSidebarOpen(false)}
+                        title={isCompact ? item.name : undefined}
+                      >
+                        <Icon className={`
+                          ${isCompact ? 'h-5 w-5' : 'h-4 w-4 mr-3'}
+                          transition-transform group-hover:scale-110
+                          ${(item as any).current ? 'text-white' : 'text-slate-500'}
+                        `} />
+                        {!isCompact && item.name}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Quick Actions */}
+            {!isCompact && quickActions.length > 0 && (
+              <>
+                <div className="my-3 border-t border-slate-200/60" />
+                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                  <Zap className="h-3 w-3" />
+                  Quick Actions
+                </div>
+                <div className="space-y-1">
+                  {quickActions.map((action) => {
+                    const Icon = action.icon
+                    return (
+                      <button
+                        key={action.name}
+                        onClick={action.action}
+                        className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 hover:scale-[1.02]"
+                      >
+                        <Icon className="h-4 w-4 mr-3 transition-transform group-hover:scale-110" />
+                        {action.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
           </nav>
 
           {/* User Profile */}
           <div className="border-t border-slate-200/60 p-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
-                <User className="h-5 w-5 text-white" />
+            {!isCompact ? (
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                {isLoadingUser ? (
+                  <div className="flex-1 min-w-0">
+                    <div className="h-4 w-32 rounded-full bg-slate-200 animate-pulse mb-2" />
+                    <div className="h-3 w-40 rounded-full bg-slate-100 animate-pulse" />
+                  </div>
+                ) : (
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-900 truncate">
+                      {effectiveUser.name}
+                    </p>
+                    <p className="text-xs text-slate-500 truncate">
+                      {effectiveUser.role === 'admin' ? 'Administrator' : 'Viewer'}
+                    </p>
+                  </div>
+                )}
+                {isAuthenticated ? (
+                  <button
+                    onClick={handleSignOut}
+                    className="flex-shrink-0 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                ) : status === 'loading' ? (
+                  <div className="flex-shrink-0 p-1.5 text-slate-400">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-100 rounded-lg bg-blue-50/60 hover:bg-blue-100 transition-colors"
+                  >
+                    Sign in
+                  </Link>
+                )}
               </div>
-              {isLoadingUser ? (
-                <div className="flex-1 min-w-0">
-                  <div className="h-4 w-32 rounded-full bg-slate-200 animate-pulse mb-2" />
-                  <div className="h-3 w-40 rounded-full bg-slate-100 animate-pulse" />
+            ) : (
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+                  <User className="h-5 w-5 text-white" />
                 </div>
-              ) : (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-900 truncate">
-                    {effectiveUser.name}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate">
-                    {effectiveUser.role === 'admin' ? 'Administrator' : 'Viewer'}
-                  </p>
-                </div>
-              )}
-              {isAuthenticated ? (
-                <button
-                  onClick={handleSignOut}
-                  className="flex-shrink-0 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                  title="Logout"
-                >
-                  <LogOut className="h-4 w-4" />
-                </button>
-              ) : status === 'loading' ? (
-                <div className="flex-shrink-0 p-1.5 text-slate-400">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex-shrink-0 px-3 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 border border-blue-100 rounded-lg bg-blue-50/60 hover:bg-blue-100 transition-colors"
-                >
-                  Sign in
-                </Link>
-              )}
-            </div>
+                {isAuthenticated && (
+                  <button
+                    onClick={handleSignOut}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="Logout"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-72">
+      <div className={`transition-all duration-300 ${isCompact ? 'lg:pl-20' : 'lg:pl-72'}`}>
         {/* Top header */}
         <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200/60 shadow-sm">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
