@@ -26,8 +26,6 @@ import {
   ChevronRight,
   Star,
   Search,
-  Zap,
-  UserPlus,
   PanelLeftClose,
   PanelLeft
 } from 'lucide-react'
@@ -272,11 +270,6 @@ export default function AppLayout({
     ...(canManageSettings ? [{ name: 'Settings', href: '/dashboard/settings', icon: Settings, current: pathname === '/dashboard/settings' }] : []),
   ]
 
-  // Quick Actions
-  const quickActions = [
-    { name: 'Send Alert', icon: Zap, action: () => window.location.href = '/dashboard/alerts' },
-    { name: 'Add Contact', icon: UserPlus, action: () => window.location.href = '/dashboard/contacts' },
-  ]
 
   // Helper: Toggle section collapse
   const toggleSection = (sectionTitle: string) => {
@@ -577,39 +570,45 @@ export default function AppLayout({
       `}>
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
           {/* Logo */}
-          <div className="flex h-16 shrink-0 items-center px-6 border-b border-slate-200/60 justify-between">
-            <Link href="/dashboard" className="flex items-center space-x-3 group">
-              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow">
-                <Shield className="h-5 w-5 text-white" />
+          <div className="flex h-16 shrink-0 items-center border-b border-slate-200/60 relative">
+            {!isCompact ? (
+              <>
+                <Link href="/dashboard" className="flex items-center space-x-3 group px-6 flex-1">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                      Emergency Alert
+                    </div>
+                    <div className="text-xs text-slate-500 -mt-1">
+                      Command Center
+                    </div>
+                  </div>
+                </Link>
+                <button
+                  onClick={() => setIsCompact(true)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors mr-4"
+                  title="Collapse sidebar (⌘B)"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </button>
+              </>
+            ) : (
+              <div className="w-full flex flex-col items-center py-2">
+                <Link href="/dashboard" className="mb-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-red-200 transition-shadow">
+                    <Shield className="h-5 w-5 text-white" />
+                  </div>
+                </Link>
+                <button
+                  onClick={() => setIsCompact(false)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  title="Expand sidebar (⌘B)"
+                >
+                  <PanelLeft className="h-4 w-4" />
+                </button>
               </div>
-              {!isCompact && (
-                <div>
-                  <div className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                    Emergency Alert
-                  </div>
-                  <div className="text-xs text-slate-500 -mt-1">
-                    Command Center
-                  </div>
-                </div>
-              )}
-            </Link>
-            {!isCompact && (
-              <button
-                onClick={() => setIsCompact(true)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                title="Collapse sidebar (⌘B)"
-              >
-                <PanelLeftClose className="h-4 w-4" />
-              </button>
-            )}
-            {isCompact && (
-              <button
-                onClick={() => setIsCompact(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors absolute top-3 right-3"
-                title="Expand sidebar (⌘B)"
-              >
-                <PanelLeft className="h-4 w-4" />
-              </button>
             )}
           </div>
 
@@ -635,9 +634,9 @@ export default function AppLayout({
             {/* Pinned Items */}
             {!isCompact && getPinnedItemsData().length > 0 && (
               <div className="mb-4">
-                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  Pinned
+                <div className="px-3 py-2.5 text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 bg-slate-50/50 rounded-lg mb-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span className="flex-1">Pinned</span>
                 </div>
                 <div className="space-y-1">
                   {getPinnedItemsData().map((item: NavItem) => {
@@ -687,11 +686,11 @@ export default function AppLayout({
                   {!isCompact && (
                     <button
                       onClick={() => toggleSection(group.title)}
-                      className="w-full px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2 hover:text-slate-700 transition-colors"
+                      className="w-full px-3 py-2.5 text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 hover:text-slate-900 transition-colors bg-slate-50/50 rounded-lg mb-1"
                     >
-                      <GroupIcon className="h-3 w-3" />
-                      {group.title}
-                      {isCollapsed ? <ChevronRight className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
+                      <GroupIcon className="h-4 w-4" />
+                      <span className="flex-1 text-left">{group.title}</span>
+                      {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </button>
                   )}
                   {!isCollapsed && (
@@ -767,9 +766,9 @@ export default function AppLayout({
               <>
                 {!isCompact && <div className="my-3 border-t border-slate-200/60" />}
                 {!isCompact && (
-                  <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                    <ShieldCheck className="h-3 w-3" />
-                    Admin
+                  <div className="px-3 py-2.5 text-sm font-bold text-slate-700 uppercase tracking-wide flex items-center gap-2 bg-slate-50/50 rounded-lg mb-1">
+                    <ShieldCheck className="h-4 w-4" />
+                    <span className="flex-1">Admin</span>
                   </div>
                 )}
                 <div className="space-y-1">
@@ -802,31 +801,6 @@ export default function AppLayout({
               </>
             )}
 
-            {/* Quick Actions */}
-            {!isCompact && quickActions.length > 0 && (
-              <>
-                <div className="my-3 border-t border-slate-200/60" />
-                <div className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-                  <Zap className="h-3 w-3" />
-                  Quick Actions
-                </div>
-                <div className="space-y-1">
-                  {quickActions.map((action) => {
-                    const Icon = action.icon
-                    return (
-                      <button
-                        key={action.name}
-                        onClick={action.action}
-                        className="w-full group flex items-center px-3 py-2 text-sm font-medium rounded-lg text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 hover:scale-[1.02]"
-                      >
-                        <Icon className="h-4 w-4 mr-3 transition-transform group-hover:scale-110" />
-                        {action.name}
-                      </button>
-                    )
-                  })}
-                </div>
-              </>
-            )}
           </nav>
 
           {/* User Profile */}
