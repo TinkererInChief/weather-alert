@@ -570,40 +570,40 @@ export default function AppLayout({
       `}>
         <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl border-r border-slate-200/60 shadow-xl">
           {/* Logo */}
-          <div className="flex h-16 shrink-0 items-center border-b border-slate-200/60 relative">
+          <div className="flex min-h-16 h-16 shrink-0 items-center border-b border-slate-200/60 relative bg-white">
             {!isCompact ? (
               <>
-                <Link href="/dashboard" className="flex items-center space-x-3 group px-6 flex-1">
+                <Link href="/dashboard" className="flex items-center space-x-3 group px-6 flex-1 min-w-0">
                   <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg group-hover:shadow-red-200 transition-shadow">
                     <Shield className="h-5 w-5 text-white" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  <div className="min-w-0">
+                    <div className="text-lg font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent truncate">
                       Emergency Alert
                     </div>
-                    <div className="text-xs text-slate-500 -mt-1">
+                    <div className="text-xs text-slate-500 -mt-1 truncate">
                       Command Center
                     </div>
                   </div>
                 </Link>
                 <button
                   onClick={() => setIsCompact(true)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors mr-4"
+                  className="flex-shrink-0 p-2 text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all hover:shadow-sm mr-3"
                   title="Collapse sidebar (⌘B)"
                 >
                   <PanelLeftClose className="h-4 w-4" />
                 </button>
               </>
             ) : (
-              <div className="w-full flex flex-col items-center py-2">
-                <Link href="/dashboard" className="mb-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-red-200 transition-shadow">
+              <div className="w-full flex flex-col items-center py-3 gap-3">
+                <Link href="/dashboard">
+                  <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-lg hover:shadow-red-200 transition-shadow">
                     <Shield className="h-5 w-5 text-white" />
                   </div>
                 </Link>
                 <button
                   onClick={() => setIsCompact(false)}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 text-slate-500 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all hover:shadow-sm"
                   title="Expand sidebar (⌘B)"
                 >
                   <PanelLeft className="h-4 w-4" />
@@ -726,7 +726,11 @@ export default function AppLayout({
                                 }
                                 ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
                               `}
-                              onClick={() => setSidebarOpen(false)}
+                              onClick={(e) => {
+                                if (!isCompact) {
+                                  setSidebarOpen(false)
+                                }
+                              }}
                               title={isCompact ? item.name : undefined}
                             >
                               <Icon className={`
