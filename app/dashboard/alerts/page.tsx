@@ -3,13 +3,20 @@
 import { useEffect, useState, useMemo } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
-import { AlertTriangle, Clock, MapPin, Activity, Globe, CheckCircle, XCircle } from 'lucide-react'
+import { 
+  AlertTriangle, Clock, MapPin, Activity, Globe, CheckCircle, XCircle,
+  TrendingUp, Users, BarChart3, Filter, RefreshCw, Download, Search, X
+} from 'lucide-react'
 import WidgetCard from '@/components/dashboard/WidgetCard'
 import TimeRangeSwitcher from '@/components/status/TimeRangeSwitcher'
+import { Can } from '@/components/auth/Can'
+import { Permission } from '@/lib/rbac/roles'
+import { getMagnitudeClasses } from '@/lib/utils/event-colors'
 
 export const dynamic = 'force-dynamic'
 
 type RangeKey = '24h' | '7d' | '30d'
+type TabKey = 'live' | 'analytics'
 
 type ServiceStatus = {
   status: string
@@ -18,58 +25,215 @@ type ServiceStatus = {
   error?: string
 }
 
+type Alert = {
+  id: string
+  earthquakeId: string
+  magnitude: number
+  location: string
+  latitude: number | null
+  longitude: number | null
+  depth: number | null
+  timestamp: string
+  contactsNotified: number
+  success: boolean
+  errorMessage: string | null
+  severity?: string
+  description?: string
+}
+
+type Stats = {
+  overview: {
+    totalAlerts: number
+    successfulAlerts: number
+    failedAlerts: number
+    successRate: number
+    avgContactsNotified: number
+    totalContactsNotified: number
+  }
+  magnitudeStats: {
+    average: number
+    min: number
+    max: number
+  }
+  magnitudeDistribution: Array<{ magnitude: number; _count: { magnitude: number } }>
+  topLocations: Array<{ location: string; _count: { location: number } }>
+  successByMagnitude: Array<{
+    magnitudeRange: string
+    total: number
+    successful: number
+    successRate: string
+  }>
+}
+
 export default function EarthquakeMonitoringPage() {
-  const [alerts, setAlerts] = useState([])
-  const [stats, setStats] = useState({ total: 0, last24h: 0 })
+  // Tab state
+  const [activeTab, setActiveTab] = useState<TabKey>('live')
+  
+  // Live feed state
+  const [alerts, setAlerts] = useState<any[]>([])
+  const [liveStats, setLiveStats] = useState({ total: 0, last24h: 0 })
   const [loading, setLoading] = useState(true)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [page, setPage] = useState(1)
-  const [hasMore, setHasMore] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
+  const [livePage, setLivePage] = useState(1)
   const [timeRange, setTimeRange] = useState<RangeKey>('24h')
   const [isPaused, setIsPaused] = useState(false)
   const [monitoringActive, setMonitoringActive] = useState(false)
   const [sourceHealth, setSourceHealth] = useState<{ usgs?: ServiceStatus; emsc?: ServiceStatus; jma?: ServiceStatus; iris?: ServiceStatus }>({})
+  
+  // Analytics state
+  const [analyticsAlerts, setAnalyticsAlerts] = useState<Alert[]>([])
+  const [stats, setStats] = useState<Stats | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsPage, setAnalyticsPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [filters, setFilters] = useState({
+    minMagnitude: '',
+    maxMagnitude: '',
+    success: '',
+    startDate: '',
+    endDate: ''
+  })
+  const [showFilters, setShowFilters] = useState(false)
+  
+  // Shared state
+  const [refreshing, setRefreshing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [toasts, setToasts] = useState<Array<{ id: number; type: 'info' | 'success' | 'error'; message: string }>>([])
+  
   const ALERTS_PER_PAGE = 20
 
-  // Fetch earthquake alerts with cache: 'no-store'
-  useEffect(() => {
-    if (isPaused) return
+  // Toast helper
+  const addToast = (message: string, type: 'info' | 'success' | 'error' = 'info') => {
+    const id = Math.floor(Math.random() * 1_000_000_000)
+    setToasts(prev => [...prev, { id, type, message }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
+  }
 
-    const fetchAlerts = async () => {
-      try {
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-        const response = await fetch(`/api/alerts/history?limit=200&startDate=${thirtyDaysAgo}`, { cache: 'no-store' })
-        const data = await response.json()
-        if (data.success) {
-          const allAlerts = data.data?.alerts || []
-          setAlerts(allAlerts)
-          setHasMore(allAlerts.length > ALERTS_PER_PAGE)
-          
-          // Calculate real stats from alerts
-          const now = Date.now()
-          const dayAgo = now - 24 * 60 * 60 * 1000
-          
-          setStats({
-            total: allAlerts.length,
-            last24h: allAlerts.filter((a: any) => {
-              const alertTime = new Date(a.timestamp).getTime()
-              return alertTime > dayAgo
-            }).length
-          })
-        }
-      } catch (error) {
-        console.error('Failed to fetch alerts:', error)
-      } finally {
-        setLoading(false)
-        setIsInitialLoad(false)
+  // Manual refresh
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      if (activeTab === 'live') {
+        await fetchLiveAlerts()
+      } else {
+        await fetchAnalyticsAlerts()
+        await fetchStats()
+      }
+      setLastUpdated(new Date())
+      addToast('Data refreshed successfully', 'success')
+    } catch (error) {
+      addToast('Failed to refresh data', 'error')
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  // Fetch live alerts
+  const fetchLiveAlerts = async () => {
+    try {
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const response = await fetch(`/api/alerts/history?limit=200&startDate=${thirtyDaysAgo}`, { cache: 'no-store' })
+      const data = await response.json()
+      if (data.success) {
+        const allAlerts = data.data?.alerts || []
+        setAlerts(allAlerts)
+        
+        // Calculate stats
+        const now = Date.now()
+        const dayAgo = now - 24 * 60 * 60 * 1000
+        
+        setLiveStats({
+          total: allAlerts.length,
+          last24h: allAlerts.filter((a: any) => new Date(a.timestamp).getTime() > dayAgo).length
+        })
+        setLastUpdated(new Date())
+      }
+    } catch (error) {
+      console.error('Failed to fetch live alerts:', error)
+      addToast('Failed to fetch alerts', 'error')
+    }
+  }
+
+  // Fetch analytics alerts
+  const fetchAnalyticsAlerts = async () => {
+    try {
+      setAnalyticsLoading(true)
+      
+      const params = new URLSearchParams({
+        page: analyticsPage.toString(),
+        limit: '50'
+      })
+      
+      if (filters.minMagnitude) params.append('minMagnitude', filters.minMagnitude)
+      if (filters.maxMagnitude) params.append('maxMagnitude', filters.maxMagnitude)
+      if (filters.success) params.append('success', filters.success)
+      if (filters.startDate) params.append('startDate', filters.startDate)
+      if (filters.endDate) params.append('endDate', filters.endDate)
+      
+      const response = await fetch(`/api/alerts/history?${params}`)
+      const data = await response.json()
+      
+      if (data.success) {
+        setAnalyticsAlerts(data.data.alerts)
+        setTotalPages(data.data.pagination.totalPages)
+      }
+    } catch (error) {
+      console.error('Failed to fetch analytics alerts:', error)
+      addToast('Failed to fetch alerts', 'error')
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }
+
+  // Fetch stats
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/alerts/stats?days=30')
+      const data = await response.json()
+      
+      if (data.success) {
+        setStats(data.data)
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error)
+    }
+  }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === '1') {
+        e.preventDefault()
+        setActiveTab('live')
+      } else if ((e.metaKey || e.ctrlKey) && e.key === '2') {
+        e.preventDefault()
+        setActiveTab('analytics')
       }
     }
+    
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [])
 
-    fetchAlerts()
-    const interval = setInterval(fetchAlerts, 30000)
+  // Fetch live alerts with auto-refresh
+  useEffect(() => {
+    if (isPaused || activeTab !== 'live') return
+
+    fetchLiveAlerts()
+    setLoading(false)
+    setIsInitialLoad(false)
+
+    const interval = setInterval(fetchLiveAlerts, 30000)
     return () => clearInterval(interval)
-  }, [isPaused])
+  }, [isPaused, activeTab])
+
+  // Fetch analytics data when switching to analytics tab
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      fetchAnalyticsAlerts()
+      fetchStats()
+    }
+  }, [activeTab, analyticsPage, filters])
 
   // Fetch monitoring status
   useEffect(() => {
@@ -138,7 +302,7 @@ export default function EarthquakeMonitoringPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Filter alerts by time range
+  // Filter live alerts by time range
   const filteredAlerts = useMemo(() => {
     const now = Date.now()
     const timeWindows = {
@@ -153,6 +317,21 @@ export default function EarthquakeMonitoringPage() {
       return alertTime >= since
     })
   }, [alerts, timeRange])
+
+  // Helper functions
+  const getMagnitudeColor = (magnitude: number) => {
+    return getMagnitudeClasses(magnitude).combined
+  }
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -191,46 +370,185 @@ export default function EarthquakeMonitoringPage() {
   return (
     <AuthGuard>
       <AppLayout 
-        title="Earthquake Monitoring"
+        title="Earthquake Alerts"
         breadcrumbs={[
-          { label: 'Earthquake Monitoring' }
+          { label: 'Alerts' }
         ]}
       >
         <div className="space-y-6">
-          {/* Alert Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <WidgetCard
-              title="Total Alerts"
-              icon={AlertTriangle}
-              iconColor="orange"
-              subtitle="All tracked earthquake alerts"
-            >
-              <div className="text-3xl font-bold text-slate-900">{stats.total}</div>
-            </WidgetCard>
-            
-            <WidgetCard
-              title="Last 24 Hours"
-              icon={Clock}
-              iconColor="blue"
-              subtitle="Recent seismic activity"
-            >
-              <div className="text-3xl font-bold text-slate-900">{stats.last24h}</div>
-            </WidgetCard>
-            
-            <WidgetCard
-              title="Monitoring Status"
-              icon={Activity}
-              iconColor={monitoringActive ? 'green' : 'slate'}
-              subtitle="Real-time feed status"
-            >
-              <div className={`text-3xl font-bold ${monitoringActive ? 'text-green-600' : 'text-slate-600'}`}>
-                {monitoringActive ? 'Active' : 'Paused'}
-              </div>
-            </WidgetCard>
+          {/* Tab Navigation */}
+          <div className="border-b border-slate-200">
+            <nav className="flex gap-8" role="tablist">
+              <button
+                onClick={() => setActiveTab('live')}
+                className={`pb-4 px-1 font-medium text-sm transition-colors relative ${
+                  activeTab === 'live'
+                    ? 'text-blue-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                role="tab"
+                aria-selected={activeTab === 'live'}
+              >
+                Live Feed
+                {activeTab === 'live' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`pb-4 px-1 font-medium text-sm transition-colors relative ${
+                  activeTab === 'analytics'
+                    ? 'text-blue-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                role="tab"
+                aria-selected={activeTab === 'analytics'}
+              >
+                Analytics & History
+                {activeTab === 'analytics' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                )}
+              </button>
+            </nav>
           </div>
 
-          {/* Source Health */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Header Actions */}
+          <div className="flex items-center justify-between">
+            <div>
+              {lastUpdated && (
+                <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <Clock className="h-4 w-4" />
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all shadow-sm disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
+
+          {/* Hero Metrics */}
+          {activeTab === 'live' ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Total Alerts */}
+              <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <AlertTriangle className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-100 px-2 py-1 rounded-full">
+                    <TrendingUp className="h-3 w-3" />
+                    30d
+                  </div>
+                </div>
+                <h3 className="text-sm font-medium text-orange-900/70 mb-1">Total Alerts</h3>
+                <p className="text-3xl font-bold text-orange-900">{liveStats.total}</p>
+              </div>
+
+              {/* Last 24h */}
+              <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Clock className="h-6 w-6 text-blue-600" />
+                  </div>
+                </div>
+                <h3 className="text-sm font-medium text-blue-900/70 mb-1">Last 24 Hours</h3>
+                <p className="text-3xl font-bold text-blue-900">{liveStats.last24h}</p>
+              </div>
+
+              {/* Monitoring Status */}
+              <div className={`bg-gradient-to-br rounded-xl p-6 border shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 ${
+                monitoringActive 
+                  ? 'from-green-50 to-emerald-50 border-green-100' 
+                  : 'from-slate-50 to-gray-50 border-slate-100'
+              }`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Activity className={`h-6 w-6 ${monitoringActive ? 'text-green-600' : 'text-slate-600'}`} />
+                  </div>
+                  {monitoringActive && (
+                    <div className="flex items-center gap-1 text-xs font-medium text-green-700 bg-green-100 px-2 py-1 rounded-full">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                      Live
+                    </div>
+                  )}
+                </div>
+                <h3 className={`text-sm font-medium mb-1 ${monitoringActive ? 'text-green-900/70' : 'text-slate-900/70'}`}>
+                  Monitoring Status
+                </h3>
+                <p className={`text-3xl font-bold ${monitoringActive ? 'text-green-900' : 'text-slate-900'}`}>
+                  {monitoringActive ? 'Active' : 'Paused'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            stats && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {/* Total Alerts */}
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-3 bg-white rounded-xl shadow-sm">
+                      <Activity className="h-6 w-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-sm font-medium text-blue-900/70 mb-1">Total Alerts</h3>
+                  <p className="text-3xl font-bold text-blue-900">{stats.overview.totalAlerts.toLocaleString()}</p>
+                  <p className="text-xs text-blue-700 mt-1">Last 30 days</p>
+                </div>
+
+                {/* Success Rate */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-3 bg-white rounded-xl shadow-sm">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-sm font-medium text-green-900/70 mb-1">Success Rate</h3>
+                  <p className="text-3xl font-bold text-green-900">{stats.overview.successRate.toFixed(1)}%</p>
+                  <p className="text-xs text-green-700 mt-1">{stats.overview.successfulAlerts} successful</p>
+                </div>
+
+                {/* Avg Magnitude */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-3 bg-white rounded-xl shadow-sm">
+                      <BarChart3 className="h-6 w-6 text-purple-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-sm font-medium text-purple-900/70 mb-1">Avg Magnitude</h3>
+                  <p className="text-3xl font-bold text-purple-900">{stats.magnitudeStats.average.toFixed(1)}</p>
+                  <p className="text-xs text-purple-700 mt-1">
+                    Range: {stats.magnitudeStats.min.toFixed(1)} - {stats.magnitudeStats.max.toFixed(1)}
+                  </p>
+                </div>
+
+                {/* Contacts Notified */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border border-orange-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-3 bg-white rounded-xl shadow-sm">
+                      <Users className="h-6 w-6 text-orange-600" />
+                    </div>
+                  </div>
+                  <h3 className="text-sm font-medium text-orange-900/70 mb-1">Contacts Notified</h3>
+                  <p className="text-3xl font-bold text-orange-900">{stats.overview.totalContactsNotified.toLocaleString()}</p>
+                  <p className="text-xs text-orange-700 mt-1">
+                    Avg: {stats.overview.avgContactsNotified.toFixed(0)} per alert
+                  </p>
+                </div>
+              </div>
+            )
+          )}
+
+          {/* Tab Content */}
+          {activeTab === 'live' ? (
+            <>
+              {/* Source Health - Live Feed Only */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <WidgetCard
               title="USGS"
               icon={Globe}
@@ -375,8 +693,8 @@ export default function EarthquakeMonitoringPage() {
                 </div>
               ) : (
                 <>
-                <div className="space-y-4">
-                  {filteredAlerts.slice(0, page * ALERTS_PER_PAGE).map((alert: any, index) => (
+                <div className="space-y-4 p-6">
+                  {filteredAlerts.slice(0, livePage * ALERTS_PER_PAGE).map((alert: any, index) => (
                     <div key={index} className="border border-slate-200 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -414,26 +732,328 @@ export default function EarthquakeMonitoringPage() {
                 </div>
                 
                 {/* Load More Button */}
-                {page * ALERTS_PER_PAGE < filteredAlerts.length && (
-                  <div className="mt-6 text-center">
+                {livePage * ALERTS_PER_PAGE < filteredAlerts.length && (
+                  <div className="mt-6 text-center pb-6">
                     <button
-                      onClick={() => setPage(p => p + 1)}
-                      disabled={loadingMore}
-                      className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => setLivePage(p => p + 1)}
+                      className="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
                     >
-                      {loadingMore ? 'Loading...' : `Load More (${filteredAlerts.length - page * ALERTS_PER_PAGE} remaining)`}
+                      Load More ({filteredAlerts.length - livePage * ALERTS_PER_PAGE} remaining)
                     </button>
                   </div>
                 )}
                 
                 {/* Showing count */}
-                <div className="mt-4 text-center text-sm text-slate-600">
-                  Showing {Math.min(page * ALERTS_PER_PAGE, filteredAlerts.length)} of {filteredAlerts.length} alerts
+                <div className="mt-4 text-center text-sm text-slate-600 pb-6">
+                  Showing {Math.min(livePage * ALERTS_PER_PAGE, filteredAlerts.length)} of {filteredAlerts.length} alerts
                 </div>
                 </>
               )}
             </div>
           </WidgetCard>
+            </>
+          ) : (
+            <Can permission={Permission.VIEW_ALERTS} fallback={
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-700">
+                You don't have permission to view alert history.
+              </div>
+            }>
+              {/* Analytics Tab Content - Success by Magnitude, Top Locations, Filters, History Table */}
+              {stats && (
+                <>
+                  {/* Success by Magnitude */}
+                  <div className="bg-white rounded-xl border border-slate-200 p-6">
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                      Success Rate by Magnitude
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {stats.successByMagnitude.map((range) => (
+                        <div key={range.magnitudeRange} className="p-4 bg-slate-50 rounded-lg">
+                          <div className="font-medium text-slate-900 mb-2">
+                            Magnitude {range.magnitudeRange}
+                          </div>
+                          <div className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Total:</span>
+                              <span className="font-medium">{range.total}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Success:</span>
+                              <span className="font-medium text-green-600">{range.successful}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Rate:</span>
+                              <span className="font-medium">{range.successRate}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Top Locations */}
+                  {stats.topLocations.length > 0 && (
+                    <div className="bg-white rounded-xl border border-slate-200 p-6">
+                      <h3 className="text-lg font-semibold text-slate-900 mb-4">
+                        Top Alert Locations
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {stats.topLocations.slice(0, 6).map((loc, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-slate-400" />
+                              <span className="text-sm text-slate-900">{loc.location}</span>
+                            </div>
+                            <span className="text-sm font-medium text-slate-600">
+                              {loc._count.location} alerts
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Filters */}
+              <div className="bg-white rounded-xl border border-slate-200 p-6">
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  <Filter className="h-4 w-4" />
+                  {showFilters ? 'Hide Filters' : 'Show Filters'}
+                </button>
+                
+                {showFilters && (
+                  <div className="mt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Min Magnitude
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={filters.minMagnitude}
+                          onChange={(e) => setFilters({ ...filters, minMagnitude: e.target.value })}
+                          placeholder="e.g., 5.0"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Max Magnitude
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={filters.maxMagnitude}
+                          onChange={(e) => setFilters({ ...filters, maxMagnitude: e.target.value })}
+                          placeholder="e.g., 7.0"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Status
+                        </label>
+                        <select
+                          value={filters.success}
+                          onChange={(e) => setFilters({ ...filters, success: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All</option>
+                          <option value="true">Successful</option>
+                          <option value="false">Failed</option>
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          Start Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filters.startDate}
+                          onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">
+                          End Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filters.endDate}
+                          onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={() => {
+                          setFilters({ minMagnitude: '', maxMagnitude: '', success: '', startDate: '', endDate: '' })
+                          setAnalyticsPage(1)
+                        }}
+                        className="px-4 py-2 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors"
+                      >
+                        Clear Filters
+                      </button>
+                      <button
+                        onClick={() => setAnalyticsPage(1)}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Alerts History Table */}
+              {analyticsLoading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                  <p className="text-slate-600 mt-4">Loading alerts...</p>
+                </div>
+              ) : analyticsAlerts.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                  <AlertTriangle className="h-12 w-12 text-slate-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    No alerts found
+                  </h3>
+                  <p className="text-slate-600">
+                    Try adjusting your filters or check back later
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Timestamp
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Location
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Magnitude
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Depth
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Contacts
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {analyticsAlerts.map((alert) => (
+                            <tr key={alert.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                {formatDate(alert.timestamp)}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="text-sm text-slate-900 max-w-xs truncate">
+                                  {alert.location}
+                                </div>
+                                {alert.latitude && alert.longitude && (
+                                  <div className="text-xs text-slate-500">
+                                    {alert.latitude.toFixed(2)}°, {alert.longitude.toFixed(2)}°
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMagnitudeColor(alert.magnitude)}`}>
+                                  M{alert.magnitude.toFixed(1)}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                {alert.depth ? `${alert.depth.toFixed(1)} km` : 'N/A'}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                                {alert.contactsNotified}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {alert.success ? (
+                                  <span className="inline-flex items-center gap-1 text-green-600">
+                                    <CheckCircle className="h-4 w-4" />
+                                    <span className="text-sm">Success</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-red-600">
+                                    <XCircle className="h-4 w-4" />
+                                    <span className="text-sm">Failed</span>
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 p-6">
+                      <p className="text-sm text-slate-600">
+                        Page {analyticsPage} of {totalPages}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setAnalyticsPage(p => Math.max(1, p - 1))}
+                          disabled={analyticsPage === 1}
+                          className="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+                        <button
+                          onClick={() => setAnalyticsPage(p => Math.min(totalPages, p + 1))}
+                          disabled={analyticsPage === totalPages}
+                          className="px-4 py-2 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </Can>
+          )}
+
+          {/* Toast Notifications */}
+          {toasts.length > 0 && (
+            <div className="fixed top-4 right-4 z-50 space-y-2">
+              {toasts.map(t => (
+                <div
+                  key={t.id}
+                  role="status"
+                  className={`min-w-[260px] max-w-sm px-4 py-3 rounded-xl shadow-lg border text-sm ${
+                    t.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' :
+                    t.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+                    'bg-slate-50 border-slate-200 text-slate-800'
+                  }`}
+                >
+                  {t.message}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </AppLayout>
     </AuthGuard>
