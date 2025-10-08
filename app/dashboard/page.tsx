@@ -811,7 +811,11 @@ export default function Dashboard() {
       severity: alert.magnitude,
       status: alert.success ? 'Delivered' : 'Delivery Issues',
       success: alert.success,
-      details: alert.errorMessage
+      details: alert.errorMessage,
+      latitude: alert.latitude,
+      longitude: alert.longitude,
+      magnitude: alert.magnitude,
+      depth: alert.depth
     }))
 
     const tsunamiEvents = (tsunamiStats?.recentAlerts ?? []).map((alert) => ({

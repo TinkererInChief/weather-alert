@@ -43,6 +43,7 @@ export default function MapPreview({
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!mapContainer.current) return
@@ -51,17 +52,30 @@ export default function MapPreview({
     // Calculate zoom based on magnitude
     const zoom = getZoomLevel(magnitude)
 
-    // Initialize map
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: type === 'tsunami' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/outdoors-v12',
-      center: [longitude, latitude],
-      zoom: zoom,
-      pitch: 60, // 3D tilt
-      bearing: -17.6, // Slight rotation
-      projection: 'globe' as any,
-      interactive: false, // Disable user interaction (static preview)
-    })
+    // Initialize map with error handling
+    try {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: type === 'tsunami' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/outdoors-v12',
+        center: [longitude, latitude],
+        zoom: zoom,
+        pitch: 60, // 3D tilt
+        bearing: -17.6, // Slight rotation
+        projection: 'globe' as any,
+        interactive: false, // Disable user interaction (static preview)
+      })
+
+      map.current.on('error', (e) => {
+        console.error('Mapbox error:', e)
+        setError('Map failed to load. Please check your Mapbox token.')
+        setIsLoading(false)
+      })
+    } catch (err) {
+      console.error('Failed to initialize map:', err)
+      setError('Unable to initialize map')
+      setIsLoading(false)
+      return
+    }
 
     map.current.on('load', () => {
       if (!map.current) return
@@ -287,9 +301,21 @@ export default function MapPreview({
     <div className="relative w-full h-[300px] rounded-t-xl overflow-hidden bg-slate-100">
       <div ref={mapContainer} className="w-full h-full" />
       
-      {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-100">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      {error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-white p-4">
+          <div className="text-6xl mb-3">🗺️</div>
+          <div className="text-sm font-medium mb-1">Map Unavailable</div>
+          <div className="text-xs text-slate-300 text-center max-w-xs">{error}</div>
+          <div className="mt-3 text-xs text-slate-400">
+            Location: {latitude.toFixed(2)}°, {longitude.toFixed(2)}°
+          </div>
+        </div>
+      )}
+      
+      {isLoading && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-100">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-2" />
+          <div className="text-xs text-slate-600">Loading map...</div>
         </div>
       )}
     </div>

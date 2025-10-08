@@ -3,6 +3,8 @@
 import { useState, useMemo } from 'react'
 import { Activity, AlertTriangle, Waves, Clock } from 'lucide-react'
 import WidgetCard from './WidgetCard'
+import EventHoverCard from '@/components/shared/EventHoverCard'
+import { EarthquakeEvent, TsunamiEvent } from '@/types/event-hover'
 
 type TimeRange = '24h' | '7d' | '30d'
 type EventType = 'all' | 'earthquake' | 'tsunami'
@@ -16,6 +18,13 @@ type TimelineEvent = {
   status: string
   success: boolean
   details?: string
+  latitude?: number
+  longitude?: number
+  magnitude?: number
+  depth?: number
+  severity?: number
+  threatLevel?: string
+  ocean?: string
 }
 
 type UnifiedIncidentTimelineProps = {
@@ -136,32 +145,83 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
 
       <div className="flex-1 min-h-0 space-y-3 overflow-y-auto px-6 pb-6">
           {filteredEvents.length ? (
-            filteredEvents.map((event) => (
-              <div key={event.id} className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/90 p-3 shadow-sm hover:shadow-md transition-shadow">
-                {getTimelineIcon(event.type)}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{event.title}</p>
-                      <p className="text-xs text-slate-500 truncate">{event.subtitle}</p>
+            filteredEvents.map((event) => {
+              // Create event data for hover card
+              let hoverEvent: EarthquakeEvent | TsunamiEvent | null = null
+              
+              if (event.type === 'earthquake' && event.latitude !== undefined && event.longitude !== undefined) {
+                hoverEvent = {
+                  id: event.id,
+                  magnitude: event.magnitude || 0,
+                  location: event.subtitle || event.title,
+                  latitude: event.latitude,
+                  longitude: event.longitude,
+                  depth: event.depth || 0,
+                  time: event.timestamp,
+                  place: event.subtitle
+                } as EarthquakeEvent
+              } else if (event.type === 'tsunami' && event.latitude !== undefined && event.longitude !== undefined) {
+                hoverEvent = {
+                  id: event.id,
+                  location: event.subtitle || event.title,
+                  latitude: event.latitude,
+                  longitude: event.longitude,
+                  magnitude: event.magnitude,
+                  time: event.timestamp,
+                  threatLevel: (event.threatLevel?.toLowerCase() || 'info') as any,
+                  ocean: event.ocean || 'Unknown',
+                  type: event.status
+                } as TsunamiEvent
+              }
+
+              const content = (
+                <div className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/90 p-3 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer">
+                  {getTimelineIcon(event.type)}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{event.title}</p>
+                        <p className="text-xs text-slate-500 truncate">{event.subtitle}</p>
+                      </div>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${
+                        event.success 
+                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                          : 'bg-rose-50 text-rose-600 border border-rose-100'
+                      }`}>
+                        {event.status}
+                      </span>
                     </div>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${
-                      event.success 
-                        ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                        : 'bg-rose-50 text-rose-600 border border-rose-100'
-                    }`}>
-                      {event.status}
-                    </span>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {event.timestamp.toLocaleString()}
+                    </p>
+                    {event.details && (
+                      <p className="mt-1 text-xs text-rose-600 truncate">{event.details}</p>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {event.timestamp.toLocaleString()}
-                  </p>
-                  {event.details && (
-                    <p className="mt-1 text-xs text-rose-600 truncate">{event.details}</p>
-                  )}
                 </div>
-              </div>
-            ))
+              )
+
+              // Wrap with EventHoverCard if we have valid coordinates
+              if (hoverEvent) {
+                return (
+                  <EventHoverCard
+                    key={event.id}
+                    event={hoverEvent}
+                    type={event.type}
+                    tsunamiTargetLocation={event.type === 'tsunami' ? {
+                      latitude: 21.3,
+                      longitude: -157.8,
+                      name: 'Hawaii'
+                    } : undefined}
+                  >
+                    {content}
+                  </EventHoverCard>
+                )
+              }
+
+              // If no coordinates, render without hover
+              return <div key={event.id}>{content}</div>
+            })
           ) : (
             <div className="text-center py-12 text-slate-500">
               <Activity className="mx-auto mb-3 h-8 w-8 text-slate-300" />

@@ -31,17 +31,29 @@ export default function EventHoverCard({
 }: EventHoverCardProps) {
   const [open, setOpen] = useState(false)
 
-  // Check if event has valid coordinates
+  // Check if event has valid coordinates (not 0,0 which is invalid)
   const hasCoordinates = event.latitude !== undefined && 
                          event.longitude !== undefined &&
                          event.latitude !== null && 
                          event.longitude !== null &&
                          !isNaN(event.latitude) &&
-                         !isNaN(event.longitude)
+                         !isNaN(event.longitude) &&
+                         !(event.latitude === 0 && event.longitude === 0) &&
+                         Math.abs(event.latitude) > 0.01 &&
+                         Math.abs(event.longitude) > 0.01
 
   if (!hasCoordinates) {
-    // If no coordinates, just render the children without hover card
-    return <>{children}</>
+    // If no coordinates, render children with a subtle indicator
+    return (
+      <div className="relative group">
+        {children}
+        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <div className="bg-slate-700 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
+            📍 No location data
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const isEarthquake = (e: any): e is EarthquakeEvent => {
@@ -89,8 +101,11 @@ export default function EventHoverCard({
           <Popover.Portal forceMount>
             <Popover.Content
               side="right"
-              sideOffset={10}
+              sideOffset={15}
               align="start"
+              alignOffset={-20}
+              collisionPadding={20}
+              avoidCollisions={true}
               className="z-[1000]"
               onMouseEnter={() => setOpen(true)}
               onMouseLeave={() => setOpen(false)}
@@ -100,7 +115,7 @@ export default function EventHoverCard({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 10 }}
                 transition={{ duration: 0.2, ease: 'easeOut' }}
-                className="w-[450px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden"
+                className="w-[450px] max-h-[85vh] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden"
                 style={{
                   boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 40px rgba(0, 0, 0, 0.05)',
                 }}
@@ -118,13 +133,15 @@ export default function EventHoverCard({
                   showTsunamiRipples={type === 'tsunami'}
                 />
 
-                {/* Event Details */}
-                <EventDetails
-                  event={event}
-                  type={type}
-                  populationImpact={populationImpact}
-                  tsunamiETA={tsunamiETA}
-                />
+                {/* Event Details - Scrollable */}
+                <div className="overflow-y-auto max-h-[calc(85vh-300px)]">
+                  <EventDetails
+                    event={event}
+                    type={type}
+                    populationImpact={populationImpact}
+                    tsunamiETA={tsunamiETA}
+                  />
+                </div>
               </motion.div>
 
               <Popover.Arrow className="fill-white" />
