@@ -40,7 +40,11 @@ class SecurityHeadersService {
         'https://api.weather.gov', 
         'https://hcaptcha.com',
         'https://*.hcaptcha.com',
-        'https://js.hcaptcha.com'
+        'https://js.hcaptcha.com',
+        // Mapbox for 3D map previews
+        'https://api.mapbox.com',
+        'https://*.tiles.mapbox.com',
+        'https://events.mapbox.com'
       ]
     },
     hsts: {
@@ -147,6 +151,8 @@ class SecurityHeadersService {
     // Add trusted script domains
     scriptSources.push('https://js.hcaptcha.com')
     scriptSources.push('https://*.hcaptcha.com')
+    scriptSources.push('https://api.mapbox.com')
+    scriptSources.push('blob:') // For Mapbox workers
     
     directives.push(`script-src ${scriptSources.join(' ')}`)
 
@@ -156,10 +162,11 @@ class SecurityHeadersService {
       styleSources.push("'unsafe-inline'")
     }
     styleSources.push('https://fonts.googleapis.com')
+    styleSources.push('https://api.mapbox.com')
     directives.push(`style-src ${styleSources.join(' ')}`)
 
     // Font sources
-    directives.push("font-src 'self' https://fonts.gstatic.com")
+    directives.push("font-src 'self' https://fonts.gstatic.com https://api.mapbox.com")
 
     // Image sources
     directives.push("img-src 'self' data: https: blob:")

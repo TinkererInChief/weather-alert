@@ -51,6 +51,12 @@ export class TsunamiMonitor {
    * Start continuous tsunami monitoring
    */
   async startMonitoring(): Promise<void> {
+    // Skip monitoring during build or when explicitly disabled
+    if (process.env.SKIP_MONITORING === '1' || process.env.SKIP_MONITORING === 'true') {
+      console.log('⏭️ Skipping tsunami monitoring (SKIP_MONITORING)')
+      return
+    }
+
     if (this.isMonitoring) {
       console.log('🌊 Tsunami monitoring already active')
       return

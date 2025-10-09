@@ -115,6 +115,12 @@ export class AlertManager {
   }
 
   startMonitoring(intervalMs: number = 60000): void {
+    // Skip monitoring during build or when explicitly disabled
+    if (process.env.SKIP_MONITORING === '1' || process.env.SKIP_MONITORING === 'true') {
+      console.log('⏭️ Skipping earthquake monitoring (SKIP_MONITORING)')
+      return
+    }
+
     if (this.isMonitoring) {
       console.log('⚠️ Monitoring is already running')
       return

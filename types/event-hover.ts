@@ -36,13 +36,16 @@ export type PopulationImpact = {
   strongShaking: number
   moderateShaking: number
   lightShaking: number
-  totalAffected: number
+  totalAffected?: number
   cities: Array<{
     name: string
     population: number
     intensity: 'Strong' | 'Moderate' | 'Light' | 'Weak'
     distance: number // km from epicenter
   }>
+  source?: 'usgs-pager' | 'geonames-estimated' | 'no-data' | 'error'
+  message?: string // For empty/error states
+  dataSource?: string // Attribution text
 }
 
 export type ShakingRadius = {

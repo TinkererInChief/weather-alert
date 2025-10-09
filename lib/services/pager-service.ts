@@ -1,0 +1,1 @@
+export { pagerService } from './pager'

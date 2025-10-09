@@ -191,45 +191,61 @@ export default function EventDetails({
             <span className="text-sm font-semibold text-slate-900">Estimated Impact</span>
           </div>
           
-          <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="bg-red-50 rounded p-2">
-              <div className="text-red-700 font-semibold">Strong</div>
-              <div className="text-red-900 font-bold mt-1">
-                {formatNumber(populationImpact.strongShaking)}
-              </div>
-              <div className="text-red-600">people</div>
+          {populationImpact.message ? (
+            // Empty state for remote areas
+            <div className="text-xs text-slate-500 text-center py-2 bg-slate-50 rounded">
+              {populationImpact.message}
             </div>
-            <div className="bg-orange-50 rounded p-2">
-              <div className="text-orange-700 font-semibold">Moderate</div>
-              <div className="text-orange-900 font-bold mt-1">
-                {formatNumber(populationImpact.moderateShaking)}
-              </div>
-              <div className="text-orange-600">people</div>
-            </div>
-            <div className="bg-yellow-50 rounded p-2">
-              <div className="text-yellow-700 font-semibold">Light</div>
-              <div className="text-yellow-900 font-bold mt-1">
-                {formatNumber(populationImpact.lightShaking)}
-              </div>
-              <div className="text-yellow-600">people</div>
-            </div>
-          </div>
-
-          {/* Affected Cities */}
-          {populationImpact.cities.length > 0 && (
-            <div className="space-y-1">
-              <div className="text-xs font-semibold text-slate-600">Nearby Cities:</div>
-              {populationImpact.cities.map((city, index) => (
-                <div key={index} className="flex items-center justify-between text-xs">
-                  <span className="text-slate-700">
-                    {city.name} ({formatNumber(city.population)})
-                  </span>
-                  <span className={`font-medium ${getIntensityColor(city.intensity)}`}>
-                    {city.intensity} • {city.distance.toFixed(0)}km
-                  </span>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="bg-red-50 rounded p-2">
+                  <div className="text-red-700 font-semibold">Strong</div>
+                  <div className="text-red-900 font-bold mt-1">
+                    {formatNumber(populationImpact.strongShaking || 0)}
+                  </div>
+                  <div className="text-red-600">people</div>
                 </div>
-              ))}
-            </div>
+                <div className="bg-orange-50 rounded p-2">
+                  <div className="text-orange-700 font-semibold">Moderate</div>
+                  <div className="text-orange-900 font-bold mt-1">
+                    {formatNumber(populationImpact.moderateShaking || 0)}
+                  </div>
+                  <div className="text-orange-600">people</div>
+                </div>
+                <div className="bg-yellow-50 rounded p-2">
+                  <div className="text-yellow-700 font-semibold">Light</div>
+                  <div className="text-yellow-900 font-bold mt-1">
+                    {formatNumber(populationImpact.lightShaking || 0)}
+                  </div>
+                  <div className="text-yellow-600">people</div>
+                </div>
+              </div>
+
+              {/* Affected Cities */}
+              {populationImpact.cities && populationImpact.cities.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold text-slate-600">Nearby Cities:</div>
+                  {populationImpact.cities.map((city, index) => (
+                    <div key={index} className="flex items-center justify-between text-xs">
+                      <span className="text-slate-700">
+                        {city.name} ({formatNumber(city.population)})
+                      </span>
+                      <span className={`font-medium ${getIntensityColor(city.intensity)}`}>
+                        {city.intensity} • {city.distance.toFixed(0)}km
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Data source attribution */}
+              {(populationImpact as any).source && (
+                <div className="text-xs text-slate-400 pt-1">
+                  Data: {(populationImpact as any).source === 'usgs-pager' ? 'USGS PAGER' : 'GeoNames'}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

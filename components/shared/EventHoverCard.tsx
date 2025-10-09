@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useState } from 'react'
+import React, { ReactNode, useState, useEffect } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { motion, AnimatePresence } from 'framer-motion'
 import MapPreview from './MapPreview'
@@ -8,7 +8,6 @@ import EventDetails from './EventDetails'
 import { EarthquakeEvent, TsunamiEvent, EventType } from '@/types/event-hover'
 import { 
   calculateShakingRadius, 
-  estimateAffectedPopulation, 
   calculateTsunamiETA 
 } from '@/lib/event-calculations'
 
@@ -30,6 +29,8 @@ export default function EventHoverCard({
   tsunamiTargetLocation 
 }: EventHoverCardProps) {
   const [open, setOpen] = useState(false)
+  const [populationImpact, setPopulationImpact] = useState<any | undefined>(undefined)
+  const [impactLoading, setImpactLoading] = useState(false)
 
   // Check if event has valid coordinates (not 0,0 which is invalid)
   const hasCoordinates = event.latitude !== undefined && 
@@ -43,34 +44,62 @@ export default function EventHoverCard({
                          Math.abs(event.longitude) > 0.01
 
   if (!hasCoordinates) {
-    // If no coordinates, render children with a subtle indicator
-    return (
-      <div className="relative group">
-        {children}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          <div className="bg-slate-700 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
-            📍 No location data
-          </div>
-        </div>
-      </div>
-    )
+    // Preserve table semantics: do not wrap rows in non-table elements
+    return <>{children}</>
   }
 
   const isEarthquake = (e: any): e is EarthquakeEvent => {
     return 'magnitude' in e && 'depth' in e
   }
 
-  // Calculate earthquake-specific data
-  let shakingRadius
-  let populationImpact
-  if (type === 'earthquake' && isEarthquake(event)) {
-    shakingRadius = calculateShakingRadius(event.magnitude, event.depth)
-    populationImpact = estimateAffectedPopulation(
-      shakingRadius,
-      event.latitude,
-      event.longitude
-    )
-  }
+  useEffect(() => {
+    if (open && type === 'earthquake' && isEarthquake(event) && !populationImpact && !impactLoading) {
+      const fetchImpactData = async () => {
+        setImpactLoading(true)
+        try {
+          const params = new URLSearchParams({
+            lat: event.latitude!.toString(),
+            lon: event.longitude!.toString(),
+            mag: event.magnitude.toString(),
+            depth: event.depth.toString(),
+          })
+          
+          // Add event ID if available (for PAGER lookup)
+          if (event.id) {
+            params.append('eventId', event.id)
+          }
+          
+          const response = await fetch(`/api/impact?${params}`)
+          if (response.ok) {
+            const data = await response.json()
+            
+            // Only set impact if we have real data (not error state)
+            if (data.source !== 'error' && data.cities && data.cities.length > 0) {
+              setPopulationImpact(data)
+            } else if (data.source === 'no-data') {
+              // Show empty state for remote areas
+              setPopulationImpact({
+                strongShaking: 0,
+                moderateShaking: 0,
+                lightShaking: 0,
+                cities: [],
+                message: 'No populated areas within impact radius'
+              })
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch population impact:', error)
+        } finally {
+          setImpactLoading(false)
+        }
+      }
+
+      fetchImpactData()
+    }
+  }, [open, event, type, populationImpact, impactLoading])
+
+  // Placeholder for shakingRadius until it's needed from the API
+  const shakingRadius = isEarthquake(event) ? calculateShakingRadius(event.magnitude, event.depth) : undefined;
 
   // Calculate tsunami ETA if target location provided
   let tsunamiETA
@@ -88,13 +117,39 @@ export default function EventHoverCard({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
-        <div
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
-          className="transition-colors relative z-0 hover:bg-slate-100 dark:hover:bg-slate-800"
-        >
-          {children}
-        </div>
+        {React.isValidElement(children)
+          ? React.cloneElement(children as React.ReactElement<any>, {
+              onMouseEnter: (e: any) => {
+                // call child handler if present
+                const childProps = (children as any).props
+                if (childProps?.onMouseEnter) {
+                  childProps.onMouseEnter(e)
+                }
+                setOpen(true)
+              },
+              onMouseLeave: (e: any) => {
+                const childProps = (children as any).props
+                if (childProps?.onMouseLeave) {
+                  childProps.onMouseLeave(e)
+                }
+                setOpen(false)
+              },
+              // merge classes safely
+              className: [
+                (children as any).props?.className,
+                'transition-colors',
+                'cursor-pointer'
+              ].filter(Boolean).join(' ')
+            })
+          : (
+            <span
+              onMouseEnter={() => setOpen(true)}
+              onMouseLeave={() => setOpen(false)}
+              className="transition-colors cursor-pointer"
+            >
+              {children}
+            </span>
+          )}
       </Popover.Trigger>
 
       <AnimatePresence>
@@ -116,6 +171,8 @@ export default function EventHoverCard({
               className="z-[9999] will-change-transform"
               onMouseEnter={() => setOpen(true)}
               onMouseLeave={() => setOpen(false)}
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onCloseAutoFocus={(e) => e.preventDefault()}
             >
               <motion.div
                 initial={{ opacity: 0, scale: 0.96, x: -8 }}
@@ -145,7 +202,7 @@ export default function EventHoverCard({
                   <EventDetails
                     event={event}
                     type={type}
-                    populationImpact={populationImpact}
+                    populationImpact={impactLoading ? { loading: true } : populationImpact}
                     tsunamiETA={tsunamiETA}
                   />
                 </div>

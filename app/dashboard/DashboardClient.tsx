@@ -1,0 +1,1367 @@
+'use client'
+
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+export const revalidate = 0
+
+import { useEffect, useMemo, useState, useRef } from 'react'
+import nextDynamic from 'next/dynamic'
+import { 
+  AlertTriangle, 
+  Play, 
+  Square, 
+  MessageSquare, 
+  Phone, 
+  Users, 
+  Activity, 
+  Waves, 
+  Mail, 
+  MessageCircle, 
+  Clock, 
+  MapPin, 
+  ArrowUpRight,
+  CheckCircle2,
+  Info,
+  XCircle,
+  Shield,
+  FileText
+} from 'lucide-react'
+import AppLayout from '@/components/layout/AppLayout'
+import AuthGuard from '@/components/auth/AuthGuard'
+import { useSession } from 'next-auth/react'
+import NotificationPermissionBanner from '@/components/notifications/NotificationPermissionBanner'
+import { useNotifications } from '@/hooks/useNotifications'
+
+// Phase 1 & 2 Dashboard Enhancements
+// Dynamic import for Leaflet map (requires window object)
+const GlobalEventMap = nextDynamic(() => import('@/components/dashboard/GlobalEventMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height: '500px' }}>
+      <div className="flex flex-col items-center justify-center h-full">
+        <MapPin className="h-12 w-12 text-slate-300 mb-4 animate-pulse" />
+        <p className="text-sm text-slate-600">Loading map...</p>
+      </div>
+    </div>
+  )
+})
+import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
+import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
+import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
+import DeliveryStatusWidget from '@/components/dashboard/DeliveryStatusWidget'
+import ActiveContactsWidget from '@/components/dashboard/ActiveContactsWidget'
+import FeedStatusWidget from '@/components/dashboard/FeedStatusWidget'
+import ChannelStatusWidget from '@/components/dashboard/ChannelStatusWidget'
+import EventsByTypeWidget from '@/components/dashboard/EventsByTypeWidget'
+import AuditTrailWidget from '@/components/dashboard/AuditTrailWidget'
+import TestingControlsWidget from '@/components/dashboard/TestingControlsWidget'
+import UnifiedIncidentTimeline from '@/components/dashboard/UnifiedIncidentTimeline'
+import MaritimeIntelligenceWidget from '@/components/dashboard/MaritimeIntelligenceWidget'
+import MaritimeTestingControls from '@/components/dashboard/MaritimeTestingControls'
+import WidgetCard from '@/components/dashboard/WidgetCard'
+import { TrendingUp, Zap } from 'lucide-react'
+
+type OperationTone = 'success' | 'error' | 'info'
+
+type DashboardStats = {
+  totalContacts: number
+  activeContacts: number
+  totalAlerts: number
+  successfulAlerts: number
+  recentAlerts: number
+  successRate: string
+  tsunami?: TsunamiStats
+}
+
+type AlertLog = {
+  id: string
+  earthquakeId: string
+  magnitude: number
+  location: string
+  latitude?: number
+  longitude?: number
+  depth?: number
+  timestamp: string
+  contactsNotified: number
+  success: boolean
+  errorMessage?: string
+  dataSources?: string[]
+  primarySource?: string
+}
+
+type MonitoringStatus = {
+  isMonitoring: boolean
+  smsAvailable: boolean
+}
+
+type TsunamiAlert = {
+  id: string
+  title: string
+  category: string
+  urgency: string
+  severity: number
+  location: string
+  latitude: number
+  longitude: number
+  magnitude?: number
+  description: string
+  instruction: string
+  threat: {
+    level: string
+    confidence: number
+    affectedRegions: string[]
+  }
+  processedAt: string
+}
+
+type TsunamiStats = {
+  totalAlerts: number
+  alertsLast24h: number
+  alertsLast7d: number
+  recentAlerts: Array<{
+    id: string
+    type: string
+    severity: number
+    title: string
+    location: string
+    timestamp: string
+  }>
+  alertsByLevel: Record<string, number>
+}
+
+type OperationMessage = {
+  id: string
+  content: string
+  tone: OperationTone
+}
+
+type TimelineEvent = {
+  id: string
+  type: 'earthquake' | 'tsunami'
+  timestamp: Date
+  title: string
+  subtitle: string
+  severity: number
+  status: string
+  success: boolean
+  details?: string
+  latitude?: number
+  longitude?: number
+  magnitude?: number
+  depth?: number
+  threatLevel?: string
+  ocean?: string
+}
+
+type StatsApiResponse = {
+  success: boolean
+  data: {
+    stats: DashboardStats
+    recentAlerts: AlertLog[]
+  }
+}
+
+type MonitoringApiResponse = {
+  isMonitoring: boolean
+  smsAvailable: boolean
+}
+
+type TsunamiApiResponse = {
+  success: boolean
+  data: {
+    alerts: TsunamiAlert[]
+    lastChecked?: string
+  }
+}
+
+type TsunamiMonitoringResponse = {
+  success: boolean
+  data: {
+    monitoring: {
+      isMonitoring: boolean
+    }
+  }
+}
+
+// ---- Hardening helpers: deduplicate events across sources ----
+const dedupeEarthquakes = (alerts: AlertLog[]) => {
+  const byId = new Map<string, AlertLog>()
+
+  for (const a of alerts) {
+    const key = a.earthquakeId || a.id
+    const exist = byId.get(key)
+    if (!exist) {
+      byId.set(key, {
+        ...a,
+        id: key, // normalize id to logical quake id
+        earthquakeId: key,
+        dataSources: a.dataSources ? [...a.dataSources] : []
+      })
+      continue
+    }
+
+    // Merge without mutating existing object
+    const newest = new Date(a.timestamp).getTime() > new Date(exist.timestamp).getTime() ? a : exist
+    const magnitude = Math.max(a.magnitude, exist.magnitude)
+    const dataSources = Array.from(new Set([...(exist.dataSources ?? []), ...(a.dataSources ?? [])]))
+    const primarySource = exist.primarySource || a.primarySource
+    const contactsNotified = Math.max(exist.contactsNotified ?? 0, a.contactsNotified ?? 0)
+
+    byId.set(key, {
+      ...exist,
+      ...newest,
+      id: key,
+      earthquakeId: key,
+      magnitude,
+      dataSources,
+      primarySource,
+      contactsNotified
+    })
+  }
+
+  // Sort newest first
+  return Array.from(byId.values()).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+}
+
+const dedupeTsunamiAlerts = (alerts: TsunamiAlert[]) => {
+  const keyOf = (t: TsunamiAlert) => {
+    const day = new Date(t.processedAt).toISOString().slice(0, 10)
+    const title = (t.title || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+    const lat = Math.round((t.latitude ?? 0) * 10) / 10
+    const lng = Math.round((t.longitude ?? 0) * 10) / 10
+    return `${day}|${title}|${lat}|${lng}`
+  }
+
+  const byKey = new Map<string, TsunamiAlert>()
+  for (const t of alerts) {
+    const k = keyOf(t)
+    const ex = byKey.get(k)
+    if (!ex) {
+      byKey.set(k, t)
+      continue
+    }
+    // Prefer latest processedAt and max severity/magnitude
+    const latest = new Date(t.processedAt).getTime() > new Date(ex.processedAt).getTime() ? t : ex
+    const severity = Math.max(t.severity ?? 0, ex.severity ?? 0)
+    const magnitude = Math.max(t.magnitude ?? 0, ex.magnitude ?? 0)
+    byKey.set(k, { ...latest, severity, magnitude })
+  }
+
+  return Array.from(byKey.values()).sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
+}
+
+export default function Dashboard() {
+  const { data: session } = useSession()
+  const { showEmergencyAlert, showSystemNotification } = useNotifications()
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [recentAlerts, setRecentAlerts] = useState<AlertLog[]>([])
+  const [monitoringStatus, setMonitoringStatus] = useState<MonitoringStatus | null>(null)
+  const [tsunamiStats, setTsunamiStats] = useState<TsunamiStats | null>(null)
+  const [tsunamiAlerts, setTsunamiAlerts] = useState<TsunamiAlert[]>([])
+  const [loading, setLoading] = useState(true)
+  const [testingService, setTestingService] = useState(false)
+  const [testResult, setTestResult] = useState<string | null>(null)
+  const [testingVoice, setTestingVoice] = useState(false)
+  const [testingMultiChannel, setTestingMultiChannel] = useState(false)
+  const [multiChannelResult, setMultiChannelResult] = useState<string | null>(null)
+  const [testingWhatsApp, setTestingWhatsApp] = useState(false)
+  const [whatsAppResult, setWhatsAppResult] = useState<string | null>(null)
+  const [testingEmail, setTestingEmail] = useState(false)
+  const [emailResult, setEmailResult] = useState<string | null>(null)
+  const [voiceResult, setVoiceResult] = useState<string | null>(null)
+  const [tsunamiLastChecked, setTsunamiLastChecked] = useState<string | null>(null)
+  const [tsunamiMonitoring, setTsunamiMonitoring] = useState(false)
+  const [operations, setOperations] = useState<OperationMessage[]>([])
+  const [timeFilter, setTimeFilter] = useState<'24h' | '7d' | '30d'>('30d')
+  const [minMagnitude, setMinMagnitude] = useState<number>(3.0)
+  const [showAllEvents, setShowAllEvents] = useState(false)
+  const [totalUnfilteredCount, setTotalUnfilteredCount] = useState<number>(0)
+  const filterRef = useRef<HTMLDivElement | null>(null)
+  const [filtersHeight, setFiltersHeight] = useState<number>(0)
+  const filtersRO = useRef<ResizeObserver | null>(null)
+  const [refreshTick, setRefreshTick] = useState(0)
+
+  // Measure filters block height to size the timeline so its top aligns with filters
+  // and its bottom aligns with the map bottom. Use ResizeObserver so changes caused by
+  // async data (e.g., counts) update the height without requiring a window resize.
+  useEffect(() => {
+    const measure = () => {
+      const el = filterRef.current
+      if (!el) return
+      const h = el.offsetHeight
+      setFiltersHeight((prev) => (prev !== h ? h : prev))
+    }
+
+    // Initial measure after paint to avoid 0 height due to layout not settled
+    const raf = requestAnimationFrame(measure)
+
+    // Observe element size changes
+    const el = filterRef.current
+    if (el && typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => measure())
+      ro.observe(el)
+      filtersRO.current = ro
+    }
+
+    // Fallback: also listen to window resize
+    window.addEventListener('resize', measure)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener('resize', measure)
+      if (filtersRO.current) {
+        filtersRO.current.disconnect()
+        filtersRO.current = null
+      }
+    }
+  }, [timeFilter, minMagnitude, showAllEvents, totalUnfilteredCount])
+
+  const logOperation = (content: string, tone: OperationTone = 'info') => {
+    setOperations((prev) => [
+      { id: `${Date.now()}-${Math.random()}`, content, tone },
+      ...prev.slice(0, 19)
+    ])
+  }
+
+  const fetchData = async () => {
+    try {
+      // Calculate time filter
+      const getTimeFilterDate = () => {
+        const now = Date.now()
+        switch (timeFilter) {
+          case '24h':
+            return new Date(now - 24 * 60 * 60 * 1000).toISOString()
+          case '7d':
+            return new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+          case '30d':
+            return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+          default:
+            return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      }
+      
+      const startDate = getTimeFilterDate()
+      
+      // Build query parameters for alerts
+      const alertParams = new URLSearchParams({
+        startDate,
+        // When showing all events, fetch ALL magnitudes (we'll filter client-side)
+        // When not showing all, fetch only events >= minMagnitude
+        minMagnitude: showAllEvents ? '0' : minMagnitude.toString()
+      })
+      
+      // Add limit based on time period (more time = more events expected)
+      if (!showAllEvents) {
+        // Scale limit based on time period to avoid missing recent events
+        const limit = timeFilter === '24h' ? '50' : timeFilter === '7d' ? '100' : '200'
+        alertParams.append('limit', limit)
+      } else {
+        alertParams.append('limit', '500') // Reasonable upper limit for performance
+      }
+      
+      // Build query for total count (no magnitude filter, distinct EQ with coords only)
+      const countParams = new URLSearchParams({
+        startDate,
+        minMagnitude: '0',
+        coordsOnly: 'true',
+        distinctByEarthquake: 'true',
+        limit: '1' // We only need meta; keep payload tiny
+      })
+      
+      const [statsRes, monitoringRes, tsunamiRes, tsunamiMonitoringRes, alertHistoryRes, countRes] = await Promise.all([
+        fetch('/api/stats'),
+        fetch('/api/monitoring'),
+        fetch('/api/tsunami'),
+        fetch('/api/tsunami/monitor'),
+        fetch(`/api/alerts/history?${alertParams}`),
+        fetch(`/api/alerts/history?${countParams}`) // Fetch for total count
+      ])
+
+      // Collect recent earthquake candidates from stats and history for dedupe
+      let statsRecentAlerts: AlertLog[] = []
+      let historyAlerts: AlertLog[] = []
+
+      if (statsRes.ok) {
+        const statsData: StatsApiResponse = await statsRes.json()
+        if (statsData?.success) {
+          setStats(statsData.data.stats)
+          statsRecentAlerts = statsData.data.recentAlerts || []
+          if (statsData.data.stats.tsunami) {
+            setTsunamiStats(statsData.data.stats.tsunami)
+          }
+        }
+      }
+
+      if (monitoringRes.ok) {
+        const monitoringData: MonitoringApiResponse = await monitoringRes.json()
+        setMonitoringStatus({
+          isMonitoring: monitoringData.isMonitoring,
+          smsAvailable: monitoringData.smsAvailable
+        })
+      }
+
+      // Process tsunami data first (needed for count calculation)
+      let freshTsunamiAlerts: TsunamiAlert[] = []
+      if (tsunamiRes.ok) {
+        const tsunamiData: TsunamiApiResponse = await tsunamiRes.json()
+        if (tsunamiData.success) {
+          // Normalize alerts to ensure threat property exists
+          const normalizedAlerts = (tsunamiData.data.alerts || []).map((alert: any) => ({
+            ...alert,
+            threat: alert.threat || {
+              level: alert.category || alert.urgency || 'advisory',
+              confidence: alert.severity || 1,
+              affectedRegions: []
+            }
+          }))
+          freshTsunamiAlerts = dedupeTsunamiAlerts(normalizedAlerts)
+          setTsunamiAlerts(freshTsunamiAlerts)
+          setTsunamiLastChecked(tsunamiData.data.lastChecked ?? null)
+        }
+      }
+
+      if (tsunamiMonitoringRes.ok) {
+        const tsunamiMonitoringData: TsunamiMonitoringResponse = await tsunamiMonitoringRes.json()
+        if (tsunamiMonitoringData.success) {
+          setTsunamiMonitoring(tsunamiMonitoringData.data.monitoring.isMonitoring)
+        }
+      }
+      
+      // Fetch more alerts for map visualization
+      if (alertHistoryRes.ok) {
+        const alertHistoryData = await alertHistoryRes.json()
+        if (alertHistoryData.success && alertHistoryData.data?.alerts) {
+          historyAlerts = alertHistoryData.data.alerts
+        }
+      }
+
+      // Upstream dedupe: combine stat-provided recent alerts with history and dedupe by logical quake id
+      const dedupedEarthquakes = dedupeEarthquakes([
+        ...statsRecentAlerts,
+        ...historyAlerts,
+      ])
+      setRecentAlerts(dedupedEarthquakes)
+      
+      // Get total unfiltered count (earthquakes + tsunamis) using server meta and filtered tsunami
+      if (countRes.ok) {
+        const countData = await countRes.json()
+        if (countData.success && countData.data?.alerts) {
+          // Prefer server-side meta distinct counts; fallback to local count if missing
+          const serverEqDistinctWithCoords: number | undefined = countData.data?.meta?.totalDistinctWithCoords
+          let earthquakeCount: number
+          if (typeof serverEqDistinctWithCoords === 'number' && !Number.isNaN(serverEqDistinctWithCoords)) {
+            earthquakeCount = serverEqDistinctWithCoords
+          } else {
+            const dedupedForCount = dedupeEarthquakes(countData.data.alerts)
+            earthquakeCount = dedupedForCount.filter((alert: AlertLog) => 
+              alert.latitude != null && alert.longitude != null
+            ).length
+          }
+
+          // Apply same time window for tsunami alerts
+          const startMs = new Date(startDate).getTime()
+          const tsunamiCount = freshTsunamiAlerts.filter(alert => 
+            alert.latitude != null && 
+            alert.longitude != null &&
+            new Date(alert.processedAt).getTime() >= startMs
+          ).length
+
+          setTotalUnfilteredCount(earthquakeCount + tsunamiCount)
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      logOperation('Failed to refresh monitoring data. Please check network connectivity.', 'error')
+    } finally {
+      setLoading(false)
+      setRefreshTick((t) => t + 1)
+    }
+  }
+
+  useEffect(() => {
+    // Initial fetch and refetch when filters change
+    fetchData()
+    
+    // Set up interval for auto-refresh every 15 seconds
+    const interval = setInterval(fetchData, 15000)
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeFilter, minMagnitude, showAllEvents]) // Refetch when filters change OR on interval
+
+  // Monitor for new earthquakes and show notifications
+  useEffect(() => {
+    if (recentAlerts.length === 0) return
+
+    // Get the most recent alert (first in array since they're sorted by timestamp desc)
+    const latestAlert = recentAlerts[0]
+    const alertTime = new Date(latestAlert.timestamp)
+    const now = new Date()
+    const timeDiff = now.getTime() - alertTime.getTime()
+    
+    // Only show notification for alerts from the last 2 minutes (to avoid spam on page load)
+    if (timeDiff < 2 * 60 * 1000) {
+      const severity = latestAlert.magnitude >= 7.0 ? 'critical' 
+                    : latestAlert.magnitude >= 6.0 ? 'high'
+                    : latestAlert.magnitude >= 5.0 ? 'medium' 
+                    : 'low'
+
+      showEmergencyAlert({
+        type: 'earthquake',
+        magnitude: latestAlert.magnitude,
+        location: latestAlert.location,
+        severity
+      })
+    }
+  }, [recentAlerts, showEmergencyAlert])
+
+  const toggleMonitoring = async () => {
+    if (!monitoringStatus) return
+
+    try {
+      const action = monitoringStatus.isMonitoring ? 'stop' : 'start'
+      const response = await fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+      })
+
+      if (response.ok) {
+        await fetchData()
+        logOperation(`Earthquake monitoring ${action === 'start' ? 'activated' : 'paused'}.`, 'success')
+      }
+    } catch (error) {
+      console.error('Error toggling monitoring:', error)
+      logOperation('Failed to toggle earthquake monitoring. See console for details.', 'error')
+    }
+  }
+
+  const testSMSService = async () => {
+    setTestingService(true)
+    setTestResult(null)
+
+    try {
+      const response = await fetch('/api/alerts/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setTestResult(data.message)
+        logOperation('SMS test alert dispatched to primary contact.', 'success')
+        
+        // Show real browser notification for successful test
+        await showSystemNotification(
+          'SMS test alert sent successfully to primary contact',
+          'success'
+        )
+      } else {
+        setTestResult(`Test failed: ${data.message}`)
+        logOperation('SMS test failed. Inspect SendGrid/Twilio configuration.', 'error')
+        
+        // Show real browser notification for failed test
+        await showSystemNotification(
+          `SMS test failed: ${data.message}`,
+          'error'
+        )
+      }
+    } catch (error) {
+      setTestResult('Test failed: Network error')
+      logOperation('SMS test failed due to network error.', 'error')
+    } finally {
+      setTestingService(false)
+    }
+  }
+
+  const testVoiceService = async () => {
+    setTestingVoice(true)
+    setVoiceResult(null)
+
+    try {
+      // First get test contact info
+      const infoResponse = await fetch('/api/voice/test')
+      const infoData = await infoResponse.json()
+      
+      if (!infoData.success || !infoData.data.testContact) {
+        setVoiceResult('No test contact available. Add a contact first.')
+        logOperation('Voice test aborted – no contacts available.', 'error')
+        return
+      }
+
+      const testContact = infoData.data.testContact
+
+      // Make test voice call
+      const response = await fetch('/api/voice/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          phoneNumber: testContact.phone,
+          contactName: testContact.name
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setVoiceResult(`✅ Test voice call initiated to ${testContact.name} (${testContact.phone}). Call ID: ${data.data.callSid}`)
+        logOperation('Voice test initiated successfully.', 'success')
+      } else {
+        setVoiceResult(`❌ Voice call failed: ${data.message}`)
+        logOperation('Voice test failed. Review Twilio Voice configuration.', 'error')
+      }
+    } catch (error) {
+      setVoiceResult('❌ Voice test failed: Network error')
+      logOperation('Voice test failed due to network error.', 'error')
+    } finally {
+      setTestingVoice(false)
+    }
+  }
+
+  const testMultiChannel = async () => {
+    setTestingMultiChannel(true)
+    setMultiChannelResult(null)
+
+    try {
+      const response = await fetch('/api/alerts/test-multichannel', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setMultiChannelResult(`✅ ${data.message} Expected channels: ${data.data?.testEarthquake?.expectedChannels}`)
+        logOperation('Multi-channel test executed successfully.', 'success')
+      } else {
+        setMultiChannelResult(`❌ Multi-channel test failed: ${data.message}`)
+        logOperation('Multi-channel test failed.', 'error')
+      }
+    } catch (error) {
+      setMultiChannelResult('❌ Multi-channel test failed: Network error')
+      logOperation('Multi-channel test failed due to network error.', 'error')
+    } finally {
+      setTestingMultiChannel(false)
+    }
+  }
+
+  const testWhatsApp = async () => {
+    setTestingWhatsApp(true)
+    setWhatsAppResult(null)
+
+    try {
+      const response = await fetch('/api/test/whatsapp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setWhatsAppResult(`✅ ${data.message}`)
+        logOperation('WhatsApp test message sent to sandbox/contact.', 'success')
+      } else {
+        setWhatsAppResult(`❌ WhatsApp test failed: ${data.message}`)
+        logOperation('WhatsApp test failed. Review WhatsApp sandbox configuration.', 'error')
+      }
+    } catch (error) {
+      setWhatsAppResult('❌ WhatsApp test failed: Network error')
+      logOperation('WhatsApp test failed due to network error.', 'error')
+    } finally {
+      setTestingWhatsApp(false)
+    }
+  }
+
+  const testEmail = async () => {
+    setTestingEmail(true)
+    setEmailResult(null)
+
+    try {
+      const response = await fetch('/api/test/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setEmailResult(`✅ ${data.message}`)
+        logOperation('Email test completed in sandbox mode.', 'success')
+        
+        // Show real browser notification for successful test
+        await showSystemNotification(
+          'Email test completed successfully in sandbox mode',
+          'success'
+        )
+      } else {
+        setEmailResult(`❌ Email test failed: ${data.message}`)
+        logOperation('Email test failed. Check SendGrid configuration.', 'error')
+        
+        // Show real browser notification for failed test
+        await showSystemNotification(
+          `Email test failed: ${data.message}`,
+          'error'
+        )
+      }
+    } catch (error) {
+      setEmailResult('❌ Email test failed: Network error')
+      logOperation('Email test failed due to network error.', 'error')
+    } finally {
+      setTestingEmail(false)
+    }
+  }
+
+  const testHighSeverity = async () => {
+    setTestingMultiChannel(true)
+    setMultiChannelResult(null)
+
+    try {
+      const response = await fetch('/api/alerts/test-high-severity', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setMultiChannelResult(`✅ ${data.message}`)
+        logOperation('High-severity drill executed (voice + all channels).', 'success')
+      } else {
+        setMultiChannelResult(`❌ High-severity test failed: ${data.message}`)
+        logOperation('High-severity drill failed. Investigate notification service.', 'error')
+      }
+    } catch (error) {
+      setMultiChannelResult('❌ High-severity test failed: Network error')
+      logOperation('High-severity drill failed due to network error.', 'error')
+    } finally {
+      setTestingMultiChannel(false)
+    }
+  }
+
+  const manualCheck = async () => {
+    try {
+      const response = await fetch('/api/alerts/check', {
+        method: 'POST'
+      })
+      
+      const result = await response.json()
+      if (result.success) {
+        alert(`Manual check completed. Found ${result.newAlerts} new earthquakes.`)
+        await fetchData()
+        logOperation(`Manual earthquake sweep completed – ${result.newAlerts} new events detected.`, 'info')
+      }
+    } catch (error) {
+      alert('Manual check failed')
+      logOperation('Manual earthquake sweep failed.', 'error')
+    }
+  }
+
+  const manualTsunamiCheck = async () => {
+    try {
+      const response = await fetch('/api/tsunami', { method: 'POST' })
+
+      if (response.ok) {
+        logOperation('Manual tsunami sweep triggered.', 'info')
+        setTimeout(fetchData, 1500)
+      } else {
+        logOperation('Manual tsunami sweep failed to trigger.', 'error')
+      }
+    } catch (error) {
+      logOperation('Manual tsunami sweep encountered a network issue.', 'error')
+    }
+  }
+
+  const toggleTsunamiMonitoring = async () => {
+    try {
+      const method = tsunamiMonitoring ? 'DELETE' : 'POST'
+      const response = await fetch('/api/tsunami/monitor', { method })
+
+      if (response.ok) {
+        setTsunamiMonitoring(!tsunamiMonitoring)
+        logOperation(`Tsunami monitoring ${tsunamiMonitoring ? 'paused' : 'activated'}.`, 'success')
+        setTimeout(fetchData, 1500)
+      } else {
+        logOperation('Unable to toggle tsunami monitoring.', 'error')
+      }
+    } catch (error) {
+      logOperation('Tsunami monitoring toggle failed due to network issue.', 'error')
+    }
+  }
+
+  const criticalTsunamiAlert = useMemo(() => {
+    return tsunamiAlerts.find((alert) => ['warning', 'watch'].includes(String(alert.threat?.level || '').toLowerCase())) || null
+  }, [tsunamiAlerts])
+
+  const mostSevereEarthquake = useMemo(() => {
+    if (!recentAlerts.length) return null
+    return [...recentAlerts].sort((a, b) => b.magnitude - a.magnitude)[0]
+  }, [recentAlerts])
+
+  const TIMELINE_MAX = 200
+
+  const timelineEvents = useMemo((): TimelineEvent[] => {
+    const earthquakeEvents = recentAlerts.map((alert) => ({
+      id: `eq-${alert.id}`,
+      type: 'earthquake' as const,
+      timestamp: new Date(alert.timestamp),
+      title: `Magnitude ${typeof alert.magnitude === 'number' ? alert.magnitude.toFixed(1) : '?' } — ${alert.location}`,
+      subtitle: `${alert.contactsNotified} contacts notified`,
+      severity: alert.magnitude,
+      status: alert.success ? 'Delivered' : 'Delivery Issues',
+      success: alert.success,
+      details: alert.errorMessage,
+      latitude: alert.latitude,
+      longitude: alert.longitude,
+      magnitude: alert.magnitude,
+      depth: alert.depth
+    }))
+
+    const tsunamiEvents = (tsunamiStats?.recentAlerts ?? []).map((alert) => ({
+      id: `ts-${alert.id}`,
+      type: 'tsunami' as const,
+      timestamp: new Date(alert.timestamp),
+      title: `${alert.title}`,
+      subtitle: alert.location,
+      severity: alert.severity,
+      status: String(alert.type || 'UNKNOWN').toUpperCase(),
+      success: alert.severity < 3,
+      details: undefined
+    }))
+
+    return [...earthquakeEvents, ...tsunamiEvents]
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      .slice(0, TIMELINE_MAX)
+  }, [recentAlerts, tsunamiStats])
+
+  const monitoringActive = monitoringStatus?.isMonitoring
+
+  const commandCenterTitle = criticalTsunamiAlert
+    ? 'Critical Tsunami Incident in Progress'
+    : 'Earthquake & Tsunami Command Center'
+
+  const monitoringSummary = useMemo(() => {
+    return [
+      {
+        label: 'Earthquake Monitoring',
+        active: monitoringStatus?.isMonitoring ?? false,
+        details: monitoringStatus?.isMonitoring ? 'Automated sweeps running every 60 seconds.' : 'Monitoring paused',
+        cta: { label: monitoringStatus?.isMonitoring ? 'Pause monitoring' : 'Activate monitoring', handler: toggleMonitoring }
+      },
+      {
+        label: 'Tsunami Monitoring',
+        active: tsunamiMonitoring,
+        details: tsunamiMonitoring ? 'Satellite + NOAA feeds synced.' : 'Monitoring paused',
+        cta: { label: tsunamiMonitoring ? 'Pause monitoring' : 'Activate monitoring', handler: toggleTsunamiMonitoring }
+      }
+    ]
+  }, [monitoringStatus, tsunamiMonitoring])
+
+  // Total events count comes from API (unfiltered by magnitude)
+  // This is fetched separately to show accurate "Show All (X events)" label
+
+  // Transform data for new components - combine earthquake and tsunami alerts
+  // Apply magnitude and time filters to map events
+  const mapEvents = useMemo(() => {
+    // Resolve start time (ms) from timeFilter
+    const startMs = (() => {
+      const now = Date.now()
+      switch (timeFilter) {
+        case '24h':
+          return now - 24 * 60 * 60 * 1000
+        case '7d':
+          return now - 7 * 24 * 60 * 60 * 1000
+        case '30d':
+          return now - 30 * 24 * 60 * 60 * 1000
+        default:
+          return now - 30 * 24 * 60 * 60 * 1000
+      }
+    })()
+
+    // Earthquake alerts - filter by coords, time window, and magnitude (unless Show All)
+    const filtered = recentAlerts
+      .filter(alert => 
+        alert.latitude != null && 
+        alert.longitude != null &&
+        new Date(alert.timestamp).getTime() >= startMs &&
+        (showAllEvents || alert.magnitude >= minMagnitude)
+      )
+
+    // Aggregate by earthquakeId (fallback to alert.id)
+    const byEqId = new Map<string, {
+      id: string
+      lat: number
+      lng: number
+      magnitude: number
+      title: string
+      timestamp: string
+      contactsAffected: number
+      sources: Set<string>
+      primarySource?: string
+    }>()
+    for (const a of filtered) {
+      const key = a.earthquakeId || a.id
+      const existing = byEqId.get(key)
+      if (!existing) {
+        byEqId.set(key, {
+          id: key,
+          lat: a.latitude!,
+          lng: a.longitude!,
+          magnitude: a.magnitude,
+          title: `M${typeof a.magnitude === 'number' ? a.magnitude?.toFixed(1) : '?' } ${a.location}`,
+          timestamp: a.timestamp,
+          contactsAffected: a.contactsNotified,
+          sources: new Set(a.dataSources ?? []),
+          primarySource: a.primarySource
+        })
+      } else {
+        // Use latest timestamp and corresponding coords/title
+        if (new Date(a.timestamp).getTime() > new Date(existing.timestamp).getTime()) {
+          existing.timestamp = a.timestamp
+          existing.lat = a.latitude!
+          existing.lng = a.longitude!
+          existing.title = `M${typeof a.magnitude === 'number' ? a.magnitude.toFixed(1) : '?' } ${a.location}`
+        }
+        // Keep the maximum magnitude observed across sources
+        if (a.magnitude > existing.magnitude) {
+          existing.magnitude = a.magnitude
+          existing.title = `M${typeof a.magnitude === 'number' ? a.magnitude.toFixed(1) : '?' } ${a.location}`
+        }
+        // Merge sources
+        for (const s of (a.dataSources ?? [])) existing.sources.add(s)
+        // Prefer an existing primarySource; otherwise adopt incoming
+        if (!existing.primarySource && a.primarySource) existing.primarySource = a.primarySource
+        // Keep max contactsAffected (avoid inflating by summing)
+        if (a.contactsNotified > existing.contactsAffected) existing.contactsAffected = a.contactsNotified
+      }
+    }
+
+    const earthquakeEvents = Array.from(byEqId.values()).map(e => ({
+      id: e.id,
+      lat: e.lat,
+      lng: e.lng,
+      type: 'earthquake' as const,
+      magnitude: e.magnitude,
+      title: e.title,
+      timestamp: e.timestamp,
+      contactsAffected: e.contactsAffected,
+      sources: Array.from(e.sources),
+      primarySource: e.primarySource
+    }))
+    
+    // Tsunami alerts (time-filtered)
+    const tsunamiEvents = tsunamiAlerts
+      .filter(alert => 
+        alert.latitude != null && 
+        alert.longitude != null &&
+        new Date(alert.processedAt).getTime() >= startMs
+      )
+      .map(alert => ({
+        id: alert.id,
+        lat: alert.latitude!,
+        lng: alert.longitude!,
+        type: 'tsunami' as const,
+        severity: alert.severity,
+        magnitude: alert.magnitude,
+        title: alert.title || `Tsunami Alert - ${alert.location}`,
+        timestamp: alert.processedAt,
+        contactsAffected: 0
+      }))
+    
+    return [...earthquakeEvents, ...tsunamiEvents]
+  }, [recentAlerts, tsunamiAlerts, minMagnitude, showAllEvents, timeFilter])
+
+  const keyMetrics = useMemo(() => [
+    {
+      label: 'Recent Events',
+      value: recentAlerts.length,
+      subtitle: 'Last 7 days',
+      icon: Activity,
+      color: '#3b82f6'
+    },
+    {
+      label: 'Monitoring Status',
+      value: monitoringStatus?.isMonitoring ? 'Active' : 'Paused',
+      subtitle: tsunamiMonitoring ? 'EQ + Tsunami' : 'Earthquake only',
+      icon: Shield,
+      color: monitoringStatus?.isMonitoring ? '#10b981' : '#6b7280'
+    },
+    {
+      label: 'Active Contacts',
+      value: stats?.activeContacts || 0,
+      subtitle: 'Configured recipients',
+      icon: Users,
+      color: '#8b5cf6'
+    },
+    {
+      label: 'Alerts Sent (24h)',
+      value: recentAlerts.filter(a => {
+        const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
+        return new Date(a.timestamp) > dayAgo
+      }).length,
+      subtitle: 'All channels',
+      icon: Zap,
+      color: '#f59e0b'
+    },
+    {
+      label: 'Success Rate',
+      value: stats?.successRate || '0%',
+      subtitle: 'Delivery success',
+      icon: CheckCircle2,
+      color: '#10b981'
+    },
+    {
+      label: 'Last Check',
+      value: recentAlerts.length > 0 ? new Date(recentAlerts[0].timestamp).toLocaleTimeString() : 'Never',
+      subtitle: 'System updated',
+      icon: Clock,
+      color: '#64748b'
+    }
+  ], [stats, recentAlerts, monitoringStatus, tsunamiMonitoring])
+
+  const prioritizedAlerts = useMemo(() => {
+    return recentAlerts
+      .filter(alert => alert.magnitude >= 5.5)
+      .map(alert => ({
+        id: alert.id,
+        type: 'earthquake' as const,
+        magnitude: alert.magnitude,
+        location: alert.location,
+        riskScore: Math.min(100, Math.round(alert.magnitude * 12 + 20)),
+        priority: (alert.magnitude >= 7 ? 'critical' : alert.magnitude >= 6 ? 'high' : alert.magnitude >= 5 ? 'medium' : 'low') as 'critical' | 'high' | 'medium' | 'low',
+        contactsAtRisk: alert.contactsNotified,
+        impactRadius: Math.round(alert.magnitude * 50),
+        factors: {
+          proximity: 85,
+          historicalImpact: 70,
+          populationDensity: 90,
+          timeSensitivity: 95
+        },
+        recommendation: `Immediate notification recommended for ${alert.contactsNotified} contacts in affected region.`
+      }))
+  }, [recentAlerts])
+
+  if (loading) {
+    return (
+      <AuthGuard>
+        <AppLayout title="Dashboard">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-slate-600">Loading dashboard...</p>
+            </div>
+          </div>
+        </AppLayout>
+      </AuthGuard>
+    )
+  }
+
+  const getToneIcon = (tone: OperationTone) => {
+    switch (tone) {
+      case 'success':
+        return <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+      case 'error':
+        return <XCircle className="h-4 w-4 text-rose-500" />
+      default:
+        return <Info className="h-4 w-4 text-blue-500" />
+    }
+  }
+
+  return (
+    <AuthGuard>
+      <AppLayout 
+        title={commandCenterTitle}
+        breadcrumbs={[{ label: 'Dashboard' }]}
+      >
+      <div className="space-y-8">
+        {/* Notification Permission Banner */}
+        <NotificationPermissionBanner />
+
+        {/* Welcome Section */}
+        {session?.user && (
+          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center">
+                <Shield className="h-6 w-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">
+                  Welcome back, {session.user.name || 'Operator'}
+                </h2>
+                <p className="text-sm text-slate-600"> 
+                  Emergency Alert Command Center
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {criticalTsunamiAlert && (
+          <div className="relative overflow-hidden rounded-3xl border border-white/30 bg-gradient-to-r from-rose-600/95 via-orange-500/90 to-red-500/90 p-6 text-white shadow-xl">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Critical Tsunami Advisory</p>
+                <h2 className="mt-1 text-2xl font-semibold">{criticalTsunamiAlert.title}</h2>
+                <p className="mt-3 text-sm text-white/90">
+                  {criticalTsunamiAlert.description}
+                </p>
+                <div className="mt-4 flex flex-wrap gap-3 text-xs font-medium">
+                  <span className="rounded-full bg-white/20 px-3 py-1">Level: {(criticalTsunamiAlert.threat?.level ?? 'UNKNOWN').toUpperCase()}</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1">Confidence: {Math.round(criticalTsunamiAlert.threat.confidence * 100)}%</span>
+                  <span className="rounded-full bg-white/20 px-3 py-1">Affected: {criticalTsunamiAlert.threat.affectedRegions.join(', ')}</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 text-sm md:items-end">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Processed {new Date(criticalTsunamiAlert.processedAt).toLocaleString()}
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  {criticalTsunamiAlert.location}
+                </div>
+                <a
+                  href="/tsunami"
+                  className="inline-flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-semibold text-rose-600 shadow-lg transition-transform hover:-translate-y-0.5"
+                >
+                  Open Tsunami Command
+                  <ArrowUpRight className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Maritime Intelligence Widget - Shows for M6.0+ earthquakes or tsunami warnings */}
+        {(recentAlerts.some(a => a.magnitude >= 6.0) || criticalTsunamiAlert) && (
+          <MaritimeIntelligenceWidget
+            earthquakeData={
+              recentAlerts.length > 0
+                ? {
+                    magnitude: recentAlerts[0].magnitude,
+                    location: recentAlerts[0].location,
+                    latitude: recentAlerts[0].latitude || 0,
+                    longitude: recentAlerts[0].longitude || 0,
+                    timestamp: new Date(recentAlerts[0].timestamp),
+                    tsunamiWarning: !!criticalTsunamiAlert
+                  }
+                : undefined
+            }
+            autoFetch={false}
+          />
+        )}
+
+        {/* Phase 1: Global Event Map + Unified Incident Timeline */}
+        <div className="grid gap-6 lg:grid-cols-3 items-start">
+          <div className="lg:col-span-2">
+            {/* Filter Controls (left column) */}
+            <div ref={filterRef} className="pb-4 space-y-3">
+              {/* Time Filter */}
+              <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-slate-600" />
+                  <span className="text-sm font-medium text-slate-700">Time Period:</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setTimeFilter('24h')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      timeFilter === '24h'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Last 24 Hours
+                  </button>
+                  <button
+                    onClick={() => setTimeFilter('7d')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      timeFilter === '7d'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Last 7 Days
+                  </button>
+                  <button
+                    onClick={() => setTimeFilter('30d')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      timeFilter === '30d'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Last 30 Days
+                  </button>
+                </div>
+              </div>
+
+              {/* Magnitude Filter & Show All */}
+              <div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm border border-slate-200">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-slate-600" />
+                    <span className="text-sm font-medium text-slate-700">Min Magnitude:</span>
+                  </div>
+                  <div className="flex items-center gap-3 flex-1 max-w-md">
+                    <input
+                      type="range"
+                      min="3.0"
+                      max="7.0"
+                      step="0.5"
+                      value={minMagnitude}
+                      onChange={(e) => setMinMagnitude(parseFloat(e.target.value))}
+                      className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                    <span className="text-sm font-semibold text-blue-600 min-w-[3rem]">
+                      M{minMagnitude.toFixed(1)}+
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={showAllEvents}
+                      onChange={(e) => setShowAllEvents(e.target.checked)}
+                      className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm font-medium text-slate-700">
+                      Show All ({totalUnfilteredCount} events)
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <GlobalEventMap
+              events={mapEvents}
+              totalCount={totalUnfilteredCount}
+              height="500px"
+            />
+          </div>
+          <UnifiedIncidentTimeline 
+            events={timelineEvents} 
+            height={`${500 + Math.max(0, filtersHeight)}px`} 
+          />
+        </div>
+
+        {/* Events by Type & Delivery Status - 1/3 and 2/3 */}
+        <div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
+          <EventsByTypeWidget 
+            earthquakes={recentAlerts}
+            tsunamis={tsunamiAlerts}
+            timeRangeExternal={timeFilter}
+            refreshKey={refreshTick}
+          />
+          <div className="lg:col-span-2 flex">
+            <DeliveryStatusWidget timeRangeExternal={timeFilter} refreshKey={refreshTick} />
+          </div>
+        </div>
+
+        {/* New Usability Widgets - Reduced height with scroll */}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="max-h-[400px] overflow-y-auto">
+            <ActiveContactsWidget />
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <FeedStatusWidget refreshKey={refreshTick} />
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <ChannelStatusWidget timeRangeExternal={timeFilter} refreshKey={refreshTick} />
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <TestingControlsWidget />
+          <AuditTrailWidget />
+        </div>
+
+        {/* Maritime Testing Controls */}
+        <MaritimeTestingControls />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="min-h-0" style={{ height: '600px' }}>
+            <RealTimeActivityFeed maxItems={20} autoRefresh={true} refreshInterval={3000} />
+          </div>
+
+          <WidgetCard
+            title="Operations Log"
+            icon={FileText}
+            iconColor="slate"
+            subtitle="Operational events will appear here as actions are performed"
+          >
+            <div className="space-y-3">
+              {operations.length ? (
+                operations.slice(0, 8).map((log) => (
+                  <div key={log.id} className="flex items-start gap-3 rounded-xl border border-slate-200/60 bg-white/90 p-3">
+                    {getToneIcon(log.tone)}
+                    <p className="text-xs text-slate-600">{log.content}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-xl border border-slate-200/60 bg-slate-50 p-4 text-center text-xs text-slate-500">
+                  No operations logged yet
+                </div>
+              )}
+            </div>
+          </WidgetCard>
+        </div>
+
+      </div>
+
+      {/* Phase 2: Quick Action Command Palette (Floating) */}
+      <QuickActionPalette
+        actions={[
+          {
+            id: 'manual-earthquake',
+            label: 'Manual Earthquake Sweep',
+            description: 'Check USGS for new earthquakes',
+            icon: Activity,
+            category: 'monitoring',
+            action: manualCheck
+          },
+          {
+            id: 'manual-tsunami',
+            label: 'Manual Tsunami Sweep',
+            description: 'Check NOAA for new tsunami advisories',
+            icon: Waves,
+            category: 'monitoring',
+            action: manualTsunamiCheck
+          },
+          {
+            id: 'test-sms',
+            label: 'Test SMS Service',
+            description: 'Send test SMS to primary contact',
+            icon: MessageSquare,
+            category: 'alerts',
+            action: testSMSService
+          },
+          {
+            id: 'manage-contacts',
+            label: 'Manage Contacts',
+            description: 'View and edit contact list',
+            icon: Users,
+            category: 'contacts',
+            action: () => window.location.href = '/dashboard/contacts'
+          }
+        ]}
+        onActionExecute={(id) => {
+          logOperation(`Quick action executed: ${id}`, 'info')
+        }}
+      />
+      </AppLayout>
+    </AuthGuard>
+  )
+}

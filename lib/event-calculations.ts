@@ -108,77 +108,14 @@ export const calculateTsunamiETA = (
 }
 
 /**
- * Estimate affected population (simplified)
- * In production, this would query WorldPop API or similar
+ * REMOVED: estimateAffectedPopulation() and generateMockCities()
+ * 
+ * Population impact is now fetched from real APIs:
+ * 1. USGS PAGER (primary) - Official earthquake impact data
+ * 2. GeoNames (fallback) - Real city data with calculated intensity
+ * 
+ * See: /app/api/impact/route.ts for implementation
  */
-export const estimateAffectedPopulation = (
-  radius: ShakingRadius,
-  latitude: number,
-  longitude: number
-): PopulationImpact => {
-  // Simplified population density estimation
-  // Real implementation would use WorldPop, GPW, or similar API
-  
-  // Base population density (people per km²)
-  // This is a very rough estimate - real data would be much more accurate
-  const densityMultiplier = Math.abs(latitude) < 40 ? 150 : 50 // More people near equator
-  
-  const strongArea = Math.PI * Math.pow(radius.strong, 2)
-  const moderateArea = Math.PI * (Math.pow(radius.moderate, 2) - Math.pow(radius.strong, 2))
-  const lightArea = Math.PI * (Math.pow(radius.light, 2) - Math.pow(radius.moderate, 2))
-  
-  const strongPop = Math.round(strongArea * densityMultiplier * 1.5)
-  const moderatePop = Math.round(moderateArea * densityMultiplier)
-  const lightPop = Math.round(lightArea * densityMultiplier * 0.5)
-  
-  // Mock nearby cities (in production, query OpenStreetMap or similar)
-  const cities = generateMockCities(latitude, longitude, radius)
-  
-  return {
-    strongShaking: strongPop,
-    moderateShaking: moderatePop,
-    lightShaking: lightPop,
-    totalAffected: strongPop + moderatePop + lightPop,
-    cities,
-  }
-}
-
-/**
- * Generate mock cities for demonstration
- * In production, query OpenStreetMap Nominatim API
- */
-const generateMockCities = (
-  lat: number,
-  lon: number,
-  radius: ShakingRadius
-): Array<{
-  name: string
-  population: number
-  intensity: 'Strong' | 'Moderate' | 'Light' | 'Weak'
-  distance: number
-}> => {
-  // This is simplified - real implementation would fetch actual city data
-  return [
-    {
-      name: 'Nearby City A',
-      population: 250000,
-      intensity: 'Strong',
-      distance: radius.strong * 0.7,
-    },
-    {
-      name: 'Nearby City B',
-      population: 85000,
-      intensity: 'Moderate',
-      distance: radius.moderate * 0.6,
-    },
-    {
-      name: 'Nearby City C',
-      population: 45000,
-      intensity: 'Light',
-      distance: radius.light * 0.5,
-    },
-  ]
-}
 
 /**
  * Format large numbers with commas

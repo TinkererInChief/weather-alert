@@ -2,15 +2,24 @@
 
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
+// Use CSP-safe worker to comply with our strict security headers (no unsafe-eval)
+// Mapbox provides a dedicated worker build that doesn't rely on eval/Function
+// This prevents generic "Mapbox error" under production CSP
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore - mapbox worker has no types
+import MapboxWorker from 'mapbox-gl/dist/mapbox-gl-csp-worker'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getMagnitudeColor, getDepthColor, getZoomLevel, calculateShakingRadius } from '@/lib/event-calculations'
 import { EventType } from '@/types/event-hover'
 
-// Set your Mapbox token
-// For development, you can use a public token or get one free from mapbox.com
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw'
+// Set your Mapbox token - must be configured in .env.local
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
 
-mapboxgl.accessToken = MAPBOX_TOKEN
+// Configure the CSP-compatible worker
+;(mapboxgl as unknown as { workerClass: unknown }).workerClass = MapboxWorker
+if (MAPBOX_TOKEN) {
+  mapboxgl.accessToken = MAPBOX_TOKEN
+}
 
 type MapPreviewProps = {
   latitude: number
@@ -44,15 +53,26 @@ export default function MapPreview({
   const map = useRef<mapboxgl.Map | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const styleLoadedRef = useRef(false)
+  const hasAnimatedRef = useRef(false)
+  const attemptedStyleFallback = useRef(false)
 
   useEffect(() => {
     if (!mapContainer.current) return
     if (map.current) return // Initialize map only once
 
     // Debug: Log token status
-    if (!MAPBOX_TOKEN || MAPBOX_TOKEN === 'your_mapbox_token_here') {
-      console.warn('⚠️ Mapbox token not configured properly')
+    if (!MAPBOX_TOKEN) {
+      console.error('❌ Mapbox token not found')
       setError('Mapbox token not configured. Please set NEXT_PUBLIC_MAPBOX_TOKEN in your .env.local')
+      setIsLoading(false)
+      return
+    }
+
+    // Validate token format
+    if (!MAPBOX_TOKEN.startsWith('pk.')) {
+      console.error('❌ Invalid Mapbox token format')
+      setError('Invalid Mapbox token format. Token should start with "pk."')
       setIsLoading(false)
       return
     }
@@ -66,7 +86,8 @@ export default function MapPreview({
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: type === 'tsunami' ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/outdoors-v12',
+        // Use outdoors by default to avoid satellite raster permissions
+        style: 'mapbox://styles/mapbox/outdoors-v12',
         center: [longitude, latitude],
         zoom: zoom,
         pitch: 60, // 3D tilt
@@ -76,12 +97,50 @@ export default function MapPreview({
       })
 
       map.current.on('error', (e) => {
-        console.error('❌ Mapbox error:', e)
-        setError('Map failed to load. Check console for details.')
-        setIsLoading(false)
+        // Only treat authentication/CSP failures as fatal; tiles/style network hiccups are non-fatal
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const err: any = (e as unknown as { error?: unknown }).error
+        const status = err?.status ?? err?.statusCode
+        const message: string = (err?.message as string) || ''
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const anyEvent = e as any
+        const sourceId: string | undefined = anyEvent?.sourceId || anyEvent?.source?.id
+
+        const fatalBase = status === 401 || status === 403 || /unauthorized|forbidden|csp/i.test(message)
+        const fatal = fatalBase && sourceId !== 'mapbox-dem'
+        if (fatal) {
+          console.error('❌ Mapbox FATAL error:', { status, message, sourceId, error: e })
+
+          // If satellite tiles are blocked (common with restricted tokens), fallback to vector style
+          const isStyleIssue = /satellite|outdoors|style/i.test(message) || sourceId === 'satellite'
+          if (!attemptedStyleFallback.current && isStyleIssue && map.current) {
+            attemptedStyleFallback.current = true
+            console.warn('🌐 Falling back to streets style due to style/tiles error')
+            map.current.setStyle('mapbox://styles/mapbox/streets-v12')
+            return
+          }
+
+          // As a last resort, surface error with specific details
+          let errorMsg = 'Map failed to load. '
+          if (status === 401) {
+            errorMsg += 'Invalid or expired Mapbox token.'
+          } else if (status === 403) {
+            errorMsg += 'Access denied. Check token permissions.'
+          } else if (/csp/i.test(message)) {
+            errorMsg += 'Content Security Policy blocked the map.'
+          } else {
+            errorMsg += 'Please verify token and try again.'
+          }
+          setError(errorMsg)
+          setIsLoading(false)
+        } else {
+          console.warn('⚠️ Mapbox non-fatal warning:', { status, message, sourceId })
+          // do not block rendering
+        }
       })
 
       map.current.on('style.load', () => {
+        styleLoadedRef.current = true
         console.log('✅ Map style loaded successfully')
       })
     } catch (err) {
@@ -94,29 +153,37 @@ export default function MapPreview({
     map.current.on('load', () => {
       if (!map.current) return
 
-      // Add 3D terrain
-      map.current.addSource('mapbox-dem', {
-        type: 'raster-dem',
-        url: 'mapbox://mapbox.terrain-rgb',
-        tileSize: 512,
-        maxzoom: 14,
-      })
+      // Add 3D terrain (use current DEM tileset). If it fails, continue without terrain.
+      try {
+        map.current.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 14,
+        })
 
-      map.current.setTerrain({
-        source: 'mapbox-dem',
-        exaggeration: 1.5, // Make terrain more dramatic
-      })
+        map.current.setTerrain({
+          source: 'mapbox-dem',
+          exaggeration: 1.5, // Make terrain more dramatic
+        })
+      } catch (demErr) {
+        console.warn('⚠️ DEM/terrain unavailable, continuing without 3D terrain', demErr)
+      }
 
       // Add sky layer for atmosphere
-      map.current.addLayer({
-        id: 'sky',
-        type: 'sky',
-        paint: {
-          'sky-type': 'atmosphere',
-          'sky-atmosphere-sun': [0.0, 0.0],
-          'sky-atmosphere-sun-intensity': 15,
-        },
-      })
+      try {
+        map.current.addLayer({
+          id: 'sky',
+          type: 'sky',
+          paint: {
+            'sky-type': 'atmosphere',
+            'sky-atmosphere-sun': [0.0, 0.0],
+            'sky-atmosphere-sun-intensity': 15,
+          },
+        })
+      } catch (skyErr) {
+        console.warn('⚠️ Sky layer failed to add', skyErr)
+      }
 
       // Add shaking radius circles for earthquakes
       if (type === 'earthquake' && showShakingRadius && shakingRadius) {
@@ -134,6 +201,24 @@ export default function MapPreview({
       // Add depth shaft for earthquakes
       if (type === 'earthquake' && showDepthShaft && depth > 0) {
         addDepthShaft()
+      }
+
+      // Subtle one-time camera motion (wow effect)
+      if (!hasAnimatedRef.current && map.current) {
+        hasAnimatedRef.current = true
+        try {
+          const m = map.current as mapboxgl.Map
+          const baseZoom = m.getZoom()
+          m.easeTo({
+            zoom: baseZoom + 0.5,
+            pitch: Math.min(75, m.getPitch() + 5),
+            bearing: m.getBearing() + 7,
+            duration: 1200,
+            essential: true,
+          })
+        } catch (e) {
+          console.warn('⚠️ Camera animation skipped', e)
+        }
       }
 
       setIsLoading(false)

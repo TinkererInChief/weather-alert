@@ -91,7 +91,7 @@ export async function applySettings(settings: SystemSettings): Promise<void> {
   try {
     // Earthquake monitoring via AlertManager
     const intervalMs = Math.max(10, settings.monitoring.checkInterval) * 1000
-    if (settings.monitoring.earthquakeMonitoring) {
+    if (settings.monitoring.earthquakeMonitoring && process.env.SKIP_MONITORING !== '1' && process.env.SKIP_MONITORING !== 'true') {
       // Ensure interval changes take effect by restarting
       alertManager.stopMonitoring()
       alertManager.startMonitoring(intervalMs)
@@ -119,7 +119,7 @@ export async function applySettings(settings: SystemSettings): Promise<void> {
       },
     })
 
-    if (settings.monitoring.tsunamiMonitoring) {
+    if (settings.monitoring.tsunamiMonitoring && process.env.SKIP_MONITORING !== '1' && process.env.SKIP_MONITORING !== 'true') {
       // Restart to apply new interval
       tsunamiMonitor.stopMonitoring()
       await tsunamiMonitor.startMonitoring()
@@ -150,7 +150,7 @@ export async function initializeSettingsSystem(): Promise<void> {
     const intervalChanged = !oldSettings || 
       oldSettings.monitoring.checkInterval !== newSettings.monitoring.checkInterval
     
-    if (shouldMonitor) {
+    if (shouldMonitor && process.env.SKIP_MONITORING !== '1' && process.env.SKIP_MONITORING !== 'true') {
       if (!wasMonitoring || intervalChanged) {
         alertManager.stopMonitoring()
         alertManager.startMonitoring(intervalMs)
@@ -190,7 +190,7 @@ export async function initializeSettingsSystem(): Promise<void> {
     const intervalChanged = !oldSettings || 
       oldSettings.monitoring.checkInterval !== newSettings.monitoring.checkInterval
     
-    if (shouldMonitor) {
+    if (shouldMonitor && process.env.SKIP_MONITORING !== '1' && process.env.SKIP_MONITORING !== 'true') {
       if (!wasMonitoring || intervalChanged) {
         tsunamiMonitor.stopMonitoring()
         await tsunamiMonitor.startMonitoring()
