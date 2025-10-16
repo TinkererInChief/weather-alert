@@ -15,6 +15,9 @@ export const GET = withPermission(Permission.VIEW_AUDIT_LOGS, async (req, sessio
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
     
+    // Sorting
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+    
     // Filters
     const action = searchParams.get('action')
     const resource = searchParams.get('resource')
@@ -62,7 +65,7 @@ export const GET = withPermission(Permission.VIEW_AUDIT_LOGS, async (req, sessio
           }
         },
         orderBy: {
-          createdAt: 'desc'
+          createdAt: sortOrder
         },
         skip,
         take: limit,

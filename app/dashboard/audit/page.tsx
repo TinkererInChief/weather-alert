@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, Search, Filter, Calendar, User, FileText, Activity, TrendingUp, Clock } from 'lucide-react'
+import { Shield, Search, Filter, Calendar, User, FileText, Activity, TrendingUp, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Can } from '@/components/auth/Can'
@@ -47,11 +47,12 @@ export default function AuditTrailPage() {
     endDate: ''
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   
   useEffect(() => {
     fetchLogs()
     fetchStats()
-  }, [page, filters])
+  }, [page, filters, sortOrder])
   
   const fetchLogs = async () => {
     try {
@@ -59,7 +60,8 @@ export default function AuditTrailPage() {
       
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '50'
+        limit: '50',
+        sortOrder: sortOrder
       })
       
       if (filters.action) params.append('action', filters.action)
@@ -289,8 +291,18 @@ export default function AuditTrailPage() {
                     <table className="w-full">
                       <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            Timestamp
+                          <th 
+                            className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 transition-colors"
+                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span>Timestamp</span>
+                              {sortOrder === 'asc' ? (
+                                <ArrowUp className="h-4 w-4" />
+                              ) : (
+                                <ArrowDown className="h-4 w-4" />
+                              )}
+                            </div>
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                             User
