@@ -58,7 +58,18 @@ LOG_LEVEL=info
 - `REDIS_URL` - Redis connection
 - `PORT` - Application port
 
-## Step 4: Deploy the Application
+## Step 4: Configure Start Command
+
+**IMPORTANT**: Before deploying, configure Railway to use the new start command:
+
+1. Go to Railway Dashboard → Your Project → Settings
+2. Find **"Start Command"** section
+3. Set it to: `pnpm run start:railway`
+4. Click **Save**
+
+This ensures the database schema syncs automatically on every deployment.
+
+## Step 5: Deploy the Application
 
 ```bash
 # Deploy to Railway
@@ -68,15 +79,9 @@ railway up
 railway logs --follow
 ```
 
-## Step 5: Run Database Migration
+## Step 6: Verify Database Schema
 
-```bash
-# Deploy database schema
-railway run pnpm db:deploy
-
-# Seed initial data
-railway run pnpm db:seed
-```
+The `start:railway` command automatically runs `prisma db push` before starting the server, so your database schema will be synced on every deploy. No manual migration needed!
 
 ## Step 6: Verify Deployment
 

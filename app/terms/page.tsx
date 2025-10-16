@@ -123,6 +123,26 @@ export default function TermsOfServicePage() {
                 </p>
               </div>
             </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-slate-900 mb-4">10. Data Sources, JMA Citation & Legal Caveat</h2>
+              <div className="space-y-3 text-slate-700">
+                <p>
+                  We use government and consortium data sources including USGS, NOAA/NWS (PTWC), IRIS, EMSC, and the Japan Meteorological Agency (JMA).
+                  Where required or requested, appropriate attribution is provided on the <a className="text-blue-600 hover:text-blue-700" href="/data-sources">Data Sources</a> page.
+                </p>
+                <p>
+                  <strong>JMA Website Terms of Use.</strong> JMA website content may be used for commercial purposes provided that the source is cited and
+                  edited content is clearly labeled as edited and not created by the Government of Japan. Example: “Source: Japan Meteorological Agency website
+                  (URL of relevant page). Edited for display.” See JMA Terms: <a className="text-blue-600 hover:text-blue-700" href="https://www.jma.go.jp/jma/en/copyright.html" target="_blank" rel="noopener noreferrer">https://www.jma.go.jp/jma/en/copyright.html</a>.
+                </p>
+                <p>
+                  <strong>Meteorological Service Act (Japan).</strong> Use of JMA content may be subject to the Meteorological Service Act, including licensing for
+                  forecasting services and restrictions on issuing “warnings” in Japan (Articles 17 and 23). Our service does not issue official warnings and is not
+                  endorsed by JMA. See: <a className="text-blue-600 hover:text-blue-700" href="https://www.japaneselawtranslation.go.jp/en/laws/view/1968" target="_blank" rel="noopener noreferrer">https://www.japaneselawtranslation.go.jp/en/laws/view/1968</a>.
+                </p>
+              </div>
+            </section>
           </div>
       </PublicPageContent>
     </div>

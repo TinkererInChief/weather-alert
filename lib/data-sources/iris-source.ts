@@ -42,18 +42,16 @@ export class IRISSource extends BaseDataSource {
       // QuakeML is the default but more complex to parse
       const params = new URLSearchParams({
         format: 'text',
-        orderby: 'time-asc'
+        // Request newest first so service can short-circuit sooner
+        orderby: 'time'
       })
       
       // Time window
-      if (options?.timeWindowHours) {
-        const startTime = new Date(Date.now() - options.timeWindowHours * 60 * 60 * 1000)
-        params.append('starttime', startTime.toISOString())
-      } else {
-        // Default: last 24 hours
-        const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000)
-        params.append('starttime', startTime.toISOString())
-      }
+      const windowHours = options?.timeWindowHours ?? 12 // narrow default window
+      const endTime = new Date()
+      const startTime = new Date(endTime.getTime() - windowHours * 60 * 60 * 1000)
+      params.append('starttime', startTime.toISOString())
+      params.append('endtime', endTime.toISOString())
       
       // Magnitude filter
       if (options?.minMagnitude) {
@@ -71,19 +69,22 @@ export class IRISSource extends BaseDataSource {
         params.append('maxlongitude', maxLon.toString())
       }
       
-      // Limit results
-      if (options?.limit) {
-        params.append('limit', options.limit.toString())
-      }
-      
       const response = await fetch(`${this.baseUrl}?${params}`, {
-        signal: AbortSignal.timeout(15000),
+        signal: AbortSignal.timeout(10000),
         headers: {
           'Accept': 'text/plain',
-          'User-Agent': 'EmergencyAlertSystem/1.0'
+          'User-Agent': 'EmergencyAlertSystem/1.0',
+          'Cache-Control': 'no-cache'
         }
       })
       
+      // Treat 204 (no content) and 404 (no data) as empty results
+      if (response.status === 204 || response.status === 404) {
+        this.recordSuccess()
+        this.recordResponseTime(Date.now() - fetchStartTime)
+        return []
+      }
+
       if (!response.ok) {
         throw new Error(`IRIS fetch failed: ${response.status}`)
       }

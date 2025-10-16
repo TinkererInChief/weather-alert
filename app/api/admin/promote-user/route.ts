@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logAudit } from '@/lib/rbac'
 import { Role } from '@/lib/rbac/roles'
 
 /**
@@ -66,20 +67,21 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Create audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'ADMIN_PROMOTE_USER',
-        resource: 'User',
-        resourceId: user.id,
-        metadata: {
-          oldRole: user.role,
-          newRole: role,
-          promotedViaAdminEndpoint: true,
-          timestamp: new Date().toISOString()
-        }
-      }
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = req.headers.get('user-agent') || undefined
+    await logAudit({
+      userId: user.id,
+      action: 'ADMIN_PROMOTE_USER',
+      resource: 'User',
+      resourceId: user.id,
+      metadata: {
+        oldRole: user.role,
+        newRole: role,
+        promotedViaAdminEndpoint: true,
+        timestamp: new Date().toISOString()
+      },
+      ipAddress: ip,
+      userAgent: ua,
     })
 
     return NextResponse.json({

@@ -72,12 +72,15 @@ export const POST = withPermission(Permission.MANAGE_USERS, async (req, session)
       }
     })
     
-    // Log audit event
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = req.headers.get('user-agent') || undefined
     await logAudit({
       action: 'CREATE_USER',
       resource: 'User',
       resourceId: user.id,
-      metadata: { role: user.role, organizationId: user.organizationId }
+      metadata: { role: user.role, organizationId: user.organizationId },
+      ipAddress: ip,
+      userAgent: ua,
     })
     
     return NextResponse.json({

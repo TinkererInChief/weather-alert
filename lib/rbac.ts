@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
+import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { authOptions } from '@/lib/auth'
 
@@ -160,11 +161,15 @@ export function withPermission(
       
       // Check permission
       if (!hasPermission(user.role, requiredPermission)) {
+        const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+        const ua = req.headers.get('user-agent') || undefined
         await logAudit({
           userId: user.id,
           action: 'PERMISSION_DENIED',
           resource: requiredPermission,
-          metadata: { path: req.url }
+          metadata: { path: req.url },
+          ipAddress: ip,
+          userAgent: ua,
         })
         
         return NextResponse.json(
@@ -200,12 +205,20 @@ export async function logAudit(params: {
   resource: string
   resourceId?: string
   metadata?: Record<string, any>
+  ipAddress?: string
+  userAgent?: string
 }) {
   try {
     const session = await getServerSession(authOptions)
     const userId = params.userId || session?.user?.id
     
     if (!userId) return
+    const hdrs = headers()
+    const reqId = hdrs.get('x-request-id') || undefined
+    const ip = params.ipAddress || (hdrs.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = params.userAgent || hdrs.get('user-agent') || undefined
+    const method = hdrs.get('x-method') || undefined
+    const path = hdrs.get('x-path') || undefined
     
     await prisma.auditLog.create({
       data: {
@@ -214,6 +227,11 @@ export async function logAudit(params: {
         resource: params.resource,
         resourceId: params.resourceId,
         metadata: params.metadata || {},
+        ipAddress: ip,
+        userAgent: ua,
+        requestId: reqId,
+        method,
+        path,
       }
     })
   } catch (error) {

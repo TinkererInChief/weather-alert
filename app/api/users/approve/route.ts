@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { logAudit } from '@/lib/rbac'
 
 const approvalSchema = z.object({
   userId: z.string(),
@@ -68,20 +69,21 @@ export async function POST(request: Request) {
       }
     })
 
-    // Log the approval/rejection in audit trail
-    await prisma.auditLog.create({
-      data: {
-        userId: currentUser.id,
-        action: action === 'approve' ? 'USER_APPROVED' : 'USER_REJECTED',
-        resource: 'User',
-        resourceId: userId,
-        metadata: {
-          approvedBy: currentUser.name,
-          userName: updatedUser.name,
-          userEmail: updatedUser.email,
-          rejectionReason: rejectionReason || null
-        }
-      }
+    const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = request.headers.get('user-agent') || undefined
+    await logAudit({
+      userId: currentUser.id,
+      action: action === 'approve' ? 'USER_APPROVED' : 'USER_REJECTED',
+      resource: 'User',
+      resourceId: userId,
+      metadata: {
+        approvedBy: currentUser.name,
+        userName: updatedUser.name,
+        userEmail: updatedUser.email,
+        rejectionReason: rejectionReason || null
+      },
+      ipAddress: ip,
+      userAgent: ua,
     })
 
     // TODO: Send notification to user about approval/rejection

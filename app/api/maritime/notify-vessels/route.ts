@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { hasPermission, Role, Permission } from '@/lib/rbac/roles'
+import { logAudit } from '@/lib/rbac'
 
 export async function POST(req: NextRequest) {
   try {
@@ -54,22 +55,23 @@ export async function POST(req: NextRequest) {
       estimatedVessels: affectedVessels || 0
     })
 
-    // Create audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: currentUser.id,
-        action: 'NOTIFY_MARITIME_VESSELS',
-        resource: 'maritime_alert',
-        resourceId: earthquakeId,
-        metadata: {
-          magnitude,
-          location,
-          impactScore,
-          priority,
-          affectedPorts: affectedPorts?.length || 0,
-          estimatedVessels: affectedVessels || 0
-        }
-      }
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = req.headers.get('user-agent') || undefined
+    await logAudit({
+      userId: currentUser.id,
+      action: 'NOTIFY_MARITIME_VESSELS',
+      resource: 'maritime_alert',
+      resourceId: earthquakeId,
+      metadata: {
+        magnitude,
+        location,
+        impactScore,
+        priority,
+        affectedPorts: affectedPorts?.length || 0,
+        estimatedVessels: affectedVessels || 0
+      },
+      ipAddress: ip,
+      userAgent: ua,
     })
 
     // TODO: Implement actual vessel notification logic

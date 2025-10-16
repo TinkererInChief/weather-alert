@@ -306,11 +306,32 @@ model AuditLog {
   metadata    Json      @default("{}")
   ipAddress   String?
   userAgent   String?
+  eventId     String?   @unique @default(uuid())
+  organizationId String?
+  actorRole   String?
+  actorEmail  String?
+  sessionId   String?
+  requestId   String?
+  traceId     String?
+  service     String?
+  env         String?
+  version     Int?
+  method      String?
+  path        String?
+  httpStatus  Int?
+  success     Boolean?
+  severity    String?
+  category    String?
   createdAt   DateTime  @default(now())
   
   // Relationships
   user        User?     @relation(fields: [userId], references: [id])
   
+  @@index([action, createdAt])
+  @@index([resource, resourceId])
+  @@index([userId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([requestId])
   @@map("audit_logs")
 }
 

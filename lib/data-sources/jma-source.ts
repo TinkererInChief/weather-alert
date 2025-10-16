@@ -13,9 +13,8 @@ export class JMASource extends BaseDataSource {
   readonly coverage = ['Japan', 'Western Pacific', 'East Asia']
   readonly updateFrequency = 60 // seconds
   
-  // JMA provides data through various endpoints
-  // Using their earthquake information feed
-  private readonly baseUrl = 'https://www.data.jma.go.jp/multi/quake/data'
+  private readonly baseUrl = 'https://www.data.jma.go.jp/multi/quake/'
+  private readonly bosaiUrl = 'https://www.jma.go.jp/bosai/quake/data/list.json'
   
   protected async healthCheck(): Promise<void> {
     // Simple health check - try to fetch the main page
@@ -33,47 +32,130 @@ export class JMASource extends BaseDataSource {
     const fetchStartTime = Date.now()
     
     try {
-      // JMA provides earthquake list in JSON format
-      // Note: This is a simplified implementation. In production, you'd need to:
-      // 1. Parse their specific XML/JSON format
-      // 2. Handle Japanese text encoding
-      // 3. Implement proper authentication if required
-      
-      const response = await fetch(`${this.baseUrl}/quake_list.json`, {
-        signal: AbortSignal.timeout(15000),
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'EmergencyAlertSystem/1.0'
+      const parserEnabled = process.env.JMA_PARSER_ENABLED === 'true'
+      if (!parserEnabled) {
+        const response = await fetch(this.baseUrl, {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(8000),
+          headers: {
+            'User-Agent': 'EmergencyAlertSystem/1.0'
+          }
+        })
+        if (response.ok) {
+          this.recordSuccess()
+          this.recordResponseTime(Date.now() - fetchStartTime)
+        } else {
+          this.recordFailure(new Error(`JMA HEAD failed: ${response.status}`))
         }
-      })
-      
-      if (!response.ok) {
-        // JMA might not have a public JSON API - fallback to empty array
-        console.warn(`JMA fetch returned ${response.status}, using fallback`)
-        this.recordSuccess() // Don't count as failure if endpoint doesn't exist
         return []
       }
-      
+
+      const response = await fetch(this.bosaiUrl, {
+        signal: AbortSignal.timeout(10000),
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'EmergencyAlertSystem/1.0',
+          'Cache-Control': 'no-cache'
+        }
+      })
+
+      if (!response.ok) {
+        this.recordFailure(new Error(`JMA bosai fetch failed: ${response.status}`))
+        return []
+      }
+
       const data = await response.json()
-      
       this.recordSuccess()
       this.recordResponseTime(Date.now() - fetchStartTime)
-      
-      // Convert JMA format to our standard format
-      const earthquakes = this.convertJMAToStandard(data, options)
-      
+
+      const earthquakes = this.convertBosaiToStandard(data, options)
       return earthquakes
-      
+
     } catch (error) {
-      // JMA API might not be publicly accessible - log but don't fail
-      console.warn('JMA source unavailable:', error)
       this.recordFailure(error instanceof Error ? error : new Error('Unknown error'))
-      
-      // Return empty array instead of throwing to allow other sources to work
       return []
     }
   }
   
+  private convertBosaiToStandard(data: any, options?: FetchOptions): EarthquakeFeature[] {
+    const arr: any[] = Array.isArray(data) ? data : []
+    const out: EarthquakeFeature[] = []
+    const minMag = options?.minMagnitude || 0
+
+    for (const item of arr) {
+      try {
+        const mag = parseFloat(item.mag || item.magnitude || '0')
+        if (!isFinite(mag) || mag < minMag) continue
+
+        const { lon, lat, depthKm } = this.parseCod(item.cod || '')
+
+        const timeIso: string = item.at || item.rdt || null
+        const timeMs = timeIso ? Date.parse(timeIso) : Date.now()
+        if (!isFinite(timeMs)) continue
+
+        const place: string = item.en_anm || item.anm || 'Japan region'
+        const id: string = String(item.eid || item.ctt || `${timeMs}_${lat}_${lon}`)
+        const detailRel: string | undefined = item.json
+        const detailUrl = detailRel ? `https://www.jma.go.jp/bosai/quake/data/${detailRel}` : 'https://www.jma.go.jp/bosai/quake/'
+
+        const eq: EarthquakeFeature = {
+          type: 'Feature',
+          id: `jma_${id}`,
+          properties: {
+            mag,
+            place,
+            time: timeMs,
+            updated: timeMs,
+            tz: 540,
+            url: 'https://www.jma.go.jp/bosai/quake/',
+            detail: detailUrl,
+            felt: null,
+            cdi: null,
+            mmi: null,
+            alert: null,
+            status: 'reviewed',
+            tsunami: 0,
+            sig: Math.round(mag * 100),
+            net: 'jma',
+            code: String(item.eid || ''),
+            ids: `jma${item.eid || ''}`,
+            sources: 'jma',
+            types: 'origin,magnitude',
+            nst: null,
+            dmin: null,
+            rms: 0,
+            gap: null,
+            magType: 'M',
+            type: 'earthquake',
+            title: `M ${mag.toFixed(1)} - ${place}`
+          },
+          geometry: {
+            type: 'Point',
+            coordinates: [lon, lat, depthKm]
+          }
+        }
+
+        out.push(eq)
+      } catch {
+        continue
+      }
+    }
+
+    return out
+  }
+
+  private parseCod(cod: string): { lon: number; lat: number; depthKm: number } {
+    const m = cod && typeof cod === 'string' ? cod.match(/([+-]\d+\.?\d*)([+-]\d+\.?\d*)([+-]\d+)(?:\/)?/) : null
+    if (m) {
+      const lat = parseFloat(m[1])
+      const lon = parseFloat(m[2])
+      const depthMeters = Math.abs(parseFloat(m[3]))
+      const depthKm = isFinite(depthMeters) ? depthMeters / 1000 : 10
+      return { lon, lat, depthKm }
+    }
+    return { lon: 139.6917, lat: 35.6895, depthKm: 10 }
+  }
+
   private convertJMAToStandard(data: any, options?: FetchOptions): EarthquakeFeature[] {
     // JMA data structure varies - this is a generic parser
     const earthquakes: EarthquakeFeature[] = []

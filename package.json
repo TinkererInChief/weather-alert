@@ -12,6 +12,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "migrate:push": "prisma db push",
     "start": "node .next/standalone/server.js",
+    "start:railway": "prisma db push --accept-data-loss && node .next/standalone/server.js",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

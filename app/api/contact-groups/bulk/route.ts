@@ -23,9 +23,9 @@ export const POST = withPermission(Permission.MANAGE_GROUPS, async (req, session
     
     switch (operation) {
       case 'delete':
-        return await handleBulkDelete(body)
+        return await handleBulkDelete(req, body)
       case 'addMembers':
-        return await handleBulkAddMembers(body)
+        return await handleBulkAddMembers(req, body)
       default:
         return NextResponse.json(
           { success: false, error: 'Invalid operation' },
@@ -41,7 +41,7 @@ export const POST = withPermission(Permission.MANAGE_GROUPS, async (req, session
   }
 })
 
-async function handleBulkDelete(body: any) {
+async function handleBulkDelete(req: NextRequest, body: any) {
   const { groupIds } = BulkDeleteSchema.parse(body)
   
   // Get groups before deletion for audit
@@ -55,14 +55,17 @@ async function handleBulkDelete(body: any) {
     where: { id: { in: groupIds } }
   })
   
-  // Log audit event
+  const ip1 = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+  const ua1 = req.headers.get('user-agent') || undefined
   await logAudit({
     action: 'BULK_DELETE_GROUPS',
     resource: 'ContactGroup',
     metadata: { 
       count: result.count,
       groups: groups.map(g => ({ id: g.id, name: g.name }))
-    }
+    },
+    ipAddress: ip1,
+    userAgent: ua1,
   })
   
   return NextResponse.json({
@@ -73,7 +76,7 @@ async function handleBulkDelete(body: any) {
   })
 }
 
-async function handleBulkAddMembers(body: any) {
+async function handleBulkAddMembers(req: NextRequest, body: any) {
   const { groupId, contactIds } = BulkAddMembersSchema.parse(body)
   
   // Check if group exists
@@ -97,7 +100,8 @@ async function handleBulkAddMembers(body: any) {
     skipDuplicates: true
   })
   
-  // Log audit event
+  const ip2 = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+  const ua2 = req.headers.get('user-agent') || undefined
   await logAudit({
     action: 'BULK_ADD_MEMBERS',
     resource: 'ContactGroup',
@@ -105,7 +109,9 @@ async function handleBulkAddMembers(body: any) {
     metadata: { 
       groupName: group.name,
       contactsAdded: result.count
-    }
+    },
+    ipAddress: ip2,
+    userAgent: ua2,
   })
   
   return NextResponse.json({

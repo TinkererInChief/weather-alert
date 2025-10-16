@@ -225,7 +225,9 @@ async function checkExternalServicesHealth() {
   const emscUrl = 'https://www.seismicportal.eu/fdsnws/event/1/query?limit=1&format=json'
   const jmaUrl = 'https://www.data.jma.go.jp/svd/eew/data/hypo/index.html'
   const ptwcUrl = 'https://www.tsunami.gov/'
-  const irisUrl = 'https://service.iris.edu/fdsnws/event/1/query?limit=1&format=json'
+  const irisStart = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+  const irisUrl = `https://service.iris.edu/fdsnws/event/1/query?format=text&starttime=${encodeURIComponent(irisStart)}&nodata=204`
+  const jmaEnabled = process.env.JMA_ENABLED === 'true'
 
   const results = await Promise.all([
     (async () => {
@@ -299,6 +301,9 @@ async function checkExternalServicesHealth() {
     })(),
 
     (async () => {
+      if (!jmaEnabled) {
+        return { status: 'warning', latencyMs: null, configured: false, statusCode: undefined, message: 'JMA disabled by feature flag' }
+      }
       const result = await time(async () => fetchWithTimeout(jmaUrl, {}, 5000))
       if (!result.ok) {
         return { status: 'warning', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'JMA request failed' }
@@ -319,7 +324,7 @@ async function checkExternalServicesHealth() {
     })(),
 
     (async () => {
-      const result = await time(async () => fetchWithTimeout(irisUrl, {}, 5000))
+      const result = await time(async () => fetchWithTimeout(irisUrl, {}, 8000))
       if (!result.ok) {
         return { status: 'warning', latencyMs: result.ms, configured: true, statusCode: undefined, error: (result.error as Error).message, message: 'IRIS request failed' }
       }
@@ -357,7 +362,12 @@ async function checkSystemHealth() {
 
   // Memory health assessment
   const heapUsagePercent = (memUsage.heapUsed / memUsage.heapTotal) * 100
-  const memoryStatus = heapUsagePercent > 90 ? 'unhealthy' : heapUsagePercent > 70 ? 'warning' : 'healthy'
+  const heapUsedMB = memoryMB.heapUsed
+  const memoryStatus = (heapUsagePercent > 95 && heapUsedMB > 256)
+    ? 'unhealthy'
+    : (heapUsagePercent > 80)
+      ? 'warning'
+      : 'healthy'
 
   return {
     status: memoryStatus,

@@ -151,6 +151,7 @@ type TimelineEvent = {
   depth?: number
   threatLevel?: string
   ocean?: string
+  source?: string
 }
 
 type StatsApiResponse = {
@@ -825,7 +826,8 @@ export default function Dashboard() {
       latitude: alert.latitude,
       longitude: alert.longitude,
       magnitude: alert.magnitude,
-      depth: alert.depth
+      depth: alert.depth,
+      source: (alert.primarySource || (alert.dataSources && alert.dataSources[0]) || '').toLowerCase()
     }))
 
     const tsunamiEvents = (tsunamiStats?.recentAlerts ?? []).map((alert) => ({

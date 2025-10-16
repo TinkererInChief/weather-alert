@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { Role, Permission, hasPermission, hasAnyPermission, hasAllPermissions } from './roles'
 import { prisma } from '@/lib/prisma'
+import { logAudit as baseLogAudit } from '@/lib/rbac'
 
 /**
  * Extended session type with RBAC fields
@@ -248,16 +249,13 @@ export async function logAudit(params: {
   userAgent?: string
 }) {
   const session = await getAuthorizedSession()
-  
-  await prisma.auditLog.create({
-    data: {
-      userId: session?.user.id,
-      action: params.action,
-      resource: params.resource,
-      resourceId: params.resourceId,
-      metadata: params.metadata || {},
-      ipAddress: params.ipAddress,
-      userAgent: params.userAgent,
-    }
+  await baseLogAudit({
+    userId: session?.user.id,
+    action: params.action,
+    resource: params.resource,
+    resourceId: params.resourceId,
+    metadata: params.metadata,
+    ipAddress: params.ipAddress,
+    userAgent: params.userAgent,
   })
 }

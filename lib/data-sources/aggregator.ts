@@ -25,10 +25,11 @@ export class DataAggregator {
   
   constructor() {
     // Initialize all data sources
+    const jmaEnabled = process.env.JMA_ENABLED === 'true'
     this.sources = [
       new USGSSource(),
       new EMSCSource(),
-      new JMASource(),
+      ...(jmaEnabled ? [new JMASource()] : []),
       new IRISSource()
     ]
     

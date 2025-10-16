@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Role } from '@/lib/rbac/roles'
+import { logAudit } from '@/lib/rbac'
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,15 +38,16 @@ export async function POST(req: NextRequest) {
       data: { isActive }
     })
 
-    // Create audit log
-    await prisma.auditLog.create({
-      data: {
-        userId: currentUser.id,
-        action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
-        resource: 'user',
-        resourceId: userId,
-        metadata: { isActive }
-      }
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = req.headers.get('user-agent') || undefined
+    await logAudit({
+      userId: currentUser.id,
+      action: isActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER',
+      resource: 'user',
+      resourceId: userId,
+      metadata: { isActive },
+      ipAddress: ip,
+      userAgent: ua,
     })
 
     return NextResponse.json({ success: true, user: updatedUser })

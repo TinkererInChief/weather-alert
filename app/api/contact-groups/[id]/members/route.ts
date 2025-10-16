@@ -71,7 +71,8 @@ export async function POST(req: NextRequest, context: RouteContext) {
         }
       })
       
-      // Log audit event
+      const ip1 = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+      const ua1 = req.headers.get('user-agent') || undefined
       await logAudit({
         action: 'ADD_GROUP_MEMBERS',
         resource: 'ContactGroup',
@@ -80,7 +81,9 @@ export async function POST(req: NextRequest, context: RouteContext) {
           groupName: group.name,
           contactsAdded: result.count,
           contactIds
-        }
+        },
+        ipAddress: ip1,
+        userAgent: ua1,
       })
       
       return NextResponse.json({
@@ -148,7 +151,8 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
         }
       })
       
-      // Log audit event
+      const ip2 = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+      const ua2 = req.headers.get('user-agent') || undefined
       await logAudit({
         action: 'REMOVE_GROUP_MEMBERS',
         resource: 'ContactGroup',
@@ -157,7 +161,9 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
           groupName: group.name,
           contactsRemoved: result.count,
           contactIds
-        }
+        },
+        ipAddress: ip2,
+        userAgent: ua2,
       })
       
       return NextResponse.json({

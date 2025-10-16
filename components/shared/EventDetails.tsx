@@ -244,6 +244,17 @@ export default function EventDetails({
         </div>
       )}
 
+      {isEarthquake(event) && event.source && event.source.toLowerCase() === 'jma' && (
+        <div className="border-t border-slate-200 pt-3">
+          <div className="flex items-start gap-2 text-xs">
+            <Info className="h-3.5 w-3.5 text-slate-500 flex-shrink-0 mt-0.5" />
+            <div className="text-slate-600">
+              <span className="font-semibold">JMA Notice:</span> This is not an official warning and is not endorsed by the Japan Meteorological Agency (JMA). Source: JMA website (edited/aggregated).
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

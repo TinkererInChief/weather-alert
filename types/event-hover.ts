@@ -15,6 +15,7 @@ export type EarthquakeEvent = {
   felt?: number
   cdi?: number
   mmi?: number
+  source?: string
 }
 
 export type TsunamiEvent = {
@@ -28,6 +29,7 @@ export type TsunamiEvent = {
   ocean: string
   type?: string
   eventId?: string
+  source?: string
 }
 
 export type EventHoverData = EarthquakeEvent | TsunamiEvent

@@ -45,12 +45,15 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
         data: { role }
       })
       
-      // Log audit event
+      const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+      const ua = req.headers.get('user-agent') || undefined
       await logAudit({
         action: 'UPDATE_USER_ROLE',
         resource: 'User',
         resourceId: id,
-        metadata: { oldRole: user.role, newRole: role }
+        metadata: { oldRole: user.role, newRole: role },
+        ipAddress: ip,
+        userAgent: ua,
       })
       
       return NextResponse.json({

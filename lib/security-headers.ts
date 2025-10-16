@@ -46,6 +46,7 @@ class SecurityHeadersService {
         'https://www.seismicportal.eu',
         'https://www.tsunami.gov',
         'https://www.data.jma.go.jp',
+        'https://www.jma.go.jp',
       ]
     },
     hsts: {

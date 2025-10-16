@@ -79,12 +79,15 @@ export const POST = withPermission(Permission.MANAGE_GROUPS, async (req, session
       }
     })
     
-    // Log audit event
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = req.headers.get('user-agent') || undefined
     await logAudit({
       action: 'CREATE_GROUP',
       resource: 'ContactGroup',
       resourceId: group.id,
-      metadata: { name: group.name }
+      metadata: { name: group.name },
+      ipAddress: ip,
+      userAgent: ua,
     })
     
     return NextResponse.json({

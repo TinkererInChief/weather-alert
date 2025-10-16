@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { logAudit } from '@/lib/rbac'
 import { z } from 'zod'
 
 const registerSchema = z.object({
@@ -47,19 +48,20 @@ export async function POST(request: Request) {
     // TODO: Send notification to admins about new registration
     // This would typically send an email to all SUPER_ADMIN or ORG_ADMIN users
     
-    // Log the registration in audit trail
-    await prisma.auditLog.create({
-      data: {
-        userId: user.id,
-        action: 'USER_REGISTERED',
-        resource: 'User',
-        resourceId: user.id,
-        metadata: {
-          name: user.name,
-          email: user.email,
-          phone: user.phone
-        }
-      }
+    const ip = (request.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+    const ua = request.headers.get('user-agent') || undefined
+    await logAudit({
+      userId: user.id,
+      action: 'USER_REGISTERED',
+      resource: 'User',
+      resourceId: user.id,
+      metadata: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      },
+      ipAddress: ip,
+      userAgent: ua,
     })
 
     return NextResponse.json({

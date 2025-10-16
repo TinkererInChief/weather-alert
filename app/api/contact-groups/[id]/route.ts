@@ -106,7 +106,8 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
         }
       })
       
-      // Log audit event
+      const ip1 = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+      const ua1 = req.headers.get('user-agent') || undefined
       await logAudit({
         action: 'UPDATE_GROUP',
         resource: 'ContactGroup',
@@ -114,7 +115,9 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
         metadata: { 
           oldName: existing.name,
           newName: group.name 
-        }
+        },
+        ipAddress: ip1,
+        userAgent: ua1,
       })
       
       return NextResponse.json({
@@ -169,7 +172,8 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
         where: { id }
       })
       
-      // Log audit event
+      const ip2 = (req.headers.get('x-forwarded-for') || '').split(',')[0] || undefined
+      const ua2 = req.headers.get('user-agent') || undefined
       await logAudit({
         action: 'DELETE_GROUP',
         resource: 'ContactGroup',
@@ -177,7 +181,9 @@ export async function DELETE(req: NextRequest, context: RouteContext) {
         metadata: { 
           name: existing.name,
           memberCount: existing._count.members
-        }
+        },
+        ipAddress: ip2,
+        userAgent: ua2,
       })
       
       return NextResponse.json({

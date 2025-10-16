@@ -4,10 +4,16 @@ import { withAuth } from 'next-auth/middleware'
 export default withAuth(
   function middleware(request) {
     const { pathname } = request.nextUrl
-
-    // Do not intercept /api/health; let the real route handlers respond
-
-    return NextResponse.next()
+    const rid = request.headers.get('x-request-id') || crypto.randomUUID()
+    const headers = new Headers(request.headers)
+    headers.set('x-request-id', rid)
+    headers.set('x-method', request.method)
+    headers.set('x-path', pathname)
+    const res = NextResponse.next({ request: { headers } })
+    res.headers.set('x-request-id', rid)
+    res.headers.set('x-method', request.method)
+    res.headers.set('x-path', pathname)
+    return res
   },
   {
     callbacks: {

@@ -25,6 +25,7 @@ type TimelineEvent = {
   severity?: number
   threatLevel?: string
   ocean?: string
+  source?: string
 }
 
 type UnifiedIncidentTimelineProps = {
@@ -158,7 +159,8 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
                   longitude: event.longitude,
                   depth: event.depth || 0,
                   time: event.timestamp,
-                  place: event.subtitle
+                  place: event.subtitle,
+                  source: event.source
                 } as EarthquakeEvent
               } else if (event.type === 'tsunami' && event.latitude !== undefined && event.longitude !== undefined) {
                 hoverEvent = {
