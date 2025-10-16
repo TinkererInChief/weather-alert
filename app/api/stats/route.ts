@@ -94,14 +94,50 @@ async function getTsunamiStats() {
       totalAlerts,
       alertsLast24h,
       alertsLast7d,
-      recentAlerts: recentAlerts.map(alert => ({
-        id: alert.id,
-        type: alert.alertType,
-        severity: alert.severityLevel,
-        title: (alert.rawData as any)?.title || 'Tsunami Alert',
-        location: (alert.rawData as any)?.location || 'Unknown',
-        timestamp: alert.createdAt
-      })),
+      recentAlerts: recentAlerts.map(alert => {
+        const rawData = (alert.rawData as any) || {}
+        const description = rawData.description || ''
+        
+        // Parse earthquake details from description
+        const magMatch = description.match(/Magnitude:\s*([\d.]+)/)
+        const latLonMatch = description.match(/Lat\/Lon:\s*([\d.-]+)\s*\/\s*([\d.-]+)/)
+        const regionMatch = description.match(/Affected Region:\s*([^N]+?)(?:\s*Note:|$)/)
+        
+        const magnitude = magMatch ? parseFloat(magMatch[1]) : undefined
+        const latitude = latLonMatch ? parseFloat(latLonMatch[1]) : undefined
+        const longitude = latLonMatch ? parseFloat(latLonMatch[2]) : undefined
+        const location = regionMatch ? regionMatch[1].trim() : (rawData.location || 'Unknown')
+        
+        // Extract ocean from location
+        const oceans = ['Pacific', 'Atlantic', 'Indian', 'Arctic', 'Southern']
+        let ocean = 'Unknown'
+        for (const o of oceans) {
+          if (location.includes(o)) {
+            ocean = `${o} Ocean`
+            break
+          }
+        }
+        
+        // Determine threat level
+        const noTsunami = description.includes('NO tsunami') || 
+                         description.includes('no tsunami danger') ||
+                         description.includes('not expected to generate a tsunami')
+        const threatLevel = noTsunami ? 'info' : (alert.severityLevel >= 3 ? 'warning' : alert.severityLevel >= 2 ? 'watch' : 'advisory')
+        
+        return {
+          id: alert.id,
+          type: alert.alertType,
+          severity: alert.severityLevel,
+          title: rawData.title || `M${magnitude || '?'} Earthquake ${noTsunami ? '(No Tsunami)' : ''}`,
+          location,
+          timestamp: alert.createdAt,
+          latitude,
+          longitude,
+          magnitude,
+          threatLevel,
+          ocean
+        }
+      }),
       alertsByLevel: alertsByLevel.reduce((acc, item) => {
         acc[item.alertType] = item._count.alertType
         return acc

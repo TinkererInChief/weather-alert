@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Search, Command, Zap, Pause, Play, History, Users, Download, Activity, Settings } from 'lucide-react'
 
 type Action = {
@@ -19,6 +20,7 @@ type QuickActionPaletteProps = {
 }
 
 export default function QuickActionPalette({ actions = [], onActionExecute }: QuickActionPaletteProps) {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -66,7 +68,7 @@ export default function QuickActionPalette({ actions = [], onActionExecute }: Qu
       icon: Users,
       shortcut: 'C',
       category: 'contacts',
-      action: () => console.log('Manage contacts')
+      action: () => router.push('/dashboard/contacts')
     },
     {
       id: 'export-contacts',

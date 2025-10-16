@@ -14,7 +14,7 @@ import {
   Info,
   ArrowRight
 } from 'lucide-react'
-import { EarthquakeEvent, TsunamiEvent, PopulationImpact, TsunamiETAData } from '@/types/event-hover'
+import { EarthquakeEvent, TsunamiEvent, PopulationImpact } from '@/types/event-hover'
 import { 
   getMagnitudeColor, 
   getDepthColor, 
@@ -26,14 +26,12 @@ type EventDetailsProps = {
   event: EarthquakeEvent | TsunamiEvent
   type: 'earthquake' | 'tsunami'
   populationImpact?: PopulationImpact
-  tsunamiETA?: TsunamiETAData
 }
 
 export default function EventDetails({ 
   event, 
   type, 
-  populationImpact,
-  tsunamiETA 
+  populationImpact
 }: EventDetailsProps) {
   const eventTime = new Date(event.time)
 
@@ -75,24 +73,7 @@ export default function EventDetails({
         </div>
       </div>
 
-      {/* Tsunami ETA Warning (if applicable) */}
-      {tsunamiETA && (
-        <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 animate-pulse">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <div className="font-bold text-red-900">
-                ⚠️ ETA: {tsunamiETA.countdown} minutes
-              </div>
-              <div className="text-sm text-red-700 mt-1">
-                <div>Distance: {formatNumber(tsunamiETA.distance)} km</div>
-                <div>Wave Speed: ~{tsunamiETA.waveSpeed} km/h</div>
-                <div>Estimated Arrival: {format(tsunamiETA.eta, 'h:mm a')}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      
 
       {/* Core Details Grid */}
       <div className="grid grid-cols-2 gap-3">
@@ -263,17 +244,6 @@ export default function EventDetails({
         </div>
       )}
 
-      {/* View Details Button */}
-      <div className="border-t border-slate-200 pt-3">
-        <Link
-          href={type === 'earthquake' ? '/dashboard/alerts' : '/dashboard/tsunami'}
-          className="w-full py-2 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium text-sm transition-colors flex items-center justify-center gap-2"
-        >
-          <TrendingUp className="h-4 w-4" />
-          View Full Details
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </div>
     </div>
   )
 }

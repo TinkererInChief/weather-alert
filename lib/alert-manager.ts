@@ -5,6 +5,7 @@ import { EarthquakeFeature } from '@/types/earthquake'
 import { TsunamiService } from './services/tsunami-service'
 import { voiceService, VoiceAlertType } from './voice-service'
 import { NotificationService } from './services/notification-service'
+import AlertQueue from './queue/alert-queue'
 import { prisma } from './prisma'
 
 export class AlertManager {
@@ -404,7 +405,7 @@ Emergency Alert System`
     tsunamiThreat: any,
     severity: number
   ): Promise<{ totalSuccessful: number; errorSummary?: string }> {
-    console.log(`📢 Sending multi-channel alerts (severity: ${severity}) to ${contacts.length} contacts`)
+    console.log(`📢 Enqueuing multi-channel alerts (severity: ${severity}) to ${contacts.length} contacts`)
 
     // Create an AlertJob to anchor DeliveryLog rows
     const alertJob = await prisma.alertJob.create({
@@ -414,7 +415,7 @@ Emergency Alert System`
         severity,
         priority: 1,
         targetingSnapshot: { contacts: contacts.length },
-        status: 'processing',
+        status: 'queued',
         scheduledFor: new Date(),
         startedAt: new Date(),
         metadata: {
@@ -424,113 +425,74 @@ Emergency Alert System`
       }
     })
 
-    const channelStats = {
-      sms: { successful: 0, failed: 0 },
-      email: { successful: 0, failed: 0 },
-      whatsapp: { successful: 0, failed: 0 },
-      voice: { successful: 0, failed: 0 }
-    }
+    const queue = AlertQueue.getInstance()
 
+    const enqueued: Array<{ contactId: string; channel: string }> = []
     const errors: string[] = []
 
-    // Process each contact
     for (const contact of contacts) {
-      // Get preferred channels based on severity (async; respects settings + priorities)
       const preferredChannels = await this.notificationService.getPreferredChannels(contact, severity)
       console.log(`📋 Contact ${contact.name}: using channels [${preferredChannels.join(', ')}]`)
 
-      // Create template data with enhanced variables
       const templateData = {
         type: 'earthquake',
         severity: severity,
         data: {
-          // Contact information
           contactName: contact.name,
           contactId: contact.id,
-          
-          // Earthquake details
           magnitude: earthquake.properties.mag,
           location: earthquake.properties.place,
           depth: Math.round(earthquake.geometry?.coordinates?.[2] || 0),
           timestamp: new Date(earthquake.properties.time).toLocaleString(),
           time: new Date(earthquake.properties.time).toISOString(),
           title: earthquake.properties.title || `M${earthquake.properties.mag} - ${earthquake.properties.place}`,
-          
-          // Tsunami information
           tsunamiLevel: tsunamiThreat.level,
           tsunamiConfidence: Math.round((tsunamiThreat.confidence || 0) * 100),
           tsunamiWarning: tsunamiThreat.level !== 'INFORMATION' 
             ? `⚠️ ${this.getTsunamiEmoji(tsunamiThreat.level)} TSUNAMI THREAT: ${tsunamiThreat.level}`
             : '',
-          
-          // Action instructions
           instructions: this.getTsunamiGuidance(tsunamiThreat.level),
-          
-          // URLs
           detailsUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/alerts`,
           preferencesUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard/contacts`,
-          
-          // Emergency information
           emergencyNumber: this.getEmergencyNumber(contact.country || 'US')
         }
       }
 
-      // Send notifications for each preferred channel
       for (const channel of preferredChannels) {
         try {
-          const result = await this.notificationService.sendNotification({
-            contact,
-            channel: channel as 'sms' | 'email' | 'whatsapp' | 'voice',
+          await queue.addAlert({
+            alertJobId: alertJob.id,
+            contactId: contact.id,
+            channel: channel as 'sms'|'email'|'whatsapp'|'voice',
             templateData,
-            alertJobId: alertJob.id
+            priority: severity,
           })
-
-          if (result.success) {
-            channelStats[channel as keyof typeof channelStats].successful++
-          } else {
-            channelStats[channel as keyof typeof channelStats].failed++
-            if (result.error) {
-              errors.push(`${channel} to ${contact.name}: ${result.error}`)
-            }
-          }
-        } catch (error) {
-          channelStats[channel as keyof typeof channelStats].failed++
-          errors.push(`${channel} to ${contact.name}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          enqueued.push({ contactId: contact.id, channel })
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          errors.push(`${channel} to ${contact.name}: ${msg}`)
         }
       }
     }
 
-    // Calculate totals and create summary
-    const totalSuccessful = Object.values(channelStats).reduce((sum, stat) => sum + stat.successful, 0)
-    const totalFailed = Object.values(channelStats).reduce((sum, stat) => sum + stat.failed, 0)
-
-    console.log(`📊 Multi-channel results: ${totalSuccessful} successful, ${totalFailed} failed`)
-    console.log(`📊 By channel: SMS(${channelStats.sms.successful}/${channelStats.sms.successful + channelStats.sms.failed}), ` +
-                `Email(${channelStats.email.successful}/${channelStats.email.successful + channelStats.email.failed}), ` +
-                `WhatsApp(${channelStats.whatsapp.successful}/${channelStats.whatsapp.successful + channelStats.whatsapp.failed}), ` +
-                `Voice(${channelStats.voice.successful}/${channelStats.voice.successful + channelStats.voice.failed})`)
-
-    // Update AlertJob status summary
     try {
       await prisma.alertJob.update({
         where: { id: alertJob.id },
         data: {
-          status: totalSuccessful > 0 && totalFailed === 0 ? 'completed' : (totalSuccessful > 0 ? 'completed' : 'failed'),
-          completedAt: new Date(),
-          errorMessage: errors.length > 0 ? errors.slice(0, 5).join('; ') : null,
+          status: enqueued.length > 0 ? 'queued' : 'failed',
           metadata: {
             ...(alertJob as any).metadata,
-            channelStats,
-            totals: { totalSuccessful, totalFailed }
+            enqueued: { count: enqueued.length },
+            errors: errors.slice(0, 5),
           }
         }
       })
     } catch (e) {
-      console.warn('⚠️ Failed to update AlertJob summary:', e)
+      console.warn('⚠️ Failed to update AlertJob queued summary:', e)
     }
 
     return {
-      totalSuccessful,
+      totalSuccessful: enqueued.length,
       errorSummary: errors.length > 0 ? errors.slice(0, 3).join('; ') + (errors.length > 3 ? '...' : '') : undefined
     }
   }

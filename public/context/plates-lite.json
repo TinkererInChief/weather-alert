@@ -1,0 +1,6 @@
+[
+  { "name": "Pacific Plate", "bboxes": [[-180, -60, -60, 60], [150, -60, 180, 60]] },
+  { "name": "North American Plate", "bbox": [-170, 5, -50, 85] },
+  { "name": "Eurasian Plate", "bbox": [-10, 20, 180, 80] },
+  { "name": "Indo-Australian Plate", "bbox": [90, -60, 160, 10] }
+]

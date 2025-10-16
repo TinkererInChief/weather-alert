@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { log } from '@/lib/logger'
 import { voiceService, VoiceAlertType } from '@/lib/voice-service'
 import { prisma } from '@/lib/prisma'
 import { protectTestEndpoint } from '@/lib/test-protection'
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log(`📞 Making test voice call to ${phoneNumber}`)
+    log.info(`Making test voice call`, { phoneNumber })
 
     // Make test voice call
     const result = await voiceService.makeVoiceCall(
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Error making test voice call:', error)
+    log.error('Error making test voice call', error)
     
     return NextResponse.json({
       success: false,
@@ -116,7 +117,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('❌ Error getting test info:', error)
+    log.error('Error getting voice test info', error)
     
     return NextResponse.json({
       success: false,

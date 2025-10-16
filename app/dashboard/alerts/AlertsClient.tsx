@@ -9,7 +9,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { 
   AlertTriangle, Clock, MapPin, Activity, Globe, CheckCircle, XCircle,
-  TrendingUp, Users, BarChart3, Filter, RefreshCw, Download, Search, X
+  TrendingUp, Users, BarChart3, Filter, RefreshCw, Download, Search, X, ChevronUp, ChevronDown
 } from 'lucide-react'
 import TimeRangeSwitcher from '@/components/status/TimeRangeSwitcher'
 import { Can } from '@/components/auth/Can'
@@ -97,6 +97,8 @@ export default function EarthquakeMonitoringPage() {
     endDate: ''
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [sortColumn, setSortColumn] = useState<'timestamp' | 'magnitude' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
   // Shared state
   const [refreshing, setRefreshing] = useState(false)
@@ -962,14 +964,44 @@ export default function EarthquakeMonitoringPage() {
                       <table className="w-full table-fixed">
                         <thead className="bg-slate-50 border-b border-slate-200">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[20%]">
-                              Timestamp
+                            <th 
+                              className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[20%] cursor-pointer hover:bg-slate-100 transition-colors"
+                              onClick={() => {
+                                if (sortColumn === 'timestamp') {
+                                  setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+                                } else {
+                                  setSortColumn('timestamp')
+                                  setSortDirection('desc')
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                Timestamp
+                                {sortColumn === 'timestamp' && (
+                                  sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                                )}
+                              </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[36%]">
                               Location
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[12%]">
-                              Magnitude
+                            <th 
+                              className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[12%] cursor-pointer hover:bg-slate-100 transition-colors"
+                              onClick={() => {
+                                if (sortColumn === 'magnitude') {
+                                  setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+                                } else {
+                                  setSortColumn('magnitude')
+                                  setSortDirection('desc')
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                Magnitude
+                                {sortColumn === 'magnitude' && (
+                                  sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                                )}
+                              </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[12%]">
                               Depth
@@ -983,7 +1015,18 @@ export default function EarthquakeMonitoringPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {analyticsAlerts.map((alert) => {
+                          {[...analyticsAlerts].sort((a, b) => {
+                            if (!sortColumn) return 0
+                            if (sortColumn === 'timestamp') {
+                              const timeA = new Date(a.timestamp).getTime()
+                              const timeB = new Date(b.timestamp).getTime()
+                              return sortDirection === 'asc' ? timeA - timeB : timeB - timeA
+                            }
+                            if (sortColumn === 'magnitude') {
+                              return sortDirection === 'asc' ? a.magnitude - b.magnitude : b.magnitude - a.magnitude
+                            }
+                            return 0
+                          }).map((alert) => {
                             const earthquakeEvent: EarthquakeEvent = {
                               id: alert.id,
                               magnitude: alert.magnitude,

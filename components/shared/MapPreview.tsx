@@ -2,24 +2,33 @@
 
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
-// Use CSP-safe worker to comply with our strict security headers (no unsafe-eval)
-// Mapbox provides a dedicated worker build that doesn't rely on eval/Function
-// This prevents generic "Mapbox error" under production CSP
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore - mapbox worker has no types
-import MapboxWorker from 'mapbox-gl/dist/mapbox-gl-csp-worker'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { getMagnitudeColor, getDepthColor, getZoomLevel, calculateShakingRadius } from '@/lib/event-calculations'
 import { EventType } from '@/types/event-hover'
 
-// Set your Mapbox token - must be configured in .env.local
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || ''
+// Use CSP-safe worker to comply with our strict security headers (no unsafe-eval)
+// Mapbox provides a dedicated worker build that doesn't rely on eval/Function
+// This prevents generic "Mapbox error" under production CSP
+if (typeof window !== 'undefined') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - CommonJS export without types
+    const workerModule = require('mapbox-gl/dist/mapbox-gl-csp-worker')
+    const WorkerConstructor = workerModule?.default ?? workerModule
 
-// Configure the CSP-compatible worker
-;(mapboxgl as unknown as { workerClass: unknown }).workerClass = MapboxWorker
-if (MAPBOX_TOKEN) {
-  mapboxgl.accessToken = MAPBOX_TOKEN
+    if (typeof WorkerConstructor === 'function') {
+      ;(mapboxgl as unknown as { workerClass: unknown }).workerClass = WorkerConstructor
+      console.log('✅ Mapbox CSP worker loaded successfully')
+    } else {
+      console.warn('⚠️ Mapbox CSP worker module did not export a constructor, falling back to default worker', workerModule)
+    }
+  } catch (err) {
+    console.warn('⚠️ Could not load Mapbox CSP worker, using default (may have CSP issues):', err)
+  }
 }
+
+let cachedToken: string | null = null
+let tokenPromise: Promise<string> | null = null
 
 type MapPreviewProps = {
   latitude: number
@@ -36,6 +45,7 @@ type MapPreviewProps = {
   showDepthShaft?: boolean
   showShakingRadius?: boolean
   showTsunamiRipples?: boolean
+  locationLabel?: string
 }
 
 export default function MapPreview({
@@ -48,53 +58,118 @@ export default function MapPreview({
   showDepthShaft = true,
   showShakingRadius = true,
   showTsunamiRipples = false,
+  locationLabel,
 }: MapPreviewProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null)
   const styleLoadedRef = useRef(false)
   const hasAnimatedRef = useRef(false)
   const attemptedStyleFallback = useRef(false)
+  const isInitializedRef = useRef(false)
+  const [contextSummary, setContextSummary] = useState<string>('')
+  const [mapReady, setMapReady] = useState(false)
 
+  // Step 1: Fetch the token from our API when the component mounts
   useEffect(() => {
-    if (!mapContainer.current) return
-    if (map.current) return // Initialize map only once
+    async function ensureToken() {
+      try {
+        if (cachedToken) {
+          mapboxgl.accessToken = cachedToken
+          setMapboxToken(cachedToken)
+          return
+        }
 
-    // Debug: Log token status
-    if (!MAPBOX_TOKEN) {
-      console.error('❌ Mapbox token not found')
-      setError('Mapbox token not configured. Please set NEXT_PUBLIC_MAPBOX_TOKEN in your .env.local')
-      setIsLoading(false)
-      return
+        if (!tokenPromise) {
+          tokenPromise = (async () => {
+            const response = await fetch('/api/mapbox-token')
+            if (!response.ok) {
+              const errorData = await response.json()
+              throw new Error(errorData.error || 'Failed to fetch Mapbox token')
+            }
+            const data = await response.json()
+            const token = data.token
+
+            if (!token || !token.startsWith('pk.')) {
+              throw new Error('Invalid or missing Mapbox token from API.')
+            }
+
+            cachedToken = token
+            mapboxgl.accessToken = token
+            return token
+          })()
+        }
+
+        const token = await tokenPromise
+        setMapboxToken(token)
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.'
+        console.error('❌ Failed to fetch or set Mapbox token:', errorMessage)
+        setError(`Could not retrieve Mapbox token: ${errorMessage}`)
+        setIsLoading(false)
+      } finally {
+        tokenPromise = null
+      }
     }
 
-    // Validate token format
-    if (!MAPBOX_TOKEN.startsWith('pk.')) {
-      console.error('❌ Invalid Mapbox token format')
-      setError('Invalid Mapbox token format. Token should start with "pk."')
-      setIsLoading(false)
+    ensureToken()
+  }, [])
+
+  // Step 2: Initialize the map only after the token has been fetched
+  useEffect(() => {
+    if (!mapboxToken || !mapContainer.current) {
+      console.log('⏸️ Map init skipped:', { hasToken: !!mapboxToken, hasContainer: !!mapContainer.current })
       return
     }
+    if (map.current) {
+      console.log('⏸️ Map already initialized, skipping')
+      return // Initialize map only once
+    }
 
-    console.log('🗺️ Initializing map with token:', MAPBOX_TOKEN.substring(0, 20) + '...')
+    console.log('🗺️ Initializing map with fetched token...', { lat: latitude, lng: longitude, mag: magnitude })
 
     // Calculate zoom based on magnitude
-    const zoom = getZoomLevel(magnitude)
+    const targetZoom = Math.min(9, getZoomLevel(magnitude) + 0.4)
+    const introZoom = Math.max(1.5, targetZoom - 2.2)
 
     // Initialize map with error handling
     try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        // Use outdoors by default to avoid satellite raster permissions
-        style: 'mapbox://styles/mapbox/outdoors-v12',
-        center: [longitude, latitude],
-        zoom: zoom,
-        pitch: 60, // 3D tilt
-        bearing: -17.6, // Slight rotation
-        projection: 'globe' as any,
-        interactive: false, // Disable user interaction (static preview)
-      })
+      // Set the access token before creating the map
+      if (!mapboxgl.accessToken) {
+        console.log('🔑 Setting Mapbox access token')
+        mapboxgl.accessToken = mapboxToken
+      }
+
+      // Try with full 3D configuration first
+      try {
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          // Use outdoors by default to avoid satellite raster permissions
+          style: 'mapbox://styles/mapbox/outdoors-v12',
+          center: [longitude, latitude],
+          zoom: introZoom,
+          pitch: 0,
+          bearing: 0,
+          projection: 'globe' as any,
+          interactive: false, // Disable user interaction (static preview)
+        })
+        console.log('✅ Map instance created successfully with globe projection')
+      } catch (projErr) {
+        console.warn('⚠️ Globe projection failed, falling back to standard projection:', projErr)
+        // Fallback to standard projection if globe is not supported
+        map.current = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/mapbox/outdoors-v12',
+          center: [longitude, latitude],
+          zoom: introZoom,
+          pitch: 0,
+          bearing: 0,
+          interactive: false,
+        })
+        console.log('✅ Map instance created successfully with standard projection')
+      }
 
       map.current.on('error', (e) => {
         // Only treat authentication/CSP failures as fatal; tiles/style network hiccups are non-fatal
@@ -142,16 +217,91 @@ export default function MapPreview({
       map.current.on('style.load', () => {
         styleLoadedRef.current = true
         console.log('✅ Map style loaded successfully')
+
+        try {
+          map.current?.setFog({
+            color: 'rgba(186, 230, 253, 0.6)',
+            'high-color': 'rgba(14, 116, 144, 0.4)',
+            'space-color': 'rgba(11, 15, 25, 1)',
+            'star-intensity': 0.15,
+          })
+          map.current?.setLight({
+            color: '#fff4e6',
+            intensity: 0.7,
+            position: [1.15, 210, 45],
+          })
+        } catch (fogErr) {
+          console.warn('⚠️ Unable to configure atmospheric fog/lighting', fogErr)
+        }
+      })
+
+      // Fallback: If map doesn't load within 5 seconds, hide loading state anyway
+      const loadingTimeout = setTimeout(() => {
+        console.warn('⚠️ Map load timeout reached, hiding loading state')
+        setIsLoading(false)
+      }, 5000)
+
+      // Clear timeout when map actually loads
+      map.current.once('load', () => {
+        clearTimeout(loadingTimeout)
+      })
+
+      // Also try 'idle' event as fallback (fires when tiles finish loading)
+      map.current.once('idle', () => {
+        console.log('✅ Map idle event fired')
+        setIsLoading(false)
       })
     } catch (err) {
       console.error('❌ Failed to initialize map:', err)
-      setError('Unable to initialize map')
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error('❌ Error details:', { 
+        error: errorMessage, 
+        hasToken: !!mapboxToken,
+        hasContainer: !!mapContainer.current,
+        latitude,
+        longitude
+      })
+      setError(`Unable to initialize map: ${errorMessage}`)
       setIsLoading(false)
       return
     }
 
     map.current.on('load', () => {
+      console.log('🎉 Map load event fired!')
       if (!map.current) return
+      
+      // Hide loading immediately when map loads, don't wait for all layers
+      setIsLoading(false)
+      setMapReady(true)
+
+      const m = map.current
+      const finalBearing = (m.getBearing() + 25 + Math.random() * 20) % 360
+      const finalPitch = Math.min(75, 45 + Math.random() * 20)
+
+      try {
+        m.flyTo({
+          center: [longitude, latitude],
+          zoom: targetZoom,
+          bearing: finalBearing,
+          pitch: finalPitch,
+          padding: { top: 40, bottom: 40, left: 40, right: 40 },
+          speed: 0.65,
+          curve: 1.5,
+          easing: (t) => 1 - Math.pow(1 - t, 2.2),
+          essential: true,
+        })
+      } catch (flyErr) {
+        console.warn('⚠️ FlyTo animation unavailable, using easeTo fallback', flyErr)
+        m.easeTo({
+          center: [longitude, latitude],
+          zoom: targetZoom,
+          bearing: finalBearing,
+          pitch: finalPitch,
+          padding: { top: 40, bottom: 40, left: 40, right: 40 },
+          duration: 1700,
+          easing: (t) => t * (2 - t),
+        })
+      }
 
       // Add 3D terrain (use current DEM tileset). If it fails, continue without terrain.
       try {
@@ -187,20 +337,37 @@ export default function MapPreview({
 
       // Add shaking radius circles for earthquakes
       if (type === 'earthquake' && showShakingRadius && shakingRadius) {
-        addShakingRadiusCircles(shakingRadius)
+        try {
+          addShakingRadiusCircles(shakingRadius)
+        } catch (err) {
+          console.warn('⚠️ Failed to add shaking radius circles:', err)
+        }
       }
 
       // Add tsunami ripples
       if (type === 'tsunami' && showTsunamiRipples) {
-        addTsunamiRipples()
+        try {
+          addTsunamiRipples()
+        } catch (err) {
+          console.warn('⚠️ Failed to add tsunami ripples:', err)
+        }
       }
 
       // Add epicenter marker
-      addEpicenterMarker()
+      try {
+        addEpicenterMarker()
+        addContextAnnotation()
+      } catch (err) {
+        console.warn('⚠️ Failed to add epicenter marker or context label:', err)
+      }
 
       // Add depth shaft for earthquakes
       if (type === 'earthquake' && showDepthShaft && depth > 0) {
-        addDepthShaft()
+        try {
+          addDepthShaft()
+        } catch (err) {
+          console.warn('⚠️ Failed to add depth shaft:', err)
+        }
       }
 
       // Subtle one-time camera motion (wow effect)
@@ -221,17 +388,23 @@ export default function MapPreview({
         }
       }
 
-      setIsLoading(false)
+      console.log('✅ All map layers and features added successfully')
     })
 
-    // Cleanup
-    return () => {
+    // Cleanup function - properly scoped
+    const cleanup = () => {
       if (map.current) {
+        console.log('🧹 Cleaning up map instance')
         map.current.remove()
         map.current = null
+        isInitializedRef.current = false
       }
     }
-  }, [])
+
+    return cleanup
+    // Only re-initialize if core location/token changes, not on every prop change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapboxToken, latitude, longitude])
 
   const addEpicenterMarker = () => {
     if (!map.current) return
@@ -269,11 +442,58 @@ export default function MapPreview({
       .addTo(map.current)
   }
 
+  const addContextAnnotation = () => {
+    if (!map.current) return
+
+    const contextText = buildContextSummary()
+    setContextSummary(contextText)
+
+    const labelEl = document.createElement('div')
+    labelEl.className = 'map-context-label'
+    labelEl.style.cssText = `
+      background: rgba(15, 23, 42, 0.72);
+      color: white;
+      border-radius: 14px;
+      padding: 10px 16px;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 220px;
+      box-shadow: 0 12px 32px rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    `
+    labelEl.innerHTML = contextText.replace(/\n/g, '<br />')
+
+    const label = new mapboxgl.Marker({ element: labelEl, anchor: 'top-left' })
+      .setLngLat([longitude + 1.2, latitude + 0.5])
+      .addTo(map.current)
+
+    map.current.once('idle', () => {
+      const bounds = new mapboxgl.LngLatBounds()
+      bounds.extend([longitude, latitude])
+      bounds.extend([longitude + 2.5, latitude + 1.4])
+      map.current?.fitBounds(bounds, {
+        padding: { top: 36, bottom: 48, left: 36, right: 36 },
+        duration: 1200,
+        easing: (t) => 1 - Math.pow(1 - t, 3),
+      })
+    })
+  }
+
   const addDepthShaft = () => {
     if (!map.current) return
 
+    const sourceId = 'depth-shaft'
+    const layerId = 'depth-shaft-layer'
+
+    // Check if source already exists
+    if (map.current.getSource(sourceId)) {
+      console.log('⚠️ Depth shaft already exists, skipping')
+      return
+    }
+
     // Add 3D line from surface to hypocenter
-    map.current.addSource('depth-shaft', {
+    map.current.addSource(sourceId, {
       type: 'geojson',
       data: {
         type: 'Feature',
@@ -291,9 +511,9 @@ export default function MapPreview({
     })
 
     map.current.addLayer({
-      id: 'depth-shaft-layer',
+      id: layerId,
       type: 'line',
-      source: 'depth-shaft',
+      source: sourceId,
       layout: {
         'line-join': 'round',
         'line-cap': 'round',
@@ -318,6 +538,12 @@ export default function MapPreview({
     circles.forEach((circle, index) => {
       const sourceId = `circle-${index}`
       
+      // Skip if source already exists
+      if (map.current!.getSource(sourceId)) {
+        console.log(`⚠️ Circle source ${sourceId} already exists, skipping`)
+        return
+      }
+
       map.current!.addSource(sourceId, {
         type: 'geojson',
         data: createGeoJSONCircle([longitude, latitude], circle.radius),
@@ -357,6 +583,12 @@ export default function MapPreview({
       
       setTimeout(() => {
         if (!map.current) return
+        
+        // Skip if source already exists
+        if (map.current.getSource(sourceId)) {
+          console.log(`⚠️ Ripple source ${sourceId} already exists, skipping`)
+          return
+        }
         
         map.current.addSource(sourceId, {
           type: 'geojson',
@@ -417,8 +649,44 @@ export default function MapPreview({
           <div className="text-xs text-slate-600">Loading map...</div>
         </div>
       )}
+
+      {mapReady && contextSummary && (
+        <div className="absolute bottom-3 left-3 max-w-[250px] rounded-xl bg-white/85 text-slate-900 p-3 text-xs shadow-lg border border-slate-200">
+          <div className="font-semibold text-slate-800 mb-1">Regional context</div>
+          <div className="leading-relaxed whitespace-pre-line">{contextSummary}</div>
+        </div>
+      )}
     </div>
   )
+}
+
+const buildContextSummary = (options?: {
+  latitude?: number
+  longitude?: number
+  locationLabel?: string
+}): string => {
+  const lat = options?.latitude ?? 0
+  const lng = options?.longitude ?? 0
+  const label = options?.locationLabel ?? 'Event location'
+
+  const latText = formatCoordinate(lat, 'N', 'S')
+  const lngText = formatCoordinate(lng, 'E', 'W')
+  const hemisphere = `${lat >= 0 ? 'Northern' : 'Southern'} • ${lng >= 0 ? 'Eastern' : 'Western'} Hemisphere`
+
+  return `${label}\n${latText}, ${lngText}\n${hemisphere}`
+}
+
+const formatCoordinate = (value: number, positiveSuffix: string, negativeSuffix: string) => {
+  const abs = Math.abs(value)
+  const degrees = Math.floor(abs)
+  const minutesFloat = (abs - degrees) * 60
+  const minutes = Math.floor(minutesFloat)
+  const seconds = Math.round((minutesFloat - minutes) * 60)
+  const suffix = value >= 0 ? positiveSuffix : negativeSuffix
+
+  return `${degrees.toString().padStart(2, '0')}°${minutes.toString().padStart(2, '0')}'${seconds
+    .toString()
+    .padStart(2, '0')}" ${suffix}`
 }
 
 // Helper function to create GeoJSON circle

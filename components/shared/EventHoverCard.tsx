@@ -1,14 +1,14 @@
 'use client'
 
-import React, { ReactNode, useState, useEffect } from 'react'
+import React, { ReactNode, useState, useEffect, useRef } from 'react'
 import * as Popover from '@radix-ui/react-popover'
 import { motion, AnimatePresence } from 'framer-motion'
-import MapPreview from './MapPreview'
+import ShareEventButton from './ShareEventButton'
+import LeafletPreview from './LeafletPreview'
 import EventDetails from './EventDetails'
 import { EarthquakeEvent, TsunamiEvent, EventType } from '@/types/event-hover'
 import { 
-  calculateShakingRadius, 
-  calculateTsunamiETA 
+  calculateShakingRadius 
 } from '@/lib/event-calculations'
 
 type EventHoverCardProps = {
@@ -31,6 +31,22 @@ export default function EventHoverCard({
   const [open, setOpen] = useState(false)
   const [populationImpact, setPopulationImpact] = useState<any | undefined>(undefined)
   const [impactLoading, setImpactLoading] = useState(false)
+  const leaveTimer = useRef<number | null>(null)
+
+  const openNow = () => {
+    if (leaveTimer.current !== null) {
+      clearTimeout(leaveTimer.current)
+      leaveTimer.current = null
+    }
+    setOpen(true)
+  }
+
+  const closeWithDelay = () => {
+    if (leaveTimer.current !== null) {
+      clearTimeout(leaveTimer.current)
+    }
+    leaveTimer.current = window.setTimeout(() => setOpen(false), 120)
+  }
 
   // Check if event has valid coordinates (not 0,0 which is invalid)
   const hasCoordinates = event.latitude !== undefined && 
@@ -101,18 +117,7 @@ export default function EventHoverCard({
   // Placeholder for shakingRadius until it's needed from the API
   const shakingRadius = isEarthquake(event) ? calculateShakingRadius(event.magnitude, event.depth) : undefined;
 
-  // Calculate tsunami ETA if target location provided
-  let tsunamiETA
-  if (type === 'tsunami' && tsunamiTargetLocation) {
-    tsunamiETA = calculateTsunamiETA(
-      event.latitude!,
-      event.longitude!,
-      tsunamiTargetLocation.latitude,
-      tsunamiTargetLocation.longitude,
-      new Date(event.time)
-    )
-    tsunamiETA.targetLocation = tsunamiTargetLocation.name
-  }
+  
 
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -125,14 +130,14 @@ export default function EventHoverCard({
                 if (childProps?.onMouseEnter) {
                   childProps.onMouseEnter(e)
                 }
-                setOpen(true)
+                openNow()
               },
               onMouseLeave: (e: any) => {
                 const childProps = (children as any).props
                 if (childProps?.onMouseLeave) {
                   childProps.onMouseLeave(e)
                 }
-                setOpen(false)
+                closeWithDelay()
               },
               // merge classes safely
               className: [
@@ -143,8 +148,8 @@ export default function EventHoverCard({
             })
           : (
             <span
-              onMouseEnter={() => setOpen(true)}
-              onMouseLeave={() => setOpen(false)}
+              onMouseEnter={openNow}
+              onMouseLeave={closeWithDelay}
               className="transition-colors cursor-pointer"
             >
               {children}
@@ -157,8 +162,8 @@ export default function EventHoverCard({
           <Popover.Portal forceMount>
 
             <Popover.Content
-              side="right"
-              sideOffset={20}
+              side="top"
+              sideOffset={2}
               align="center"
               collisionPadding={{
                 top: 20,
@@ -167,44 +172,44 @@ export default function EventHoverCard({
                 left: 20
               }}
               avoidCollisions={true}
-              sticky="always"
+              sticky="partial"
               className="z-[9999] will-change-transform"
-              onMouseEnter={() => setOpen(true)}
-              onMouseLeave={() => setOpen(false)}
+              onMouseEnter={openNow}
+              onMouseLeave={closeWithDelay}
               onOpenAutoFocus={(e) => e.preventDefault()}
               onCloseAutoFocus={(e) => e.preventDefault()}
             >
               <motion.div
-                initial={{ opacity: 0, scale: 0.96, x: -8 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.96, x: -8 }}
-                transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="w-[420px] max-h-[80vh] bg-white rounded-lg shadow-2xl border border-slate-200 overflow-hidden"
+                initial={{ opacity: 0, scale: 0.96, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.96, y: 8 }}
+                className="w-[380px] max-w-[calc(100vw-40px)] max-h-[85vh] bg-white rounded-lg shadow-2xl border border-slate-200 overflow-hidden flex flex-col"
                 style={{
                   boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 40px rgba(0, 0, 0, 0.05)',
                 }}
               >
-                {/* Map Preview */}
-                <MapPreview
-                  latitude={event.latitude!}
-                  longitude={event.longitude!}
-                  magnitude={isEarthquake(event) ? event.magnitude : undefined}
-                  depth={isEarthquake(event) ? event.depth : undefined}
-                  type={type}
-                  shakingRadius={shakingRadius}
-                  showDepthShaft={type === 'earthquake' && isEarthquake(event)}
-                  showShakingRadius={type === 'earthquake' && !!shakingRadius}
-                  showTsunamiRipples={type === 'tsunami'}
-                />
-
-                {/* Event Details - Scrollable */}
-                <div className="overflow-y-auto max-h-[calc(80vh-250px)]">
-                  <EventDetails
-                    event={event}
+                <div className="flex-shrink-0">
+                  <LeafletPreview
+                    latitude={event.latitude!}
+                    longitude={event.longitude!}
+                    magnitude={isEarthquake(event) ? event.magnitude : undefined}
+                    depth={isEarthquake(event) ? event.depth : undefined}
                     type={type}
-                    populationImpact={impactLoading ? { loading: true } : populationImpact}
-                    tsunamiETA={tsunamiETA}
+                    shakingRadius={shakingRadius}
+                    showDepthShaft={type === 'earthquake' && isEarthquake(event)}
+                    showTsunamiRipples={type === 'tsunami'}
+                    locationLabel={event.location}
                   />
+                </div>
+
+                {/* Event Details */}
+                <div className="p-4 overflow-y-auto flex-1 min-h-0">
+                  <EventDetails event={event} type={type} />
+
+                  {/* Share Event Button */}
+                  <div className="mt-4">
+                    <ShareEventButton event={event} />
+                  </div>
                 </div>
               </motion.div>
             </Popover.Content>

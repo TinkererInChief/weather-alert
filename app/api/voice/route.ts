@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { log } from '@/lib/logger'
 import { voiceService, VoiceAlertType } from '@/lib/voice-service'
 import { prisma } from '@/lib/prisma'
 
@@ -26,7 +27,7 @@ export async function GET() {
     })
 
   } catch (error) {
-    console.error('❌ Error getting voice service info:', error)
+    log.error('Error getting voice service info', error)
     
     return NextResponse.json({
       success: false,
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    console.log(`📞 Making voice call to ${phoneNumber} for ${alertType}`)
+    log.info('Making voice call', { phoneNumber, alertType })
 
     const result = await voiceService.makeVoiceCall(
       phoneNumber,
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('❌ Error making voice call:', error)
+    log.error('Error making voice call', error)
     
     return NextResponse.json({
       success: false,

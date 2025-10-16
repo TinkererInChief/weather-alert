@@ -22,14 +22,15 @@ export async function GET(req: NextRequest) {
     const periodMs = period === '7d' ? 7 * 24 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000
     const fromTs = now - periodMs
     
-    // Calculate uptime percentage
+    // Calculate uptime percentage across core services
+    const coreServices = ['database','redis','usgs','noaa','emsc','jma','ptwc','iris']
     const snapshots = await (prisma as any).healthSnapshot.findMany({
       where: {
         createdAt: { gte: new Date(fromTs) },
-        service: 'database', // Use database as overall indicator
+        service: { in: coreServices as any },
       },
       orderBy: { createdAt: 'asc' },
-      select: { status: true },
+      select: { status: true, service: true },
     })
     
     const healthyCount = snapshots.filter((s: any) => s.status === 'healthy').length

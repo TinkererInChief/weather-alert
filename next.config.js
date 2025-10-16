@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
   output: 'standalone',
-  transpilePackages: ['lucide-react', 'react-map-gl', 'mapbox-gl'],
+  transpilePackages: ['lucide-react'],
   eslint: {
     // Temporarily disabled due to styling warnings - can be re-enabled after cleanup
     ignoreDuringBuilds: true,
@@ -9,13 +10,13 @@ const nextConfig = {
   async headers() {
     const csp = [
       "default-src 'self'",
-      // Mapbox + APIs + inline styles for Tailwind preflight utilities
-      "script-src 'self' 'unsafe-inline' https://api.mapbox.com blob:",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.mapbox.com",
+      // Allow inline styles for Tailwind preflight utilities
+      "script-src 'self' 'unsafe-inline'",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
-      "font-src 'self' https://fonts.gstatic.com https://api.mapbox.com",
-      // Enhanced Mapbox CSP: include all tile subdomains and APIs
-      "connect-src 'self' https://*.mapbox.com https://api.mapbox.com https://events.mapbox.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      // Allow connections to required external APIs and captcha
+      "connect-src 'self' https://api.usgs.gov https://earthquake.usgs.gov https://api.weather.gov https://www.tsunami.gov https://hcaptcha.com https://*.hcaptcha.com https://service.iris.edu https://www.seismicportal.eu https://www.data.jma.go.jp https://api.sendgrid.com https://api.twilio.com",
       "worker-src 'self' blob:",
       "frame-src 'self' https://hcaptcha.com https://*.hcaptcha.com",
       "object-src 'none'",
@@ -34,6 +35,15 @@ const nextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(self)' }
         ]
       }
+    ]
+  },
+  async redirects() {
+    return [
+      {
+        source: '/contacts',
+        destination: '/contact',
+        permanent: true,
+      },
     ]
   },
   webpack: (config) => {

@@ -837,7 +837,12 @@ export default function Dashboard() {
       severity: alert.severity,
       status: String(alert.type || 'UNKNOWN').toUpperCase(),
       success: alert.severity < 3,
-      details: undefined
+      details: undefined,
+      latitude: (alert as any).latitude,
+      longitude: (alert as any).longitude,
+      magnitude: (alert as any).magnitude,
+      threatLevel: (alert as any).threatLevel,
+      ocean: (alert as any).ocean
     }))
 
     return [...earthquakeEvents, ...tsunamiEvents]

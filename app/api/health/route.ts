@@ -1,6 +1,7 @@
 import { checkDatabaseConnection, prisma } from '@/lib/prisma'
 import RedisConnection from '@/lib/queue/redis-connection'
 import type Redis from 'ioredis'
+import { initializeApp } from '@/lib/init'
 // Avoid direct enum type imports to prevent build issues on some environments
 
 // Lazy getter for ioredis client (Railway Redis)
@@ -15,6 +16,8 @@ export async function HEAD() {
 
 export async function GET(request: Request) {
   const startTime = Date.now()
+  
+  await initializeApp().catch(() => {})
   
   try {
     const url = new URL(request.url)
@@ -408,17 +411,22 @@ async function persistHealthSnapshots(checks: any) {
 
   push('database', db)
   push('redis', redis)
-  push('sms', svc.twilio)
-  push('email', svc.sendgrid)
+  const twilio = svc.twilio
+  const sendgrid = svc.sendgrid
+  if (sendgrid?.configured !== false) {
+    push('email', sendgrid)
+  }
+  if (twilio?.configured !== false) {
+    push('sms', twilio)
+    push('whatsapp', twilio)
+    push('voice', twilio)
+  }
   push('usgs', svc.usgs)
   push('noaa', svc.noaa)
   push('emsc', svc.emsc)
   push('jma', svc.jma)
   push('ptwc', svc.ptwc)
   push('iris', svc.iris)
-  // Derive WhatsApp and Voice from Twilio as well
-  push('whatsapp', svc.twilio)
-  push('voice', svc.twilio)
 
   // Cast to any to avoid enum typing issues at build time
   await (prisma as any).healthSnapshot.createMany({ data: records as any })

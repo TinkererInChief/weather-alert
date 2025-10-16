@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { log } from '@/lib/logger'
 import { alertManager } from '@/lib/alert-manager'
 
 export async function POST() {
@@ -16,7 +17,7 @@ export async function POST() {
       }))
     })
   } catch (error) {
-    console.error('Error checking for earthquakes:', error)
+    log.error('Error checking for earthquakes', error)
     
     return NextResponse.json(
       {

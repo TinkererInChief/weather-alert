@@ -1,13 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Activity, CheckCircle, XCircle, AlertTriangle, Clock, Wifi, Database, Globe, Phone, Mail, MessageSquare, MessageCircle, Shield } from 'lucide-react'
+import { Activity, CheckCircle, XCircle, AlertTriangle, Shield } from 'lucide-react'
 import RangeSwitcher from '@/components/status/RangeSwitcher'
-import LatencyChart from '@/components/status/LatencyChart'
-import StatusTimeline, { TimelinePoint } from '@/components/status/StatusTimeline'
+import AggregatedStatusTimeline from '@/components/status/AggregatedStatusTimeline'
 import HeroMetrics from '@/components/status/HeroMetrics'
-import IncidentTimeline from '@/components/status/IncidentTimeline'
-import TrendIndicator from '@/components/status/TrendIndicator'
+
+type TimelinePoint = {
+  time: number
+  worstStatus: 'healthy' | 'warning' | 'critical'
+  count: number
+}
 import Link from 'next/link'
 import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
 import { formatTime } from '@/lib/date-utils'
@@ -20,15 +23,6 @@ type HistoryPoint = {
   latencyP50?: number
   latencyP95?: number
   latencyP99?: number
-}
-
-type SystemEvent = {
-  id: string
-  service?: string
-  eventType: string
-  severity: string
-  message: string
-  createdAt: string
 }
 
 type HeroMetricsData = {
@@ -64,9 +58,7 @@ export default function SystemStatusPage() {
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [range, setRange] = useState<'60m' | '24h' | '7d'>('60m')
-  const [latencyHistory, setLatencyHistory] = useState<Partial<Record<'database' | 'redis' | 'sms' | 'email' | 'whatsapp' | 'voice' | 'usgs' | 'noaa', HistoryPoint[]>>>({})
-  const [uptimeTimeline, setUptimeTimeline] = useState<Partial<Record<'database' | 'redis' | 'sms' | 'email' | 'whatsapp' | 'voice' | 'usgs' | 'noaa', TimelinePoint[]>>>({})
-  const [events, setEvents] = useState<SystemEvent[]>([])
+  const [uptimeTimeline, setUptimeTimeline] = useState<Partial<Record<'database' | 'redis' | 'sms' | 'email' | 'whatsapp' | 'voice' | 'usgs' | 'noaa' | 'emsc' | 'jma' | 'ptwc' | 'iris', TimelinePoint[]>>>({})
   const [heroMetrics, setHeroMetrics] = useState<HeroMetricsData | null>(null)
 
   const formatLatency = (ms: unknown) =>
@@ -74,15 +66,15 @@ export default function SystemStatusPage() {
 
   useEffect(() => {
     fetchSystemStatus()
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchSystemStatus, 30000)
+    // Silent refresh every 30 seconds (no loading state)
+    const interval = setInterval(() => fetchSystemStatus(true), 30000)
     return () => clearInterval(interval)
   }, [])
 
   // Fetch history + uptime for selected range
   useEffect(() => {
     let active = true
-    const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa'
+    const servicesParam = 'database,redis,sms,email,whatsapp,voice,usgs,noaa,emsc,jma,ptwc,iris'
     const load = async () => {
       try {
         const [histRes, upRes] = await Promise.all([
@@ -92,31 +84,13 @@ export default function SystemStatusPage() {
         const hist: any = await histRes.json()
         const up: any = await upRes.json()
         if (!active) return
-        if (hist?.series) {
-          const mapSeries = (key: keyof typeof latencyHistory) => {
-            const arr = (hist.series[key] as Array<{ time: number; latencyAvg?: number; latencyP50?: number; latencyP95?: number; latencyP99?: number }> | undefined) || []
-            return arr.map(p => ({
-              time: Number(p.time),
-              latency: typeof p.latencyAvg === 'number' ? p.latencyAvg : undefined,
-              latencyP50: typeof p.latencyP50 === 'number' ? p.latencyP50 : undefined,
-              latencyP95: typeof p.latencyP95 === 'number' ? p.latencyP95 : undefined,
-              latencyP99: typeof p.latencyP99 === 'number' ? p.latencyP99 : undefined
-            }))
-          }
-          setLatencyHistory({
-            database: mapSeries('database'),
-            redis: mapSeries('redis'),
-            sms: mapSeries('sms'),
-            email: mapSeries('email'),
-            whatsapp: mapSeries('whatsapp'),
-            voice: mapSeries('voice'),
-            usgs: mapSeries('usgs'),
-            noaa: mapSeries('noaa'),
-          })
-        }
+        
+        console.log('Uptime API response:', up)
+        console.log('Timeline data:', up?.timeline)
+        
         if (up?.timeline) {
           const tl = (key: keyof typeof uptimeTimeline) => (up.timeline[key] as TimelinePoint[] | undefined) || []
-          setUptimeTimeline({
+          const newTimeline = {
             database: tl('database'),
             redis: tl('redis'),
             sms: tl('sms'),
@@ -125,36 +99,25 @@ export default function SystemStatusPage() {
             voice: tl('voice'),
             usgs: tl('usgs'),
             noaa: tl('noaa'),
-          })
+            emsc: tl('emsc'),
+            jma: tl('jma'),
+            ptwc: tl('ptwc'),
+            iris: tl('iris'),
+          }
+          console.log('Setting uptime timeline:', newTimeline)
+          setUptimeTimeline(newTimeline)
+        } else {
+          console.warn('No timeline data in uptime response')
         }
       } catch (e) {
         console.error('Failed to load history/uptime', e)
       }
     }
     load()
+    // Silent refresh every 30 seconds
     const id = setInterval(load, 30000)
     return () => { active = false; clearInterval(id) }
   }, [range])
-
-  // Fetch recent events
-  useEffect(() => {
-    let active = true
-    const loadEvents = async () => {
-      try {
-        const res = await fetch('/api/health/events?limit=10', { cache: 'no-store' })
-        const data = await res.json()
-        if (active && data?.events) {
-          setEvents(data.events)
-        }
-      } catch (e) {
-        console.error('Failed to load health events', e)
-      }
-    }
-
-    loadEvents()
-    const id = setInterval(loadEvents, 30000)
-    return () => { active = false; clearInterval(id) }
-  }, [])
 
   // Fetch hero metrics
   useEffect(() => {
@@ -176,11 +139,12 @@ export default function SystemStatusPage() {
     return () => { active = false; clearInterval(id) }
   }, [])
 
-  const fetchSystemStatus = async () => {
+  const fetchSystemStatus = async (silent = false) => {
     try {
-      setLoading(true)
+      if (!silent) setLoading(true)
+      const healthUrl = silent ? '/api/health?detailed=true&record=true' : '/api/health?detailed=true'
       const [healthRes, statsRes] = await Promise.all([
-        fetch('/api/health?detailed=true', { cache: 'no-store' }),
+        fetch(healthUrl, { cache: 'no-store' }),
         fetch('/api/stats', { cache: 'no-store' })
       ])
 
@@ -283,7 +247,7 @@ export default function SystemStatusPage() {
     } catch (error) {
       console.error('Failed to fetch system status:', error)
     } finally {
-      setLoading(false)
+      if (!silent) setLoading(false)
     }
   }
 
@@ -292,7 +256,7 @@ export default function SystemStatusPage() {
       case 'healthy': return <CheckCircle className="h-5 w-5 text-green-500" />
       case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-500" />
       case 'critical': return <XCircle className="h-5 w-5 text-red-500" />
-      default: return <Clock className="h-5 w-5 text-gray-400" />
+      default: return <Activity className="h-5 w-5 text-gray-400" />
     }
   }
 
@@ -305,17 +269,6 @@ export default function SystemStatusPage() {
     }
   }
 
-  const getServiceIcon = (service: string) => {
-    switch (service) {
-      case 'database': return <Database className="h-6 w-6" />
-      case 'usgs': return <Globe className="h-6 w-6" />
-      case 'sms': return <MessageSquare className="h-6 w-6" />
-      case 'email': return <Mail className="h-6 w-6" />
-      case 'whatsapp': return <MessageCircle className="h-6 w-6" />
-      case 'voice': return <Phone className="h-6 w-6" />
-      default: return <Activity className="h-6 w-6" />
-    }
-  }
 
   if (loading) {
     return (
@@ -411,7 +364,7 @@ export default function SystemStatusPage() {
               })()}
             </span>
             <button
-              onClick={fetchSystemStatus}
+              onClick={() => fetchSystemStatus(false)}
               className="btn btn-secondary flex items-center gap-2"
             >
               <Activity className="h-4 w-4" />
@@ -420,141 +373,15 @@ export default function SystemStatusPage() {
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">System Uptime</p>
-                <p className="text-2xl font-bold text-slate-900">{status?.uptime}</p>
-              </div>
-              <Clock className="h-8 w-8 text-blue-500" />
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Success Rate</p>
-                <p className="text-2xl font-bold text-green-600">{status?.stats.successRate}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Avg Response</p>
-                <p className="text-2xl font-bold text-slate-900">{status?.stats.avgResponseTime}</p>
-              </div>
-              <Activity className="h-8 w-8 text-blue-500" />
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Alerts</p>
-                <p className="text-2xl font-bold text-slate-900">{status?.stats.totalAlerts}</p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-orange-500" />
-            </div>
-          </div>
-        </div>
-
-        {/* Service Status */}
+        {/* Aggregated System Health Timeline */}
         <div className="card">
-          <h3 className="text-lg font-semibold text-slate-900 mb-6">Service Health</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {status && Object.entries(status.services).map(([service, details]) => (
-              <div
-                key={service}
-                className={`p-4 rounded-xl border-2 ${getStatusColor(details.status)} transition-all duration-200`}
-                title={`${details.message}${details.latency ? ` • Latency: ${details.latency}` : ''}`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    {getServiceIcon(service)}
-                    <span className="font-medium capitalize text-slate-900">
-                      {service === 'usgs' ? 'USGS API' : service}
-                    </span>
-                  </div>
-                  {getStatusIcon(details.status)}
-                </div>
-                <p className="text-sm text-slate-600 mb-1">{details.message}</p>
-                {('code' in details || 'error' in details) && (
-                  <p className="text-xs text-slate-500 mb-1">
-                    {('code' in details && details.code) ? `HTTP ${details.code}` : ''}
-                    {('error' in details && details.error) ? `${('code' in details && details.code) ? ' • ' : ''}${details.error}` : ''}
-                  </p>
-                )}
-                <p className="text-xs text-slate-500">Latency: {details.latency}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Service Latency (Selected Range) */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Service Latency</h3>
+          <div className="flex items-center justify-end mb-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-500">Auto-refresh every 30s</span>
+              <span className="text-xs text-slate-500">Range: {range}</span>
               <RangeSwitcher value={range} onChange={setRange} />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {([
-              { key: 'database', name: 'Database', color: '#3b82f6' },
-              { key: 'redis', name: 'Redis', color: '#06b6d4' },
-              { key: 'sms', name: 'SMS', color: '#10b981' },
-              { key: 'email', name: 'Email', color: '#8b5cf6' },
-              { key: 'whatsapp', name: 'WhatsApp', color: '#22c55e' },
-              { key: 'voice', name: 'Voice', color: '#f59e0b' },
-              { key: 'usgs', name: 'USGS API', color: '#64748b' },
-              { key: 'noaa', name: 'NOAA Tsunami', color: '#ef4444' },
-            ] as Array<{ key: keyof typeof latencyHistory; name: string; color: string }> )
-              .filter(cfg => (latencyHistory[cfg.key]?.length ?? 0) > 0)
-              .map(cfg => (
-                <LatencyChart key={cfg.key as string} title={cfg.name} points={latencyHistory[cfg.key] as HistoryPoint[]} color={cfg.color} />
-              ))}
-          </div>
-        </div>
-
-        {/* Service Uptime Timeline */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">Service Uptime Timeline</h3>
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-slate-500">Range: {range}</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {([
-              { key: 'database', name: 'Database' },
-              { key: 'redis', name: 'Redis' },
-              { key: 'sms', name: 'SMS' },
-              { key: 'email', name: 'Email' },
-              { key: 'whatsapp', name: 'WhatsApp' },
-              { key: 'voice', name: 'Voice' },
-              { key: 'usgs', name: 'USGS API' },
-              { key: 'noaa', name: 'NOAA Tsunami' },
-            ] as Array<{ key: keyof typeof uptimeTimeline; name: string }> )
-              .filter(cfg => (uptimeTimeline[cfg.key]?.length ?? 0) > 0)
-              .map(cfg => (
-                <StatusTimeline key={cfg.key as string} title={cfg.name} points={uptimeTimeline[cfg.key] as TimelinePoint[]} />
-              ))}
-          </div>
-        </div>
-
-        {/* Recent System Events */}
-        <div className="card">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-slate-900">Recent System Events</h3>
-            <p className="text-sm text-slate-500 mt-1">Real-time status changes and incidents</p>
-          </div>
-          <IncidentTimeline events={events} />
+          <AggregatedStatusTimeline servicesData={uptimeTimeline} />
         </div>
         </div>
       </main>

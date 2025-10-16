@@ -5,7 +5,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { 
   Waves, Clock, MapPin, Activity, Globe, Wifi, CheckCircle, AlertTriangle, XCircle,
-  TrendingUp, BarChart3, Filter, RefreshCw, Download, Bell, BellOff
+  TrendingUp, BarChart3, Filter, RefreshCw, Download, Bell, BellOff, ChevronUp, ChevronDown
 } from 'lucide-react'
 import TimeRangeSwitcher from '@/components/status/TimeRangeSwitcher'
 import { Can } from '@/components/auth/Can'
@@ -64,6 +64,8 @@ export default function TsunamiMonitoringPage() {
     endDate: ''
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [sortColumn, setSortColumn] = useState<'timestamp' | 'threatLevel' | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   
   // Shared state (Phase 1)
   const [refreshing, setRefreshing] = useState(false)
@@ -1050,14 +1052,44 @@ export default function TsunamiMonitoringPage() {
                       <table className="w-full table-fixed">
                         <thead className="bg-slate-50 border-b border-slate-200">
                           <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[22%]">
-                              Timestamp
+                            <th 
+                              className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[22%] cursor-pointer hover:bg-slate-100 transition-colors"
+                              onClick={() => {
+                                if (sortColumn === 'timestamp') {
+                                  setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+                                } else {
+                                  setSortColumn('timestamp')
+                                  setSortDirection('desc')
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                Timestamp
+                                {sortColumn === 'timestamp' && (
+                                  sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                                )}
+                              </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[38%]">
                               Location
                             </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[14%]">
-                              Threat Level
+                            <th 
+                              className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[14%] cursor-pointer hover:bg-slate-100 transition-colors"
+                              onClick={() => {
+                                if (sortColumn === 'threatLevel') {
+                                  setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+                                } else {
+                                  setSortColumn('threatLevel')
+                                  setSortDirection('desc')
+                                }
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                Threat Level
+                                {sortColumn === 'threatLevel' && (
+                                  sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
+                                )}
+                              </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[14%]">
                               Ocean
@@ -1068,7 +1100,23 @@ export default function TsunamiMonitoringPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {analyticsAlerts.slice((analyticsPage - 1) * 50, analyticsPage * 50).map((alert: any, index) => {
+                          {[...analyticsAlerts].sort((a, b) => {
+                            if (!sortColumn) return 0
+                            if (sortColumn === 'timestamp') {
+                              const timeA = new Date(a.processedAt || a.createdAt || a.timestamp || a.time).getTime()
+                              const timeB = new Date(b.processedAt || b.createdAt || b.timestamp || b.time).getTime()
+                              return sortDirection === 'asc' ? timeA - timeB : timeB - timeA
+                            }
+                            if (sortColumn === 'threatLevel') {
+                              const threatOrder: Record<string, number> = { warning: 4, watch: 3, advisory: 2, info: 1, information: 1 }
+                              const levelA = (a.threat?.level || a.urgency || 'info').toLowerCase()
+                              const levelB = (b.threat?.level || b.urgency || 'info').toLowerCase()
+                              const orderA = Object.keys(threatOrder).find(key => levelA.includes(key)) ? threatOrder[Object.keys(threatOrder).find(key => levelA.includes(key))!] : 0
+                              const orderB = Object.keys(threatOrder).find(key => levelB.includes(key)) ? threatOrder[Object.keys(threatOrder).find(key => levelB.includes(key))!] : 0
+                              return sortDirection === 'asc' ? orderA - orderB : orderB - orderA
+                            }
+                            return 0
+                          }).slice((analyticsPage - 1) * 50, analyticsPage * 50).map((alert: any, index) => {
                             const tsunamiEvent: TsunamiEvent = {
                               id: alert.id || `tsunami-analytics-${index}`,
                               location: alert.location || 'Unknown',

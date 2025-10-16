@@ -1,0 +1,22 @@
+[
+  {"n":"Tokyo","c":"JP","lat":35.68,"lon":139.76,"pop":37400068},
+  {"n":"Osaka","c":"JP","lat":34.69,"lon":135.50,"pop":19222665},
+  {"n":"Manila","c":"PH","lat":14.60,"lon":120.98,"pop":13923452},
+  {"n":"Jakarta","c":"ID","lat":-6.20,"lon":106.80,"pop":34540000},
+  {"n":"Sydney","c":"AU","lat":-33.87,"lon":151.21,"pop":5312000},
+  {"n":"Melbourne","c":"AU","lat":-37.81,"lon":144.96,"pop":5078000},
+  {"n":"Los Angeles","c":"US","lat":34.05,"lon":-118.24,"pop":12750807},
+  {"n":"San Francisco","c":"US","lat":37.78,"lon":-122.42,"pop":4720000},
+  {"n":"Honolulu","c":"US","lat":21.31,"lon":-157.86,"pop":1000000},
+  {"n":"Anchorage","c":"US","lat":61.22,"lon":-149.90,"pop":291000},
+  {"n":"Lima","c":"PE","lat":-12.05,"lon":-77.05,"pop":10750000},
+  {"n":"Santiago","c":"CL","lat":-33.45,"lon":-70.67,"pop":6520000},
+  {"n":"Mexico City","c":"MX","lat":19.43,"lon":-99.13,"pop":21581000},
+  {"n":"Bogotá","c":"CO","lat":4.71,"lon":-74.07,"pop":10777900},
+  {"n":"San Juan","c":"PR","lat":18.47,"lon":-66.11,"pop":318000},
+  {"n":"Auckland","c":"NZ","lat":-36.85,"lon":174.76,"pop":1657000},
+  {"n":"Shanghai","c":"CN","lat":31.23,"lon":121.47,"pop":26317104},
+  {"n":"Istanbul","c":"TR","lat":41.01,"lon":28.97,"pop":15460000},
+  {"n":"Delhi","c":"IN","lat":28.61,"lon":77.20,"pop":30291000},
+  {"n":"Tehran","c":"IR","lat":35.69,"lon":51.42,"pop":8846782}
+]
