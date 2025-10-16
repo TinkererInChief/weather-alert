@@ -114,6 +114,12 @@ export default function EventHoverCard({
     }
   }, [open, event, type, populationImpact, impactLoading])
 
+  // Reset cached impact data whenever the event identity or core coords change
+  useEffect(() => {
+    setPopulationImpact(undefined)
+    setImpactLoading(false)
+  }, [event.id, event.latitude, event.longitude, type])
+
   // Placeholder for shakingRadius until it's needed from the API
   const shakingRadius = isEarthquake(event) ? calculateShakingRadius(event.magnitude, event.depth) : undefined;
 

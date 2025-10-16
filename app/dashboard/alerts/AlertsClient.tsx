@@ -701,7 +701,7 @@ export default function EarthquakeMonitoringPage() {
                 <div className="space-y-4 p-6">
                   {filteredAlerts.slice(0, livePage * ALERTS_PER_PAGE).map((alert: any, index) => {
                     const earthquakeEvent: EarthquakeEvent = {
-                      id: alert.earthquakeId || `live-${index}`,
+                      id: alert.earthquakeId || alert.id,
                       magnitude: alert.magnitude,
                       location: alert.location,
                       latitude: alert.latitude ?? 0,
@@ -713,7 +713,7 @@ export default function EarthquakeMonitoringPage() {
                     
                     return (
                       <EventHoverCard
-                        key={index}
+                        key={alert.id}
                         event={earthquakeEvent}
                         type="earthquake"
                       >
