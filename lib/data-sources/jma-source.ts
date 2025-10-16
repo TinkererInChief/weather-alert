@@ -88,6 +88,7 @@ export class JMASource extends BaseDataSource {
         if (!isFinite(mag) || mag < minMag) continue
 
         const { lon, lat, depthKm } = this.parseCod(item.cod || '')
+        if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
 
         const timeIso: string = item.at || item.rdt || null
         const timeMs = timeIso ? Date.parse(timeIso) : Date.now()
@@ -153,7 +154,7 @@ export class JMASource extends BaseDataSource {
       const depthKm = isFinite(depthMeters) ? depthMeters / 1000 : 10
       return { lon, lat, depthKm }
     }
-    return { lon: 139.6917, lat: 35.6895, depthKm: 10 }
+    return { lon: Number.NaN, lat: Number.NaN, depthKm: 10 }
   }
 
   private convertJMAToStandard(data: any, options?: FetchOptions): EarthquakeFeature[] {
@@ -174,8 +175,9 @@ export class JMASource extends BaseDataSource {
         const time = this.parseTime(item)
         const location = this.parseLocation(item)
         const depth = this.parseDepth(item)
-        
+
         if (magnitude < minMag) continue
+        if (!Number.isFinite(coordinates[0]) || !Number.isFinite(coordinates[1])) continue
         
         const earthquake: EarthquakeFeature = {
           type: 'Feature',
@@ -239,8 +241,7 @@ export class JMASource extends BaseDataSource {
     if (item.coordinates && Array.isArray(item.coordinates)) {
       return [item.coordinates[0], item.coordinates[1]]
     }
-    // Default to Japan region if coordinates not found
-    return [139.6917, 35.6895] // Tokyo coordinates as fallback
+    return [Number.NaN, Number.NaN]
   }
   
   private parseTime(item: any): number {
