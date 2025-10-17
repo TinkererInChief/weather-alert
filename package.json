@@ -19,6 +19,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "worker": "tsx scripts/queue-worker.ts",
+    "worker:vessels": "tsx scripts/start-vessel-worker.ts",
     "ingestion:dev": "node scripts/ingestion-worker.js",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx scripts/seed-database.ts",
