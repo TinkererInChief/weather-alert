@@ -43,6 +43,7 @@ export class AISStreamService {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 5000
+  private isShuttingDown = false
   
   static getInstance() {
     if (!AISStreamService.instance) {
@@ -78,6 +79,9 @@ export class AISStreamService {
     })
     
     this.ws.on('message', async (data: WebSocket.Data) => {
+      // Skip processing if shutting down
+      if (this.isShuttingDown) return
+      
       try {
         const message: AISStreamMessage = JSON.parse(data.toString())
         await this.processMessage(message)
@@ -224,6 +228,9 @@ export class AISStreamService {
   }
   
   disconnect() {
+    // Set shutdown flag to stop processing incoming messages
+    this.isShuttingDown = true
+    
     if (this.ws) {
       this.ws.close()
       this.ws = null
