@@ -1,63 +1,56 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
-  engineType = "binary"
+  engineType    = "binary"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider     = "postgresql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
 }
 
-// Authentication models for passwordless login (NextAuth)
 model User {
-  id            String   @id @default(cuid())
-  name          String?
-  email         String?  @unique
-  phone         String?  @unique
-  emailVerified DateTime?
-  image         String?
-  
-  // RBAC fields
-  role          String   @default("VIEWER") // SUPER_ADMIN, ORG_ADMIN, OPERATOR, VIEWER
-  organizationId String?
-  isActive      Boolean  @default(true)
-  lastLoginAt   DateTime?
-  
-  // User approval workflow
-  approvalStatus String   @default("pending") // "pending", "approved", "rejected"
-  approvedBy     String?
-  approvedAt     DateTime?
+  id              String        @id @default(cuid())
+  name            String?
+  email           String?       @unique
+  phone           String?       @unique
+  emailVerified   DateTime?
+  image           String?
+  role            String        @default("VIEWER")
+  organizationId  String?
+  isActive        Boolean       @default(true)
+  lastLoginAt     DateTime?
+  approvalStatus  String        @default("pending")
+  approvedBy      String?
+  approvedAt      DateTime?
   rejectionReason String?
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  accounts      Account[]
-  sessions      Session[]
-  organization  Organization? @relation(fields: [organizationId], references: [id])
-  auditLogs     AuditLog[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  accounts        Account[]
+  sessions        Session[]
+  organization    Organization? @relation(fields: [organizationId], references: [id])
+  auditLogs       AuditLog[]
 
   @@map("users")
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String   @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String?
   session_state     String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -70,8 +63,7 @@ model Session {
   expires      DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -88,198 +80,174 @@ model VerificationToken {
 }
 
 model SmsOtp {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   phone      String
   tokenHash  String
   expires    DateTime
-  attempts   Int      @default(0)
-  createdAt  DateTime @default(now())
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
   consumedAt DateTime?
 
   @@index([phone])
   @@map("sms_otps")
 }
 
-// Enhanced contact model with geographic and preference data
 model Contact {
-  id                    String    @id @default(cuid())
-  name                  String
-  email                 String?
-  phone                 String?   @unique
-  whatsapp              String?
-  language              String    @default("en")
-  timezone              String    @default("UTC")
-  elevationMeters       Float?
-  isCoastalResident     Boolean   @default(false)
-  notificationChannels  Json      @default("[]") // ["sms", "email", "whatsapp", "voice"]
-  notificationSettings  Json      @default("{}") // preferences per channel/severity
-  active                Boolean   @default(true)
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  
-  // Relationships
-  groupMemberships      ContactGroupMember[]
-  deliveryLogs          DeliveryLog[]
-  vesselAssignments     VesselContact[]  // Maritime: vessels assigned to this contact
-  
+  id                   String               @id @default(cuid())
+  name                 String
+  email                String?
+  phone                String?              @unique
+  whatsapp             String?
+  language             String               @default("en")
+  timezone             String               @default("UTC")
+  elevationMeters      Float?
+  isCoastalResident    Boolean              @default(false)
+  notificationChannels Json                 @default("[]")
+  notificationSettings Json                 @default("{}")
+  active               Boolean              @default(true)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  groupMemberships     ContactGroupMember[]
+  deliveryLogs         DeliveryLog[]
+  vesselAssignments    VesselContact[]
+
   @@map("contacts")
 }
 
-// Contact groups for organization
 model ContactGroup {
   id          String               @id @default(cuid())
   name        String
   description String?
   metadata    Json                 @default("{}")
   createdAt   DateTime             @default(now())
-  
-  // Relationships
   members     ContactGroupMember[]
-  
+
   @@map("contact_groups")
 }
 
 model ContactGroupMember {
   contactId String
   groupId   String
-  
   contact   Contact      @relation(fields: [contactId], references: [id], onDelete: Cascade)
   group     ContactGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
+
   @@id([contactId, groupId])
   @@map("contact_group_members")
 }
 
-// Alert zones for geographic targeting
 model AlertZone {
-  id              String    @id @default(cuid())
-  name            String
-  type            String    // "tsunami_zone", "earthquake_zone", "evacuation_zone"
-  zoneCode        String?   @unique
-  priority        Int       @default(1)
-  metadata        Json      @default("{}")
-  createdAt       DateTime  @default(now())
-  
-  // Note: PostGIS geometry fields will be added via raw SQL migration
-  
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  zoneCode  String?  @unique
+  priority  Int      @default(1)
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+
   @@map("alert_zones")
 }
 
-// Enhanced event tracking
 model EarthquakeEvent {
-  id              String    @id @default(cuid())
-  sourceId        String    @unique
-  source          String    // "usgs", "emsc"
+  id              String         @id @default(cuid())
+  sourceId        String         @unique
+  source          String
   magnitude       Float
   depth           Float?
   latitude        Float
   longitude       Float
   location        String
   occurredAt      DateTime
-  tsunamiPossible Boolean   @default(false)
-  rawData         Json      @default("{}")
-  status          String    @default("active") // "active", "updated", "cancelled"
-  processed       Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  // Relationships
+  tsunamiPossible Boolean        @default(false)
+  rawData         Json           @default("{}")
+  status          String         @default("active")
+  processed       Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
   tsunamiAlerts   TsunamiAlert[]
   alertJobs       AlertJob[]
-  
+
   @@map("earthquake_events")
 }
 
-// Tsunami alert tracking
 model TsunamiAlert {
-  id                    String    @id @default(cuid())
-  eventId               String
-  source                String    // "noaa", "ptwc", "jma"
-  alertType             String    // "watch", "advisory", "warning", "emergency"
-  severityLevel         Int       // 1-5 scale
-  estimatedWaveHeight   Float?
-  estimatedArrivalTime  DateTime?
-  affectedZones         String[]  @default([])
-  sourceEarthquakeId    String?
-  cancellationTime      DateTime?
-  rawData               Json      @default("{}")
-  createdAt             DateTime  @default(now())
-  
-  // Relationships
-  sourceEarthquake      EarthquakeEvent? @relation(fields: [sourceEarthquakeId], references: [id])
-  alertJobs             AlertJob[]
-  
+  id                   String           @id @default(cuid())
+  eventId              String
+  source               String
+  alertType            String
+  severityLevel        Int
+  estimatedWaveHeight  Float?
+  estimatedArrivalTime DateTime?
+  affectedZones        String[]         @default([])
+  sourceEarthquakeId   String?
+  cancellationTime     DateTime?
+  rawData              Json             @default("{}")
+  createdAt            DateTime         @default(now())
+  sourceEarthquake     EarthquakeEvent? @relation(fields: [sourceEarthquakeId], references: [id])
+  alertJobs            AlertJob[]
+
   @@map("tsunami_alerts")
 }
 
-// Message templates
 model MessageTemplate {
-  id          String    @id @default(cuid())
-  name        String
-  type        String    // "earthquake", "tsunami", "test"
-  channel     String    // "sms", "email", "whatsapp", "voice"
-  language    String    @default("en")
-  subject     String?   // for email
-  content     String
-  variables   Json      @default("[]")
-  version     Int       @default(1)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  channel   String
+  language  String   @default("en")
+  subject   String?
+  content   String
+  variables Json     @default("[]")
+  version   Int      @default(1)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([name, channel, language, version])
   @@map("message_templates")
 }
 
-// Alert job queue
 model AlertJob {
-  id                  String    @id @default(cuid())
-  type                String    // "earthquake", "tsunami", "test", "cancel"
-  eventType           String    // "earthquake", "tsunami"
-  earthquakeEventId   String?
-  tsunamiAlertId      String?
-  severity            Int
-  priority            Int       @default(1)
-  targetingSnapshot   Json      // snapshot of targeting rules used
-  status              String    @default("pending") // "pending", "processing", "completed", "failed"
-  scheduledFor        DateTime  @default(now())
-  startedAt           DateTime?
-  completedAt         DateTime?
-  errorMessage        String?
-  metadata            Json      @default("{}")
-  createdAt           DateTime  @default(now())
-  
-  // Relationships
-  earthquakeEvent     EarthquakeEvent? @relation(fields: [earthquakeEventId], references: [id])
-  tsunamiAlert        TsunamiAlert?    @relation(fields: [tsunamiAlertId], references: [id])
-  deliveryLogs        DeliveryLog[]
-  
+  id                String           @id @default(cuid())
+  type              String
+  eventType         String
+  earthquakeEventId String?
+  tsunamiAlertId    String?
+  severity          Int
+  priority          Int              @default(1)
+  targetingSnapshot Json
+  status            String           @default("pending")
+  scheduledFor      DateTime         @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+  errorMessage      String?
+  metadata          Json             @default("{}")
+  createdAt         DateTime         @default(now())
+  earthquakeEvent   EarthquakeEvent? @relation(fields: [earthquakeEventId], references: [id])
+  tsunamiAlert      TsunamiAlert?    @relation(fields: [tsunamiAlertId], references: [id])
+  deliveryLogs      DeliveryLog[]
+
   @@map("alert_jobs")
 }
 
-// Individual delivery tracking
 model DeliveryLog {
   id                String    @id @default(cuid())
   alertJobId        String
   contactId         String
-  channel           String    // "sms", "email", "whatsapp", "voice"
-  provider          String    // "twilio", "sendgrid"
-  status            String    // "queued", "sent", "delivered", "failed", "bounced"
+  channel           String
+  provider          String
+  status            String
   providerMessageId String?
   errorMessage      String?
   sentAt            DateTime?
   deliveredAt       DateTime?
   readAt            DateTime?
   createdAt         DateTime  @default(now())
-
-  // Relationships
   alertJob          AlertJob  @relation(fields: [alertJobId], references: [id], onDelete: Cascade)
   contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@map("delivery_logs")
 }
 
-// Organizations for multi-tenancy
 model Organization {
   id          String   @id @default(cuid())
   name        String
@@ -289,44 +257,39 @@ model Organization {
   settings    Json     @default("{}")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  // Relationships
   users       User[]
-  
+
   @@map("organizations")
 }
 
-// System audit logs
 model AuditLog {
-  id          String    @id @default(cuid())
-  userId      String?   // operator ID
-  action      String
-  resource    String
-  resourceId  String?
-  metadata    Json      @default("{}")
-  ipAddress   String?
-  userAgent   String?
-  eventId     String?   @unique @default(uuid())
+  id             String   @id @default(cuid())
+  userId         String?
+  action         String
+  resource       String
+  resourceId     String?
+  metadata       Json     @default("{}")
+  ipAddress      String?
+  userAgent      String?
+  eventId        String?  @unique @default(uuid())
   organizationId String?
-  actorRole   String?
-  actorEmail  String?
-  sessionId   String?
-  requestId   String?
-  traceId     String?
-  service     String?
-  env         String?
-  version     Int?
-  method      String?
-  path        String?
-  httpStatus  Int?
-  success     Boolean?
-  severity    String?
-  category    String?
-  createdAt   DateTime  @default(now())
-  
-  // Relationships
-  user        User?     @relation(fields: [userId], references: [id])
-  
+  actorRole      String?
+  actorEmail     String?
+  sessionId      String?
+  requestId      String?
+  traceId        String?
+  service        String?
+  env            String?
+  version        Int?
+  method         String?
+  path           String?
+  httpStatus     Int?
+  success        Boolean?
+  severity       String?
+  category       String?
+  createdAt      DateTime @default(now())
+  user           User?    @relation(fields: [userId], references: [id])
+
   @@index([action, createdAt])
   @@index([resource, resourceId])
   @@index([userId, createdAt])
@@ -335,7 +298,6 @@ model AuditLog {
   @@map("audit_logs")
 }
 
-// Simple alert log used by POC endpoints and dashboard
 model AlertLog {
   id               String   @id @default(cuid())
   earthquakeId     String
@@ -348,18 +310,14 @@ model AlertLog {
   contactsNotified Int      @default(0)
   success          Boolean  @default(false)
   errorMessage     String?
-  
-  // Data source traceability
-  dataSources      String[] @default([]) // ["USGS", "EMSC", "JMA", "NOAA", "PTWC"]
-  primarySource    String?  // Primary data source
-  sourceMetadata   Json?    @default("{}") // Additional source-specific data
-  
+  dataSources      String[] @default([])
+  primarySource    String?
+  sourceMetadata   Json?    @default("{}")
   createdAt        DateTime @default(now())
 
   @@map("alert_logs")
 }
 
-// Cache of earthquakes used for deduplication
 model EarthquakeCache {
   id           String   @id @default(cuid())
   earthquakeId String   @unique
@@ -375,34 +333,31 @@ model EarthquakeCache {
   @@map("earthquake_cache")
 }
 
-// Voice call records
 model VoiceCall {
-  id           String    @id @default(cuid())
-  callSid      String    @unique
-  phoneNumber  String
-  alertType    String    // tsunami-warning, earthquake, test, etc.
-  status       String    // queued, ringing, in-progress, completed, failed, etc.
-  duration     Int?      // call duration in seconds
-  createdAt    DateTime  @default(now())
-  completedAt  DateTime?
-  
+  id          String    @id @default(cuid())
+  callSid     String    @unique
+  phoneNumber String
+  alertType   String
+  status      String
+  duration    Int?
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
   @@map("voice_calls")
 }
 
-// Bulk call job records
 model BulkCallJob {
-  id               String   @id @default(cuid())
-  alertType        String
-  totalContacts    Int
-  successfulCalls  Int
-  failedCalls      Int
-  customMessage    String?
-  createdAt        DateTime @default(now())
-  
+  id              String   @id @default(cuid())
+  alertType       String
+  totalContacts   Int
+  successfulCalls Int
+  failedCalls     Int
+  customMessage   String?
+  createdAt       DateTime @default(now())
+
   @@map("bulk_call_jobs")
 }
 
-// System-wide settings stored as a single JSON document
 model SystemSettings {
   id        String   @id @default("global")
   settings  Json     @default("{}")
@@ -412,7 +367,162 @@ model SystemSettings {
   @@map("system_settings")
 }
 
-// Health monitoring snapshots for time-series charts
+model HealthSnapshot {
+  id        String        @id @default(cuid())
+  service   HealthService
+  status    HealthStatus
+  latencyMs Int?
+  error     String?
+  createdAt DateTime      @default(now())
+
+  @@index([service, createdAt])
+  @@map("health_snapshots")
+}
+
+model HealthEvent {
+  id        String          @id @default(cuid())
+  service   HealthService?
+  eventType HealthEventType
+  severity  HealthStatus    @default(warning)
+  message   String
+  oldStatus HealthStatus?
+  newStatus HealthStatus?
+  metadata  Json            @default("{}")
+  createdAt DateTime        @default(now())
+
+  @@index([createdAt])
+  @@index([service, createdAt])
+  @@map("health_events")
+}
+
+model MaintenanceWindow {
+  id               String   @id @default(cuid())
+  title            String
+  description      String?
+  startTime        DateTime
+  endTime          DateTime
+  affectedServices String[] @default([])
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([startTime, endTime])
+  @@map("maintenance_windows")
+}
+
+model Vessel {
+  id                String           @id @default(cuid())
+  mmsi              String           @unique
+  imo               String?          @unique
+  name              String
+  callsign          String?
+  vesselType        String
+  flag              String?
+  length            Float?
+  width             Float?
+  height            Float?
+  draught           Float?
+  grossTonnage      Float?
+  operator          String?
+  owner             String?
+  active            Boolean          @default(true)
+  lastSeen          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  buildYear         Int?             @map("build_year")
+  manager           String?
+  enrichedAt        DateTime?        @map("enriched_at") @db.Timestamptz(6)
+  enrichmentSource  String?          @map("enrichment_source")
+  positions         VesselPosition[]
+  alerts            VesselAlert[]
+  contacts          VesselContact[]
+
+  @@index([mmsi])
+  @@index([active])
+  @@index([vesselType])
+  @@map("vessels")
+}
+
+model VesselPosition {
+  id                String    @default(cuid())
+  vesselId          String
+  latitude          Float
+  longitude         Float
+  speed             Float?
+  course            Float?
+  heading           Float?
+  navStatus         String?
+  destination       String?
+  eta               DateTime?
+  draught           Float?
+  captain           String?
+  timestamp         DateTime
+  dataSource        String    @default("marinetraffic")
+  createdAt         DateTime  @default(now())
+  vessel_id         String?   @default(dbgenerated("\"vesselId\""))
+  rateOfTurn        Float?    @map("rate_of_turn")
+  positionAccuracy  Boolean?  @map("position_accuracy")
+  vessel            Vessel    @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+
+  @@id([id, timestamp])
+  @@index([vesselId, timestamp])
+  @@index([timestamp])
+  @@map("vessel_positions")
+}
+
+model VesselAlert {
+  id             String    @id @default(cuid())
+  vesselId       String
+  type           String
+  severity       String
+  eventId        String?
+  eventType      String?
+  riskLevel      String
+  tsunamiETA     Int?
+  waveHeight     Float?
+  waterDepth     Float?
+  distance       Float?
+  recommendation String
+  actions        String[]  @default([])
+  aiContext      String?
+  acknowledged   Boolean   @default(false)
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  vessel         Vessel    @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+
+  @@index([vesselId, createdAt])
+  @@index([type, severity])
+  @@index([riskLevel])
+  @@map("vessel_alerts")
+}
+
+model VesselContact {
+  id        String   @id @default(cuid())
+  vesselId  String
+  contactId String
+  role      String
+  primary   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  vessel    Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@unique([vesselId, contactId])
+  @@index([vesselId])
+  @@index([contactId])
+  @@map("vessel_contacts")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model spatial_ref_sys {
+  srid      Int     @id
+  auth_name String? @db.VarChar(256)
+  auth_srid Int?
+  srtext    String? @db.VarChar(2048)
+  proj4text String? @db.VarChar(2048)
+}
+
 enum HealthService {
   database
   redis
@@ -434,184 +544,9 @@ enum HealthStatus {
   critical
 }
 
-model HealthSnapshot {
-  id        String        @id @default(cuid())
-  service   HealthService
-  status    HealthStatus
-  latencyMs Int?
-  error     String?
-  createdAt DateTime      @default(now())
-
-  @@index([service, createdAt])
-  @@map("health_snapshots")
-}
-
-// Health events for status page timeline
 enum HealthEventType {
   status_change
   error
   recovery
   deploy
-}
-
-model HealthEvent {
-  id          String          @id @default(cuid())
-  service     HealthService?
-  eventType   HealthEventType
-  severity    HealthStatus    @default(warning)
-  message     String
-  oldStatus   HealthStatus?
-  newStatus   HealthStatus?
-  metadata    Json            @default("{}")
-  createdAt   DateTime        @default(now())
-
-  @@index([createdAt])
-  @@index([service, createdAt])
-  @@map("health_events")
-}
-
-model MaintenanceWindow {
-  id               String   @id @default(cuid())
-  title            String
-  description      String?
-  startTime        DateTime
-  endTime          DateTime
-  affectedServices String[] @default([])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  @@index([startTime, endTime])
-  @@map("maintenance_windows")
-}
-
-// ============================================================================
-// MARITIME ALERT SYSTEM MODELS
-// ============================================================================
-
-// Vessel registry for maritime tracking
-model Vessel {
-  id            String   @id @default(cuid())
-  mmsi          String   @unique  // Maritime Mobile Service Identity (required for tracking)
-  imo           String?  @unique  // International Maritime Organization number
-  name          String
-  callsign      String?
-  
-  // Vessel specifications
-  vesselType    String   // container, bulk, tanker, ro-ro, passenger, fishing, other
-  flag          String?
-  length        Float?   // meters
-  width         Float?   // meters
-  draught       Float?   // meters
-  grossTonnage  Float?
-  
-  // Ownership/Operation
-  operator      String?
-  owner         String?
-  
-  // Tracking status
-  active        Boolean  @default(true)
-  lastSeen      DateTime?
-  
-  // Relations
-  positions     VesselPosition[]
-  alerts        VesselAlert[]
-  contacts      VesselContact[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  @@index([mmsi])
-  @@index([active])
-  @@index([vesselType])
-  @@map("vessels")
-}
-
-// Vessel position history (from MarineTraffic API)
-model VesselPosition {
-  id            String   @id @default(cuid())
-  vesselId      String
-  vessel        Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
-  
-  // Position data
-  latitude      Float
-  longitude     Float
-  speed         Float?   // Knots (Speed Over Ground)
-  course        Float?   // Degrees (Course Over Ground)
-  heading       Float?   // Degrees (True heading)
-  navStatus     String?  // "Underway using engine", "At anchor", "Moored", etc.
-  
-  // Voyage data
-  destination   String?
-  eta           DateTime?
-  draught       Float?   // Current draught
-  
-  // Metadata
-  timestamp     DateTime
-  dataSource    String   @default("marinetraffic")
-  
-  createdAt     DateTime @default(now())
-  
-  @@index([vesselId, timestamp])
-  @@index([timestamp])
-  @@map("vessel_positions")
-}
-
-// Maritime alerts (tsunami risk, port closure, etc.)
-model VesselAlert {
-  id            String   @id @default(cuid())
-  vesselId      String
-  vessel        Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
-  
-  // Alert details
-  type          String   // tsunami, earthquake, storm, port_closure
-  severity      String   // low, moderate, high, critical
-  
-  // Event linkage
-  eventId       String?  // Link to earthquake/tsunami event
-  eventType     String?  // earthquake, tsunami
-  
-  // Risk assessment
-  riskLevel     String   // safe, caution, warning, danger
-  tsunamiETA    Int?     // Minutes until tsunami arrival
-  waveHeight    Float?   // Estimated wave height in meters
-  waterDepth    Float?   // Water depth at vessel position in meters
-  distance      Float?   // Distance from epicenter in km
-  
-  // Recommendations
-  recommendation String  @db.Text
-  actions        String[] @default([])
-  aiContext      String? @db.Text
-  
-  // Status
-  acknowledged  Boolean  @default(false)
-  acknowledgedAt DateTime?
-  acknowledgedBy String?
-  resolvedAt    DateTime?
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  @@index([vesselId, createdAt])
-  @@index([type, severity])
-  @@index([riskLevel])
-  @@map("vessel_alerts")
-}
-
-// Link vessels to contacts (crew, operators, emergency contacts)
-model VesselContact {
-  id            String   @id @default(cuid())
-  vesselId      String
-  contactId     String
-  role          String   // captain, operator, crew, emergency_contact, shore_support
-  primary       Boolean  @default(false)
-  
-  vessel        Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
-  contact       Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  
-  createdAt     DateTime @default(now())
-  
-  @@unique([vesselId, contactId])
-  @@index([vesselId])
-  @@index([contactId])
-  @@map("vessel_contacts")
 }

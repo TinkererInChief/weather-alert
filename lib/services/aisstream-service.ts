@@ -1,5 +1,6 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '../prisma'
 import WebSocket from 'ws'
+import { getFlagFromMMSI } from '../utils/mmsi-to-country'
 
 type AISStreamMessage = {
   MessageType: string
@@ -18,6 +19,8 @@ type AISStreamMessage = {
       Sog?: number
       TrueHeading?: number
       NavigationalStatus?: number
+      RateOfTurn?: number
+      PositionAccuracy?: boolean
     }
     ShipStaticData?: {
       Name?: string
@@ -25,7 +28,8 @@ type AISStreamMessage = {
       Destination?: string
       Eta?: string
       CallSign?: string
-      ImoNumber?: string
+      ImoNumber?: number
+      MaximumStaticDraught?: number
       Dimension?: {
         A?: number
         B?: number
@@ -84,6 +88,12 @@ export class AISStreamService {
       
       try {
         const message: AISStreamMessage = JSON.parse(data.toString())
+        
+        // Log non-vessel messages for debugging (errors, control messages)
+        if (!message.MetaData?.MMSI) {
+          console.log('📨 AISStream message:', JSON.stringify(message).substring(0, 200))
+        }
+        
         await this.processMessage(message)
       } catch (error) {
         console.error('Error processing AIS message:', error)
@@ -94,8 +104,9 @@ export class AISStreamService {
       console.error('AISStream WebSocket error:', error)
     })
     
-    this.ws.on('close', () => {
-      console.log('⚠️ Disconnected from AISStream.io')
+    this.ws.on('close', (code: number, reason: Buffer) => {
+      const reasonStr = reason.toString() || 'No reason provided'
+      console.log(`⚠️ Disconnected from AISStream.io (code: ${code}, reason: ${reasonStr})`)
       this.attemptReconnect(boundingBoxes)
     })
   }
@@ -110,12 +121,22 @@ export class AISStreamService {
     }
   }
   
-  private async processMessage(message: AISStreamMessage) {
+  private isAISStreamVesselMessage(msg: unknown): msg is AISStreamMessage {
+    if (!msg || typeof msg !== 'object') return false
+    const m = msg as { MetaData?: { MMSI?: string | number }, MessageType?: unknown, Message?: unknown }
+    if (!m.MetaData || typeof m.MetaData.MMSI === 'undefined') return false
+    if (typeof m.MessageType !== 'string') return false
+    return true
+  }
+
+  private async processMessage(message: unknown) {
+    if (!this.isAISStreamVesselMessage(message)) return
     const mmsi = message.MetaData.MMSI?.toString()
     if (!mmsi) return
     
     if (message.MessageType === 'PositionReport' && message.Message?.PositionReport) {
       const pos = message.Message.PositionReport
+      const flag = getFlagFromMMSI(mmsi)
       
       const vessel = await prisma.vessel.upsert({
         where: { mmsi },
@@ -127,6 +148,7 @@ export class AISStreamService {
           mmsi,
           name: message.MetaData.ShipName || `Vessel ${mmsi}`,
           vesselType: 'other',
+          flag: flag || undefined,
           active: true,
           lastSeen: new Date(message.MetaData.time_utc || Date.now())
         }
@@ -141,6 +163,8 @@ export class AISStreamService {
           course: pos.Cog,
           heading: pos.TrueHeading,
           navStatus: this.mapNavStatus(pos.NavigationalStatus),
+          rateOfTurn: pos.RateOfTurn !== -128 ? pos.RateOfTurn : undefined, // -128 = not available
+          positionAccuracy: pos.PositionAccuracy,
           timestamp: new Date(message.MetaData.time_utc || Date.now()),
           dataSource: 'aisstream'
         }
@@ -152,32 +176,86 @@ export class AISStreamService {
     if (message.MessageType === 'ShipStaticData' && message.Message?.ShipStaticData) {
       const staticData = message.Message.ShipStaticData
       
-      await prisma.vessel.upsert({
+      const flag = getFlagFromMMSI(mmsi)
+      const totalLength = staticData.Dimension ? (staticData.Dimension.A || 0) + (staticData.Dimension.B || 0) : undefined
+      const totalWidth = staticData.Dimension ? (staticData.Dimension.C || 0) + (staticData.Dimension.D || 0) : undefined
+      const totalHeight = staticData.Dimension ? Math.max(staticData.Dimension.C || 0, staticData.Dimension.D || 0) : undefined
+      
+      // Filter invalid IMO numbers (0, null, or < 1000000 are invalid)
+      const validImo = staticData.ImoNumber && staticData.ImoNumber >= 1000000 
+        ? staticData.ImoNumber.toString() 
+        : undefined
+      
+      // Parse ETA if provided (format: "MM-DD HH:MM")
+      let etaDate: Date | undefined
+      if (staticData.Eta) {
+        try {
+          const currentYear = new Date().getFullYear()
+          const etaStr = `${currentYear}-${staticData.Eta.replace(' ', 'T')}:00Z`
+          etaDate = new Date(etaStr)
+          if (isNaN(etaDate.getTime())) etaDate = undefined
+        } catch {
+          etaDate = undefined
+        }
+      }
+      
+      const vessel = await prisma.vessel.upsert({
         where: { mmsi },
         update: {
           name: staticData.Name || `Vessel ${mmsi}`,
           callsign: staticData.CallSign,
-          imo: staticData.ImoNumber,
+          imo: validImo,
           vesselType: this.mapVesselType(staticData.Type),
-          length: staticData.Dimension ? 
-            (staticData.Dimension.A || 0) + (staticData.Dimension.B || 0) : undefined,
-          width: staticData.Dimension ?
-            (staticData.Dimension.C || 0) + (staticData.Dimension.D || 0) : undefined,
+          flag: flag || undefined,
+          length: totalLength || undefined,
+          width: totalWidth || undefined,
+          height: totalHeight || undefined,
+          draught: staticData.MaximumStaticDraught || undefined,
+          lastSeen: new Date(message.MetaData.time_utc || Date.now()),
           updatedAt: new Date()
         },
         create: {
           mmsi,
           name: staticData.Name || `Vessel ${mmsi}`,
           callsign: staticData.CallSign,
-          imo: staticData.ImoNumber,
+          imo: validImo,
           vesselType: this.mapVesselType(staticData.Type),
-          length: staticData.Dimension ?
-            (staticData.Dimension.A || 0) + (staticData.Dimension.B || 0) : undefined,
-          width: staticData.Dimension ?
-            (staticData.Dimension.C || 0) + (staticData.Dimension.D || 0) : undefined,
-          active: true
+          flag: flag || undefined,
+          length: totalLength || undefined,
+          width: totalWidth || undefined,
+          height: totalHeight || undefined,
+          draught: staticData.MaximumStaticDraught || undefined,
+          active: true,
+          lastSeen: new Date(message.MetaData.time_utc || Date.now())
         }
       })
+      
+      // Create a VesselPosition record with voyage-specific data (destination, eta, draught)
+      // Only create if we have at least one of these voyage fields
+      if (staticData.Destination || etaDate || staticData.MaximumStaticDraught) {
+        // Get the last known position coordinates for this vessel
+        const lastPosition = await prisma.vesselPosition.findFirst({
+          where: { vesselId: vessel.id },
+          orderBy: { timestamp: 'desc' },
+          select: { latitude: true, longitude: true }
+        })
+        
+        // Only create position if we have coordinates
+        if (lastPosition) {
+          await prisma.vesselPosition.create({
+            data: {
+              vesselId: vessel.id,
+              latitude: lastPosition.latitude,
+              longitude: lastPosition.longitude,
+              destination: staticData.Destination || undefined,
+              eta: etaDate,
+              draught: staticData.MaximumStaticDraught || undefined,
+              timestamp: new Date(message.MetaData.time_utc || Date.now()),
+              dataSource: 'aisstream'
+            }
+          })
+        }
+      }
       
       console.log(`📝 Updated static data for ${staticData.Name} (${mmsi})`)
     }
@@ -186,29 +264,80 @@ export class AISStreamService {
   private mapVesselType(typeCode?: number): string {
     if (!typeCode) return 'other'
     
-    const typeMap: Record<number, string> = {
+    // Exact type codes (more specific)
+    const exactTypeMap: Record<number, string> = {
+      // Fishing
       30: 'fishing',
-      31: 'towing',
-      32: 'towing',
+      // Towing/Tug
+      31: 'tug',
+      32: 'tug',
+      52: 'tug',
+      // Specialized
       33: 'dredging',
       34: 'diving',
       35: 'military',
       36: 'sailing',
       37: 'pleasure',
+      // High speed
       40: 'high_speed',
+      41: 'high_speed',
+      42: 'high_speed',
+      43: 'high_speed',
+      44: 'high_speed',
+      45: 'high_speed',
+      46: 'high_speed',
+      47: 'high_speed',
+      48: 'high_speed',
+      49: 'high_speed',
+      // Pilot/Harbor
       50: 'pilot',
       51: 'search_rescue',
-      52: 'tug',
       53: 'port_tender',
+      54: 'port_tender',
       55: 'law_enforcement',
+      // Passenger
       60: 'passenger',
+      61: 'passenger',
+      62: 'passenger',
+      63: 'passenger',
+      64: 'passenger',
+      65: 'passenger',
+      66: 'passenger',
+      67: 'passenger',
+      68: 'passenger',
+      69: 'passenger',
+      // Cargo
       70: 'cargo',
+      71: 'cargo',
+      72: 'cargo',
+      73: 'cargo',
+      74: 'cargo',
+      75: 'cargo',
+      76: 'cargo',
+      77: 'cargo',
+      78: 'cargo',
+      79: 'cargo',
+      // Tanker
       80: 'tanker',
-      90: 'other'
+      81: 'tanker',
+      82: 'tanker',
+      83: 'tanker',
+      84: 'tanker',
+      85: 'tanker',
+      86: 'tanker',
+      87: 'tanker',
+      88: 'tanker',
+      89: 'tanker',
     }
     
+    // Try exact match first
+    if (exactTypeMap[typeCode]) {
+      return exactTypeMap[typeCode]
+    }
+    
+    // Fall back to category (10s)
     const category = Math.floor(typeCode / 10) * 10
-    return typeMap[category] || 'other'
+    return exactTypeMap[category] || 'other'
   }
   
   private mapNavStatus(status?: number): string {

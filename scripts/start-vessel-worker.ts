@@ -19,6 +19,7 @@
  */
 
 import { vesselIngestionWorker } from '../lib/workers/vessel-ingestion-worker'
+import { createServer } from 'http'
 
 async function main() {
   console.log('╔══════════════════════════════════════╗')
@@ -45,6 +46,22 @@ async function main() {
   console.log(`📦 Database: ${process.env.DATABASE_URL?.split('@')[1]?.split('/')[0] || 'configured'}`)
   console.log(`🔑 AISStream API Key: ${process.env.AISSTREAM_API_KEY?.substring(0, 10)}...`)
   console.log('')
+  
+  // Start minimal HTTP health server for Railway healthcheck
+  const healthPort = parseInt(process.env.PORT || '3000', 10)
+  const healthServer = createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/api/health') {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ status: 'ok', service: 'vessel-worker', uptime: process.uptime() }))
+    } else {
+      res.writeHead(404)
+      res.end('Not Found')
+    }
+  })
+  
+  healthServer.listen(healthPort, '0.0.0.0', () => {
+    console.log(`🏥 Health server listening on port ${healthPort}`)
+  })
   
   try {
     await vesselIngestionWorker.start()

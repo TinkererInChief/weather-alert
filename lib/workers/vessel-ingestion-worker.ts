@@ -12,7 +12,7 @@
  * - Performance monitoring
  */
 
-import { VesselTrackingCoordinator } from '@/lib/services/vessel-tracking-coordinator'
+import { VesselTrackingCoordinator } from '../services/vessel-tracking-coordinator'
 
 class VesselIngestionWorker {
   private coordinator: VesselTrackingCoordinator
@@ -126,7 +126,7 @@ class VesselIngestionWorker {
    */
   private async getVesselCount(): Promise<number> {
     try {
-      const { prisma } = await import('@/lib/prisma')
+      const { prisma } = await import('../prisma')
       return await prisma.vessel.count()
     } catch (error) {
       return 0
@@ -138,7 +138,7 @@ class VesselIngestionWorker {
    */
   private async getPositionCount(): Promise<number> {
     try {
-      const { prisma } = await import('@/lib/prisma')
+      const { prisma } = await import('../prisma')
       return await prisma.vesselPosition.count()
     } catch (error) {
       return 0
@@ -150,7 +150,7 @@ class VesselIngestionWorker {
    */
   private async getRecentPositionCount(): Promise<number> {
     try {
-      const { prisma } = await import('@/lib/prisma')
+      const { prisma } = await import('../prisma')
       return await prisma.vesselPosition.count({
         where: {
           timestamp: {

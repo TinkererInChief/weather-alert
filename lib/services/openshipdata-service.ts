@@ -1,4 +1,5 @@
-import { prisma } from '@/lib/prisma'
+import { prisma } from '../prisma'
+import { getFlagFromMMSI } from '../utils/mmsi-to-country'
 
 type OpenShipDataReport = {
   timeSecUtc: number
@@ -38,7 +39,7 @@ type BoundingBox = {
 
 export class OpenShipDataService {
   private static instance: OpenShipDataService
-  private baseUrl = 'http://ais.marineplan.com/location/v1'
+  private baseUrl = 'https://ais.marineplan.com/location/v1'
   private pollInterval = 60000 // 1 minute
   private intervalId: NodeJS.Timeout | null = null
   
@@ -155,6 +156,9 @@ export class OpenShipDataService {
         signal: AbortSignal.timeout(10000) // 10s timeout
       })
       
+      if (response.status === 404) {
+        return 0
+      }
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
@@ -191,6 +195,8 @@ export class OpenShipDataService {
       return // Skip vessels without MMSI
     }
     
+    const flag = getFlagFromMMSI(report.mmsi)
+    
     // Upsert vessel
     const vessel = await prisma.vessel.upsert({
       where: { mmsi: report.mmsi },
@@ -198,8 +204,10 @@ export class OpenShipDataService {
         name: report.boatName || `Vessel ${report.mmsi}`,
         callsign: report.callSign,
         vesselType: this.mapVesselType(report.vesselType),
+        flag: flag || undefined,
         length: report.lengthMeters,
         width: report.widthMeters,
+        height: report.heightMeters,
         lastSeen: new Date(report.timeSecUtc * 1000),
         updatedAt: new Date()
       },
@@ -208,8 +216,10 @@ export class OpenShipDataService {
         name: report.boatName || `Vessel ${report.mmsi}`,
         callsign: report.callSign,
         vesselType: this.mapVesselType(report.vesselType),
+        flag: flag || undefined,
         length: report.lengthMeters,
         width: report.widthMeters,
+        height: report.heightMeters,
         active: true,
         lastSeen: new Date(report.timeSecUtc * 1000)
       }
@@ -223,6 +233,9 @@ export class OpenShipDataService {
         longitude: report.point.longitude,
         speed: this.kmhToKnots(report.speedKmh),
         course: report.bearingDeg,
+        captain: report.captain,
+        destination: report.destinationName,
+        eta: report.etaSecUtc ? new Date(report.etaSecUtc * 1000) : undefined,
         timestamp: new Date(report.timeSecUtc * 1000),
         dataSource: 'openshipdata'
       }
