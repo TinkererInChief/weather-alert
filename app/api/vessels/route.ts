@@ -15,11 +15,26 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const activeOnly = searchParams.get('active') === 'true'
     const withPosition = searchParams.get('withPosition') === 'true'
+    const limit = parseInt(searchParams.get('limit') || '1000')
     
-    const where = activeOnly ? { active: true } : {}
+    // Bounding box filtering for map viewport
+    const north = searchParams.get('north')
+    const south = searchParams.get('south')
+    const east = searchParams.get('east')
+    const west = searchParams.get('west')
+    
+    const where: any = activeOnly ? { active: true } : {}
+    
+    // Only show vessels seen in last hour for better performance
+    if (activeOnly) {
+      where.lastSeen = {
+        gte: new Date(Date.now() - 60 * 60 * 1000)
+      }
+    }
     
     const vessels = await prisma.vessel.findMany({
       where,
+      take: limit,
       include: {
         contacts: {
           include: {
@@ -54,7 +69,23 @@ export async function GET(request: Request) {
       orderBy: { lastSeen: 'desc' }
     })
     
-    const vesselsWithPosition = vessels.map(vessel => {
+    // Filter by bounding box if provided
+    let filteredVessels = vessels
+    if (north && south && east && west && withPosition) {
+      const n = parseFloat(north)
+      const s = parseFloat(south)
+      const e = parseFloat(east)
+      const w = parseFloat(west)
+      
+      filteredVessels = vessels.filter(vessel => {
+        const pos = 'positions' in vessel && vessel.positions?.[0]
+        if (!pos) return false
+        return pos.latitude >= s && pos.latitude <= n &&
+               pos.longitude >= w && pos.longitude <= e
+      })
+    }
+    
+    const vesselsWithPosition = filteredVessels.map(vessel => {
       const latestPosition = (withPosition && 'positions' in vessel) ? vessel.positions?.[0] : null
       return {
         ...vessel,

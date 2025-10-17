@@ -1,0 +1,25 @@
+/* Marker cluster custom styles */
+:global(.vessel-cluster) {
+  background: transparent !important;
+}
+
+:global(.vessel-marker) {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Smooth transitions for markers */
+:global(.leaflet-marker-icon) {
+  transition: transform 0.2s ease;
+}
+
+:global(.leaflet-marker-icon:hover) {
+  transform: scale(1.2);
+  z-index: 1000 !important;
+}
+
+/* Cluster hover effect */
+:global(.vessel-cluster > div:hover) {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}

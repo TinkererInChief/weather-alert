@@ -64,7 +64,8 @@ export default function VesselsPage() {
   
   const fetchVessels = async () => {
     try {
-      const response = await fetch('/api/vessels?active=true&withPosition=true', {
+      // Only fetch recent vessels (last hour) and limit to 1000 for performance
+      const response = await fetch('/api/vessels?active=true&withPosition=true&limit=1000', {
         cache: 'no-store'
       })
       const data = await response.json()
