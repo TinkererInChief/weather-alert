@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
           select: {
             alerts: {
               where: {
-                status: 'active'
+                resolvedAt: null  // Count only unresolved alerts
               }
             }
           }
