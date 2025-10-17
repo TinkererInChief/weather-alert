@@ -4,7 +4,7 @@ import WebSocket from 'ws'
 type AISStreamMessage = {
   MessageType: string
   MetaData: {
-    MMSI: string
+    MMSI: string | number  // AISStream sends as number, we convert to string
     ShipName?: string
     latitude?: number
     longitude?: number
@@ -107,7 +107,7 @@ export class AISStreamService {
   }
   
   private async processMessage(message: AISStreamMessage) {
-    const mmsi = message.MetaData.MMSI
+    const mmsi = message.MetaData.MMSI?.toString()
     if (!mmsi) return
     
     if (message.MessageType === 'PositionReport' && message.Message?.PositionReport) {
