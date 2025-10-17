@@ -27,7 +27,8 @@ import {
   Star,
   Search,
   PanelLeftClose,
-  PanelLeft
+  PanelLeft,
+  Ship
 } from 'lucide-react'
 import { Role, Permission, hasPermission } from '@/lib/rbac/roles'
 
@@ -76,6 +77,7 @@ export default function AppLayout({
   const [liveCounts, setLiveCounts] = useState({
     earthquakeAlerts: 0,
     tsunamiAlerts: 0,
+    vesselAlerts: 0,
     notifications: 0,
     systemStatus: 'healthy' as 'healthy' | 'warning' | 'critical'
   })
@@ -96,19 +98,22 @@ export default function AppLayout({
   useEffect(() => {
     const fetchLiveCounts = async () => {
       try {
-        const [alertsRes, notificationsRes, healthRes] = await Promise.all([
+        const [alertsRes, vesselsRes, notificationsRes, healthRes] = await Promise.all([
           fetch('/api/alerts/stats', { cache: 'no-store' }).catch(() => null),
+          fetch('/api/vessels/alerts?active=true', { cache: 'no-store' }).catch(() => null),
           fetch('/api/notifications', { cache: 'no-store' }).catch(() => null),
           fetch('/api/health', { cache: 'no-store' }).catch(() => null)
         ])
 
         const alertsData = alertsRes ? await alertsRes.json() : null
+        const vesselsData = vesselsRes ? await vesselsRes.json() : null
         const notificationsData = notificationsRes ? await notificationsRes.json() : null
         const healthData = healthRes ? await healthRes.json() : null
 
         setLiveCounts({
           earthquakeAlerts: alertsData?.data?.activeAlerts || 0,
           tsunamiAlerts: alertsData?.data?.tsunamiAlerts || 0,
+          vesselAlerts: vesselsData?.stats?.bySeverity?.critical + vesselsData?.stats?.bySeverity?.high || 0,
           notifications: notificationsData?.data?.unreadCount || 0,
           systemStatus: healthData?.status || 'healthy'
         })
@@ -139,6 +144,7 @@ export default function AppLayout({
           case '1': e.preventDefault(); window.location.href = '/dashboard'; break
           case '2': e.preventDefault(); window.location.href = '/dashboard/alerts'; break
           case '3': e.preventDefault(); window.location.href = '/dashboard/tsunami'; break
+          case '4': e.preventDefault(); window.location.href = '/dashboard/vessels'; break
           case 'k': e.preventDefault(); document.getElementById('sidebar-search')?.focus(); break
           case 'b': e.preventDefault(); setIsCompact(!isCompact); break
         }
@@ -156,8 +162,8 @@ export default function AppLayout({
 
   const shouldHighlight = (itemName: string) => {
     // Highlight active alerts during working hours
-    if (isWorkingHours() && (itemName === 'Earthquake' || itemName === 'Tsunami')) {
-      return liveCounts.earthquakeAlerts > 0 || liveCounts.tsunamiAlerts > 0
+    if (isWorkingHours() && (itemName === 'Earthquake' || itemName === 'Tsunami' || itemName === 'Vessels')) {
+      return liveCounts.earthquakeAlerts > 0 || liveCounts.tsunamiAlerts > 0 || liveCounts.vesselAlerts > 0
     }
     // Highlight system status when degraded
     if (itemName === 'System Status' && liveCounts.systemStatus !== 'healthy') {
@@ -199,6 +205,15 @@ export default function AppLayout({
           shortcut: '⌘3',
           badge: liveCounts.tsunamiAlerts > 0 ? { count: liveCounts.tsunamiAlerts, color: 'orange', pulse: true } : undefined,
           highlight: shouldHighlight('Tsunami')
+        },
+        { 
+          name: 'Vessels', 
+          href: '/dashboard/vessels', 
+          icon: Ship, 
+          current: pathname === '/dashboard/vessels',
+          shortcut: '⌘4',
+          badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'blue', pulse: true } : undefined,
+          highlight: shouldHighlight('Vessels')
         },
       ]
     },

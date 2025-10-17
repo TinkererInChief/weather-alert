@@ -88,6 +88,23 @@ export class AlertManager {
     // Cache the earthquake as processed
     await db.markEarthquakeProcessed(earthquake.id)
     
+    // Check for vessels at risk
+    try {
+      const { VesselProximityService } = await import('./services/vessel-proximity-service')
+      const vesselProximity = VesselProximityService.getInstance()
+      
+      const vesselAlertsCount = await vesselProximity.dispatchVesselAlerts(earthquake, {
+        minMagnitude: 6.0,
+        radiusKm: 500
+      })
+      
+      if (vesselAlertsCount > 0) {
+        console.log(`🚢 Created ${vesselAlertsCount} vessel proximity alerts`)
+      }
+    } catch (error) {
+      console.error('❌ Error checking vessel proximity:', error)
+    }
+    
     // Also log to console for POC demonstration
     console.log('📋 Alert Log:', alertResult)
   }
