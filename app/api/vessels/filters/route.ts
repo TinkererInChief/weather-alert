@@ -14,7 +14,7 @@ export async function GET() {
       by: ['vesselType'],
       where: {
         vesselType: {
-          not: null
+          not: null as any
         }
       },
       _count: {
@@ -32,7 +32,7 @@ export async function GET() {
       by: ['owner'],
       where: {
         owner: {
-          not: null
+          not: null as any
         }
       },
       _count: {
@@ -51,7 +51,7 @@ export async function GET() {
       by: ['operator'],
       where: {
         operator: {
-          not: null
+          not: null as any
         }
       },
       _count: {
@@ -70,7 +70,7 @@ export async function GET() {
       by: ['flag'],
       where: {
         flag: {
-          not: null
+          not: null as any
         }
       },
       _count: {
