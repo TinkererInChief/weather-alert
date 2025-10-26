@@ -23,6 +23,7 @@
     "worker:vessels": "tsx scripts/start-vessel-worker.ts",
     "worker:standalone": "tsx scripts/start-vessel-worker.ts",
     "ingestion:dev": "node scripts/ingestion-worker.js",
+    "ais:start": "tsx scripts/start-ais-streaming.ts",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx scripts/seed-database.ts",
     "user:promote": "tsx scripts/promote-user.ts",

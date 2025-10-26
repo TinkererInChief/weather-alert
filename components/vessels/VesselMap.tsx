@@ -26,26 +26,44 @@ const getVesselColor = (type: string, hasAlert: boolean) => {
 }
 
 // Create arrow icon with rotation
-const createVesselIcon = (heading: number | null, vesselType: string, hasAlert: boolean) => {
+const createVesselIcon = (heading: number | null, vesselType: string, hasAlert: boolean, isHighlighted: boolean = false) => {
   const color = getVesselColor(vesselType, hasAlert)
   const rotation = heading !== null ? heading : 0
+  const size = isHighlighted ? 40 : 28
+  const viewBox = isHighlighted ? 40 : 28
+  const pathScale = isHighlighted ? 1.4 : 1
+  const strokeWidth = isHighlighted ? 2.5 : 1.8
+  const whiteStroke = isHighlighted ? 1.2 : 0.8
+  
+  const animation = isHighlighted
+    ? `<animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite" />`
+    : ''
   
   // Use simple triangle arrow pointing up, rotated by heading
   const svgIcon = `
-    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" 
-         style="transform: rotate(${rotation}deg); transform-origin: center;">
-      <path d="M10 2 L16 16 L10 13 L4 16 Z" 
-            fill="${color}" 
+    <svg width="${size}" height="${size}" viewBox="0 0 ${viewBox} ${viewBox}" xmlns="http://www.w3.org/2000/svg" 
+         style="transform: rotate(${rotation}deg); transform-origin: center; filter: drop-shadow(0 ${isHighlighted ? 4 : 2}px ${isHighlighted ? 8 : 4}px rgba(0,0,0,${isHighlighted ? 0.6 : 0.4}));">
+      <path d="M${14 * pathScale} ${4 * pathScale} L${22 * pathScale} ${22 * pathScale} L${14 * pathScale} ${18 * pathScale} L${6 * pathScale} ${22 * pathScale} Z" 
+            fill="${isHighlighted ? '#fbbf24' : color}" 
+            stroke="#000" 
+            stroke-width="${strokeWidth}"
+            stroke-opacity="0.7">
+        ${animation}
+      </path>
+      <path d="M${14 * pathScale} ${4 * pathScale} L${22 * pathScale} ${22 * pathScale} L${14 * pathScale} ${18 * pathScale} L${6 * pathScale} ${22 * pathScale} Z" 
+            fill="none" 
             stroke="white" 
-            stroke-width="1.5"/>
+            stroke-width="${whiteStroke}">
+        ${animation}
+      </path>
     </svg>
   `
   return new L.DivIcon({
-    html: `<div style="width: 20px; height: 20px;">${svgIcon}</div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10],
-    className: 'vessel-marker'
+    html: `<div style="width: ${size}px; height: ${size}px; z-index: ${isHighlighted ? 1000 : 'auto'};">${svgIcon}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+    className: isHighlighted ? 'vessel-marker vessel-highlighted' : 'vessel-marker'
   })
 }
 
@@ -55,10 +73,10 @@ function MapBounds({ vessels }: { vessels: Vessel[] }) {
   
   useEffect(() => {
     if (vessels.length > 0) {
-      const validVessels = vessels.filter(v => v.latitude && v.longitude)
+      const validVessels = vessels.filter(v => v.latitude !== null && v.longitude !== null)
       if (validVessels.length > 0) {
         const bounds = L.latLngBounds(
-          validVessels.map(v => [v.latitude!, v.longitude!] as [number, number])
+          validVessels.map(v => [v.latitude as number, v.longitude as number] as [number, number])
         )
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 10 })
       }
@@ -94,13 +112,50 @@ type VesselAlert = {
   } | null
 }
 
+type Bounds = { north: number; south: number; east: number; west: number }
+
 type VesselMapProps = {
   vessels: Vessel[]
   alerts: VesselAlert[]
+  onBoundsChange?: (bounds: Bounds) => void
+  highlightedVesselId?: string | null
 }
 
-export default function VesselMap({ vessels, alerts }: VesselMapProps) {
-  const vesselsWithPosition = vessels.filter(v => v.latitude && v.longitude)
+function BoundsListener({ onChange }: { onChange?: (bounds: Bounds) => void }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!onChange) return
+    const handler = () => {
+      const b = map.getBounds()
+      onChange({ north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() })
+    }
+    handler()
+    map.on('moveend', handler)
+    map.on('zoomend', handler)
+    return () => {
+      map.off('moveend', handler)
+      map.off('zoomend', handler)
+    }
+  }, [map, onChange])
+  return null
+}
+
+function HighlightHandler({ vessels, highlightedId }: { vessels: Vessel[], highlightedId: string | null | undefined }) {
+  const map = useMap()
+  
+  useEffect(() => {
+    if (!highlightedId) return
+    const vessel = vessels.find(v => v.id === highlightedId)
+    if (vessel && vessel.latitude && vessel.longitude) {
+      map.flyTo([vessel.latitude, vessel.longitude], 10, { duration: 1 })
+    }
+  }, [highlightedId, vessels, map])
+  
+  return null
+}
+
+export default function VesselMap({ vessels, alerts, onBoundsChange, highlightedVesselId }: VesselMapProps) {
+  const vesselsWithPosition = vessels.filter(v => v.latitude !== null && v.longitude !== null)
   
   // Default center (Atlantic Ocean)
   const center: [number, number] = [25, -12]
@@ -125,6 +180,8 @@ export default function VesselMap({ vessels, alerts }: VesselMapProps) {
         updateWhenZooming={false}
         updateWhenIdle={true}
       />
+      <BoundsListener onChange={onBoundsChange} />
+      <HighlightHandler vessels={vesselsWithPosition} highlightedId={highlightedVesselId} />
       
       <MapBounds vessels={vesselsWithPosition} />
       
@@ -142,30 +199,31 @@ export default function VesselMap({ vessels, alerts }: VesselMapProps) {
           
           if (count > 100) {
             size = 'large'
-            sizeClass = 'w-12 h-12 text-base'
+            sizeClass = 'w-14 h-14 text-base'
           } else if (count > 10) {
             size = 'medium'
-            sizeClass = 'w-10 h-10 text-sm'
+            sizeClass = 'w-12 h-12 text-sm'
           } else {
-            sizeClass = 'w-8 h-8 text-xs'
+            sizeClass = 'w-10 h-10 text-xs'
           }
           
           return new DivIcon({
-            html: `<div class="${sizeClass} rounded-full bg-blue-500 text-white font-bold flex items-center justify-center border-2 border-white shadow-lg">${count}</div>`,
+            html: `<div class="${sizeClass} rounded-full bg-blue-600 text-white font-bold flex items-center justify-center border-3 border-white shadow-xl" style="box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -1px rgba(0,0,0,0.2);">${count}</div>`,
             className: 'vessel-cluster',
-            iconSize: [40, 40]
+            iconSize: [50, 50]
           })
         }}
       >
         {vesselsWithPosition.map((vessel) => {
           const hasAlert = vessel.activeAlertCount > 0
           const alert = alertsByVessel.get(vessel.mmsi)
+          const isHighlighted = vessel.id === highlightedVesselId
           
           return (
             <Marker
               key={vessel.id}
               position={[vessel.latitude!, vessel.longitude!]}
-              icon={createVesselIcon(vessel.heading, vessel.vesselType, hasAlert)}
+              icon={createVesselIcon(vessel.heading, vessel.vesselType, hasAlert, isHighlighted)}
             >
               <Popup>
                 <div className="p-2 min-w-[200px]">

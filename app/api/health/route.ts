@@ -1,7 +1,7 @@
 import { checkDatabaseConnection, prisma } from '@/lib/prisma'
 import RedisConnection from '@/lib/queue/redis-connection'
 import type Redis from 'ioredis'
-import { initializeApp } from '@/lib/init'
+import { initializeApp, isInitialized } from '@/lib/init'
 // Avoid direct enum type imports to prevent build issues on some environments
 
 // Lazy getter for ioredis client (Railway Redis)
@@ -17,7 +17,9 @@ export async function HEAD() {
 export async function GET(request: Request) {
   const startTime = Date.now()
   
-  await initializeApp().catch(() => {})
+  if (!isInitialized()) {
+    await initializeApp().catch(() => {})
+  }
   
   try {
     const url = new URL(request.url)

@@ -458,7 +458,6 @@ model VesselPosition {
   timestamp         DateTime
   dataSource        String    @default("marinetraffic")
   createdAt         DateTime  @default(now())
-  vessel_id         String?   @default(dbgenerated("\"vesselId\""))
   rateOfTurn        Float?    @map("rate_of_turn")
   positionAccuracy  Boolean?  @map("position_accuracy")
   vessel            Vessel    @relation(fields: [vesselId], references: [id], onDelete: Cascade)

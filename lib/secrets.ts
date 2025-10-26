@@ -115,53 +115,53 @@ const secretsConfig: Record<keyof EnvironmentConfig, SecretConfig> = {
     description: 'NextAuth.js callback URL'
   },
   OTP_SECRET: {
-    required: true,
+    required: false,
     type: SecretType.TOKEN,
     validation: /^.{16,}$/, // At least 16 characters
     masked: true,
-    description: 'OTP generation secret'
+    description: 'OTP generation secret (falls back to NEXTAUTH_SECRET if not set)'
   },
   OTP_LENGTH: {
-    required: true,
+    required: false,
     type: SecretType.CONFIG,
     validation: /^[4-8]$/, // 4-8 digits
     masked: false,
-    description: 'OTP code length'
+    description: 'OTP code length (default: 6)'
   },
   OTP_EXPIRY_MINUTES: {
-    required: true,
+    required: false,
     type: SecretType.CONFIG,
     validation: /^[1-9]\d*$/, // Positive integer
     masked: false,
-    description: 'OTP expiry time in minutes'
+    description: 'OTP expiry time in minutes (default: 5)'
   },
   OTP_MAX_ATTEMPTS: {
-    required: true,
+    required: false,
     type: SecretType.CONFIG,
     validation: /^[1-9]\d*$/, // Positive integer
     masked: false,
-    description: 'Maximum OTP verification attempts'
+    description: 'Maximum OTP verification attempts (default: 5)'
   },
   TWILIO_ACCOUNT_SID: {
-    required: true,
+    required: false,
     type: SecretType.API_KEY,
     validation: /^AC[a-z0-9]{32}$/i,
     masked: true,
-    description: 'Twilio account SID'
+    description: 'Twilio account SID (optional in development)'
   },
   TWILIO_AUTH_TOKEN: {
-    required: true,
+    required: false,
     type: SecretType.TOKEN,
     validation: /^[a-z0-9]{32}$/i,
     masked: true,
-    description: 'Twilio authentication token'
+    description: 'Twilio authentication token (optional in development)'
   },
   TWILIO_PHONE_NUMBER: {
-    required: true,
+    required: false,
     type: SecretType.PHONE,
     validation: secretValidation.phone,
     masked: false,
-    description: 'Twilio SMS phone number'
+    description: 'Twilio SMS phone number (optional in development)'
   },
   TWILIO_WHATSAPP_NUMBER: {
     required: false,
@@ -171,18 +171,18 @@ const secretsConfig: Record<keyof EnvironmentConfig, SecretConfig> = {
     description: 'Twilio WhatsApp number'
   },
   SENDGRID_API_KEY: {
-    required: true,
+    required: false,
     type: SecretType.API_KEY,
     validation: /^SG\..{66}$/,
     masked: true,
-    description: 'SendGrid API key'
+    description: 'SendGrid API key (optional in development)'
   },
   SENDGRID_FROM_EMAIL: {
-    required: true,
+    required: false,
     type: SecretType.EMAIL,
     validation: secretValidation.email,
     masked: false,
-    description: 'SendGrid sender email address'
+    description: 'SendGrid sender email address (optional in development)'
   },
   SENDGRID_FROM_NAME: {
     required: false,

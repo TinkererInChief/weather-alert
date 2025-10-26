@@ -48,6 +48,8 @@ export class AISStreamService {
   private maxReconnectAttempts = 5
   private reconnectDelay = 5000
   private isShuttingDown = false
+  private queue: AISStreamMessage[] = []
+  private processing = false
   
   static getInstance() {
     if (!AISStreamService.instance) {
@@ -82,19 +84,15 @@ export class AISStreamService {
       console.log(`📡 Subscribed to ${boundingBoxes.length} bounding boxes`)
     })
     
-    this.ws.on('message', async (data: WebSocket.Data) => {
-      // Skip processing if shutting down
+    this.ws.on('message', (data: WebSocket.Data) => {
       if (this.isShuttingDown) return
-      
       try {
         const message: AISStreamMessage = JSON.parse(data.toString())
-        
-        // Log non-vessel messages for debugging (errors, control messages)
         if (!message.MetaData?.MMSI) {
           console.log('📨 AISStream message:', JSON.stringify(message).substring(0, 200))
         }
-        
-        await this.processMessage(message)
+        this.queue.push(message)
+        void this.processQueue()
       } catch (error) {
         console.error('Error processing AIS message:', error)
       }
@@ -121,6 +119,23 @@ export class AISStreamService {
     }
   }
   
+  private async processQueue() {
+    if (this.processing) return
+    this.processing = true
+    try {
+      while (this.queue.length > 0 && !this.isShuttingDown) {
+        const msg = this.queue.shift()!
+        try {
+          await this.processMessage(msg)
+        } catch (err) {
+          console.error('Error handling AIS queued message:', err)
+        }
+      }
+    } finally {
+      this.processing = false
+    }
+  }
+
   private isAISStreamVesselMessage(msg: unknown): msg is AISStreamMessage {
     if (!msg || typeof msg !== 'object') return false
     const m = msg as { MetaData?: { MMSI?: string | number }, MessageType?: unknown, Message?: unknown }

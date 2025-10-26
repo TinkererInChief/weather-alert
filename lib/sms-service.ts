@@ -43,8 +43,20 @@ export class SMSService {
         this.client = {
           messages: {
             create: async (options: any) => {
-              log.debug('SMS mock: message sent', { to: options.to, body: options.body?.substring(0, 50) })
-              return { sid: 'mock_sid' }
+              // Extract OTP code from message for easy testing
+              const otpMatch = options.body?.match(/Use (\d+) to access/)
+              const otp = otpMatch ? otpMatch[1] : 'N/A'
+              
+              console.log('\n' + '='.repeat(60))
+              console.log('📱 SMS MOCK - OTP CODE FOR TESTING')
+              console.log('='.repeat(60))
+              console.log(`Phone: ${options.to}`)
+              console.log(`OTP Code: ${otp}`)
+              console.log(`Message: ${options.body}`)
+              console.log('='.repeat(60) + '\n')
+              
+              log.debug('SMS mock: message sent', { to: options.to, otp, body: options.body?.substring(0, 50) })
+              return { sid: `mock_${Date.now()}` }
             }
           }
         }
@@ -68,8 +80,20 @@ export class SMSService {
         this.client = {
           messages: {
             create: async (options: any) => {
-              log.debug('SMS mock (fallback): message sent', { to: options.to, body: options.body?.substring(0, 50) })
-              return { sid: 'mock_sid' }
+              // Extract OTP code from message for easy testing
+              const otpMatch = options.body?.match(/Use (\d+) to access/)
+              const otp = otpMatch ? otpMatch[1] : 'N/A'
+              
+              console.log('\n' + '='.repeat(60))
+              console.log('📱 SMS MOCK (FALLBACK) - OTP CODE FOR TESTING')
+              console.log('='.repeat(60))
+              console.log(`Phone: ${options.to}`)
+              console.log(`OTP Code: ${otp}`)
+              console.log(`Message: ${options.body}`)
+              console.log('='.repeat(60) + '\n')
+              
+              log.debug('SMS mock (fallback): message sent', { to: options.to, otp, body: options.body?.substring(0, 50) })
+              return { sid: `mock_${Date.now()}` }
             }
           }
         }

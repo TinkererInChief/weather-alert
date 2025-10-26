@@ -80,3 +80,7 @@ yarn.lock
 
 # Kiro AI assistant files (optional - you might want to include these)
 .kiro/
+
+# Database dumps
+*.dump
+*.csv

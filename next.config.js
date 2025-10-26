@@ -8,10 +8,16 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async headers() {
+    // Allow unsafe-eval in development for Next.js hot module replacement
+    const isDev = process.env.NODE_ENV === 'development'
+    const scriptSrc = isDev 
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'"
+    
     const csp = [
       "default-src 'self'",
       // Allow inline styles for Tailwind preflight utilities
-      "script-src 'self' 'unsafe-inline'",
+      scriptSrc,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' https://fonts.gstatic.com",

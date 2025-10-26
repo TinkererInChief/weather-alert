@@ -147,7 +147,8 @@ class SecurityHeadersService {
     if (csp.allowInlineScripts) {
       scriptSources.push("'unsafe-inline'")
     }
-    if (!csp.strictMode) {
+    // Allow unsafe-eval in development for Next.js hot reload
+    if (!csp.strictMode || process.env.NODE_ENV === 'development') {
       scriptSources.push("'unsafe-eval'")
     }
     // Add trusted script domains
