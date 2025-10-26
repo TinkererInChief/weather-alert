@@ -28,7 +28,8 @@ import {
   Search,
   PanelLeftClose,
   PanelLeft,
-  Ship
+  Ship,
+  Database
 } from 'lucide-react'
 import { Role, Permission, hasPermission } from '@/lib/rbac/roles'
 
@@ -263,6 +264,12 @@ export default function AppLayout({
             pulse: liveCounts.systemStatus === 'critical'
           } : { icon: '✓', color: 'green', pulse: false },
           highlight: shouldHighlight('System Status')
+        },
+        { 
+          name: 'Database Stats', 
+          href: '/dashboard/database', 
+          icon: Database, 
+          current: pathname === '/dashboard/database'
         },
       ]
     }
