@@ -165,6 +165,18 @@ export default function VesselMap({ vessels, alerts, onBoundsChange, highlighted
     alerts.map(a => [a.vessel.mmsi, a])
   )
   
+  // Safety check - don't render if no vessels
+  if (vesselsWithPosition.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full bg-slate-50 text-slate-500">
+        <div className="text-center">
+          <Ship className="h-12 w-12 mx-auto mb-2 opacity-30" />
+          <p>No vessels to display</p>
+        </div>
+      </div>
+    )
+  }
+  
   return (
     <MapContainer 
       center={center} 

@@ -58,7 +58,7 @@ export default function VesselsPage() {
   const boundsDebounce = useRef<number | undefined>(undefined)
   const [skip, setSkip] = useState(0)
   const [hasMore, setHasMore] = useState(true)
-  const PAGE_LIMIT = 5000
+  const PAGE_LIMIT = 500  // Reduced from 5000 for better performance
   const [searchQuery, setSearchQuery] = useState('')
   const [highlightedVesselId, setHighlightedVesselId] = useState<string | null>(null)
   const [mode, setMode] = useState<'active' | 'all'>('active')
@@ -424,8 +424,9 @@ export default function VesselsPage() {
           noPadding
         >
           <div style={{ height: '500px', width: '100%' }}>
-            {!loading && (
+            {!loading && vessels.length > 0 && (
               <VesselMap 
+                key={`map-${vessels.length}`}
                 vessels={vessels} 
                 alerts={alerts}
                 highlightedVesselId={highlightedVesselId}

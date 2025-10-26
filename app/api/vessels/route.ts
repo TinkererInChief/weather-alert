@@ -74,6 +74,11 @@ export async function GET(request: Request) {
       where.lastSeen = {
         gte: new Date(Date.now() - 60 * 60 * 1000)
       }
+    } else {
+      // For non-active queries, still limit to recent vessels to prevent overload
+      where.lastSeen = {
+        gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
+      }
     }
     
     const vessels = await prisma.vessel.findMany({
