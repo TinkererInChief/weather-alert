@@ -13,8 +13,9 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     
-    // Only allow authenticated users to view database stats
-    if (!session) {
+    // Only allow authenticated users to view database stats (or in development)
+    const isDev = process.env.NODE_ENV === 'development'
+    if (!session && !isDev) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -30,28 +31,28 @@ export async function GET() {
       recentlyActiveVessels,
       newVesselsToday
     ] = await Promise.all([
-      prisma.vessel.count(),
+      prisma.vessel.count().catch(e => { console.error('vessel.count error:', e); return 0 }),
       prisma.vessel.count({
         where: {
           positions: {
             some: {}
           }
         }
-      }),
+      }).catch(e => { console.error('vessel.count with positions error:', e); return 0 }),
       prisma.vessel.count({
         where: {
           lastSeen: {
             gte: lastHour
           }
         }
-      }),
+      }).catch(e => { console.error('vessel.count recently active error:', e); return 0 }),
       prisma.vessel.count({
         where: {
           createdAt: {
             gte: today
           }
         }
-      })
+      }).catch(e => { console.error('vessel.count new today error:', e); return 0 })
     ])
 
     // Position statistics
@@ -61,54 +62,54 @@ export async function GET() {
       positionsLastHour,
       positionsLast15Min
     ] = await Promise.all([
-      prisma.vesselPosition.count(),
+      prisma.vesselPosition.count().catch(e => { console.error('vesselPosition.count error:', e); return 0 }),
       prisma.vesselPosition.count({
         where: {
           timestamp: {
             gte: today
           }
         }
-      }),
+      }).catch(e => { console.error('vesselPosition.count today error:', e); return 0 }),
       prisma.vesselPosition.count({
         where: {
           timestamp: {
             gte: lastHour
           }
         }
-      }),
+      }).catch(e => { console.error('vesselPosition.count last hour error:', e); return 0 }),
       prisma.vesselPosition.count({
         where: {
           timestamp: {
             gte: last15Min
           }
         }
-      })
+      }).catch(e => { console.error('vesselPosition.count last 15min error:', e); return 0 })
     ])
 
     // Alert statistics
     const [totalAlerts, activeAlerts, criticalAlerts] = await Promise.all([
-      prisma.vesselAlert.count(),
+      prisma.vesselAlert.count().catch(e => { console.error('vesselAlert.count error:', e); return 0 }),
       prisma.vesselAlert.count({
         where: {
           resolvedAt: null
         }
-      }),
+      }).catch(e => { console.error('vesselAlert.count active error:', e); return 0 }),
       prisma.vesselAlert.count({
         where: {
           resolvedAt: null,
           severity: 'critical'
         }
-      })
+      }).catch(e => { console.error('vesselAlert.count critical error:', e); return 0 })
     ])
 
     // User statistics
     const [totalUsers, adminUsers] = await Promise.all([
-      prisma.user.count(),
+      prisma.user.count().catch(e => { console.error('user.count error:', e); return 0 }),
       prisma.user.count({
         where: {
           role: 'admin'
         }
-      })
+      }).catch(e => { console.error('user.count admin error:', e); return 0 })
     ])
 
     // Get counts for major tables (with error handling)
@@ -129,11 +130,11 @@ export async function GET() {
       prisma.vessel.findFirst({
         orderBy: { updatedAt: 'desc' },
         select: { updatedAt: true }
-      }),
+      }).catch(e => { console.error('vessel.findFirst error:', e); return null }),
       prisma.vesselPosition.findFirst({
         orderBy: { timestamp: 'desc' },
         select: { timestamp: true }
-      })
+      }).catch(e => { console.error('vesselPosition.findFirst error:', e); return null })
     ])
 
     // Manually construct table stats
