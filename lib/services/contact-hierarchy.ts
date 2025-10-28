@@ -42,11 +42,7 @@ export class ContactHierarchyService {
         }
       },
       include: {
-        contact: {
-          include: {
-            notificationSettings: false
-          }
-        }
+        contact: true
       },
       orderBy: [
         { priority: 'asc' },  // Primary first (priority 1, 2, 3...)
