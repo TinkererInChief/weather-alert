@@ -33,8 +33,18 @@ export async function GET(request: Request) {
     const owner = searchParams.get('owner')
     const operator = searchParams.get('operator')
     const flag = searchParams.get('flag')
+    const search = searchParams.get('search')
     
     const where: any = activeOnly ? { active: true } : {}
+    
+    // Search filter (MMSI, name, or vessel type)
+    if (search && search.trim().length > 0) {
+      where.OR = [
+        { mmsi: { contains: search, mode: 'insensitive' } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { vesselType: { contains: search, mode: 'insensitive' } }
+      ]
+    }
     
     // Fleet filtering - only show vessels with assigned contacts
     if (fleetOnly) {
