@@ -113,8 +113,7 @@ export default function FleetsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Fleet Management</h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-600">
               Group and manage your vessels for targeted monitoring
             </p>
           </div>
