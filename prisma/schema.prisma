@@ -435,6 +435,7 @@ model Vessel {
   positions         VesselPosition[]
   alerts            VesselAlert[]
   contacts          VesselContact[]
+  fleetVessels      FleetVessel[]
 
   @@index([mmsi])
   @@index([active])
@@ -503,6 +504,8 @@ model VesselContact {
   contactId String
   role      String
   primary   Boolean  @default(false)
+  priority  Int      @default(1)  // 1 = highest priority
+  notifyOn  String[] @default(["critical", "high"])  // Alert levels to notify
   createdAt DateTime @default(now())
   vessel    Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
   contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
@@ -510,7 +513,53 @@ model VesselContact {
   @@unique([vesselId, contactId])
   @@index([vesselId])
   @@index([contactId])
+  @@index([priority])
   @@map("vessel_contacts")
+}
+
+model Fleet {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  metadata    Json          @default("{}")
+  active      Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  vessels     FleetVessel[]
+
+  @@index([ownerId])
+  @@index([active])
+  @@map("fleets")
+}
+
+model FleetVessel {
+  id        String   @id @default(cuid())
+  fleetId   String
+  vesselId  String
+  role      String   @default("primary")  // "primary", "backup", "auxiliary"
+  priority  Int      @default(1)          // 1 = highest priority
+  metadata  Json     @default("{}")
+  addedAt   DateTime @default(now())
+  fleet     Fleet    @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  vessel    Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+
+  @@unique([fleetId, vesselId])
+  @@index([fleetId])
+  @@index([vesselId])
+  @@map("fleet_vessels")
+}
+
+model RealtimeStats {
+  id                      String   @id @default("singleton")
+  positionsLastHour       Int      @default(0) @map("positions_last_hour")
+  positionsLast15Min      Int      @default(0) @map("positions_last_15min")
+  vesselsActiveLastHour   Int      @default(0) @map("vessels_active_last_hour")
+  totalVessels            Int      @default(0) @map("total_vessels")
+  totalPositionsEstimate  BigInt   @default(0) @map("total_positions_estimate")
+  updatedAt               DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("realtime_stats")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.

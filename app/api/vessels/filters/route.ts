@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
@@ -9,23 +12,22 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET() {
   try {
-    // Get unique vessel types
-    const vesselTypes = await prisma.vessel.groupBy({
-      by: ['vesselType'],
-      where: {
-        vesselType: {
-          not: null as any
-        }
-      },
-      _count: {
-        vesselType: true
-      },
-      orderBy: {
-        _count: {
-          vesselType: 'desc'
-        }
-      }
-    })
+    const session = await getServerSession(authOptions)
+    const isDev = process.env.NODE_ENV === 'development'
+    if (!session && !isDev) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    // Get vessel types (trimmed, non-empty, excluding placeholders)
+    const vesselTypes = await prisma.$queryRaw<Array<{ v: string; c: bigint }>>(Prisma.sql`
+      SELECT BTRIM("vesselType") AS v, COUNT(*)::bigint AS c
+      FROM "vessels"
+      WHERE "vesselType" IS NOT NULL
+        AND length(BTRIM("vesselType")) > 0
+        AND UPPER(BTRIM("vesselType")) NOT IN ('?', 'NA', 'N/A', 'NIL', '0', '-', '--')
+      GROUP BY v
+      ORDER BY c DESC
+      LIMIT 20
+    `)
 
     // Get unique owners
     const owners = await prisma.vessel.groupBy({
@@ -65,30 +67,24 @@ export async function GET() {
       take: 50 // Limit to top 50 operators
     })
 
-    // Get unique flags
-    const flags = await prisma.vessel.groupBy({
-      by: ['flag'],
-      where: {
-        flag: {
-          not: null as any
-        }
-      },
-      _count: {
-        flag: true
-      },
-      orderBy: {
-        _count: {
-          flag: 'desc'
-        }
-      }
-    })
+    // Get flags (trimmed, non-empty, normalized to upper-case, excluding placeholders)
+    const flags = await prisma.$queryRaw<Array<{ v: string; c: bigint }>>(Prisma.sql`
+      SELECT UPPER(BTRIM("flag")) AS v, COUNT(*)::bigint AS c
+      FROM "vessels"
+      WHERE "flag" IS NOT NULL
+        AND length(BTRIM("flag")) > 0
+        AND UPPER(BTRIM("flag")) NOT IN ('?', 'NA', 'N/A', 'NIL', '0', '-', '--')
+      GROUP BY v
+      ORDER BY c DESC
+      LIMIT 100
+    `)
 
     return NextResponse.json({
       success: true,
       filters: {
         vesselTypes: vesselTypes.map(v => ({
-          value: v.vesselType,
-          count: v._count.vesselType
+          value: v.v,
+          count: Number(v.c)
         })),
         owners: owners.map(o => ({
           value: o.owner,
@@ -99,8 +95,8 @@ export async function GET() {
           count: o._count.operator
         })),
         flags: flags.map(f => ({
-          value: f.flag,
-          count: f._count.flag
+          value: f.v,
+          count: Number(f.c)
         }))
       }
     })

@@ -47,19 +47,59 @@ export async function GET(req: Request) {
     const since = new Date(Date.now() - rangeMs)
 
     const expr = bucketExprFor('timestamp', bucket)
-
-    const query = Prisma.sql`
-      SELECT
-        ${expr} AS t,
-        COUNT(*)::bigint AS positions,
-        COUNT(DISTINCT "vesselId")::bigint AS unique_vessels
-      FROM "vessel_positions"
-      WHERE "timestamp" >= ${since}
-      GROUP BY t
-      ORDER BY t
-    `
-
-    const rows = await prisma.$queryRaw<Array<{ t: Date; positions: bigint; unique_vessels: bigint }>>(query)
+    
+    // Prefer continuous aggregate when available for 5m bucket
+    let rows: Array<{ t: Date; positions: bigint; unique_vessels: bigint }>
+    if (bucket === '5m') {
+      try {
+        const exists = await prisma.$queryRaw<Array<{ exists: boolean }>>(Prisma.sql`
+          SELECT EXISTS (
+            SELECT 1 FROM pg_matviews WHERE matviewname = 'positions_5m'
+          ) as exists
+        `)
+        if (exists[0]?.exists) {
+          rows = await prisma.$queryRaw<Array<{ t: Date; positions: bigint; unique_vessels: bigint }>>(Prisma.sql`
+            SELECT bucket AS t, positions, unique_vessels
+            FROM positions_5m
+            WHERE bucket >= ${since}
+            ORDER BY t
+          `)
+        } else {
+          rows = await prisma.$queryRaw<Array<{ t: Date; positions: bigint; unique_vessels: bigint }>>(Prisma.sql`
+            SELECT
+              ${expr} AS t,
+              COUNT(*)::bigint AS positions,
+              COUNT(DISTINCT "vesselId")::bigint AS unique_vessels
+            FROM "vessel_positions"
+            WHERE "timestamp" >= ${since}
+            GROUP BY t
+            ORDER BY t
+          `)
+        }
+      } catch {
+        rows = await prisma.$queryRaw<Array<{ t: Date; positions: bigint; unique_vessels: bigint }>>(Prisma.sql`
+          SELECT
+            ${expr} AS t,
+            COUNT(*)::bigint AS positions,
+            COUNT(DISTINCT "vesselId")::bigint AS unique_vessels
+          FROM "vessel_positions"
+          WHERE "timestamp" >= ${since}
+          GROUP BY t
+          ORDER BY t
+        `)
+      }
+    } else {
+      rows = await prisma.$queryRaw<Array<{ t: Date; positions: bigint; unique_vessels: bigint }>>(Prisma.sql`
+        SELECT
+          ${expr} AS t,
+          COUNT(*)::bigint AS positions,
+          COUNT(DISTINCT "vesselId")::bigint AS unique_vessels
+        FROM "vessel_positions"
+        WHERE "timestamp" >= ${since}
+        GROUP BY t
+        ORDER BY t
+      `)
+    }
 
     const buckets = rows.map(r => ({
       t: new Date(r.t).toISOString(),

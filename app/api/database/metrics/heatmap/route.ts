@@ -37,22 +37,32 @@ export async function GET(req: Request) {
     const east = searchParams.get('east')
     const west = searchParams.get('west')
 
-    const boundsSql = north && south && east && west
-      ? Prisma.sql`AND "latitude" BETWEEN ${Number(south)} AND ${Number(north)} AND "longitude" BETWEEN ${Number(west)} AND ${Number(east)}`
-      : Prisma.empty
-
-    const rows = await prisma.$queryRaw<Array<{ lat: number; lon: number; c: bigint }>>(Prisma.sql`
-      SELECT
-        ROUND("latitude" / ${precision}) * ${precision} AS lat,
-        ROUND("longitude" / ${precision}) * ${precision} AS lon,
-        COUNT(*)::bigint AS c
-      FROM "vessel_positions"
-      WHERE "timestamp" >= ${since}
-      ${boundsSql}
-      GROUP BY lat, lon
-      ORDER BY c DESC
-      LIMIT ${limit}
-    `)
+    const hasBounds = Boolean(north && south && east && west)
+    const rows = hasBounds
+      ? await prisma.$queryRaw<Array<{ lat: number; lon: number; c: bigint }>>(Prisma.sql`
+          SELECT
+            ROUND("latitude" / ${precision}) * ${precision} AS lat,
+            ROUND("longitude" / ${precision}) * ${precision} AS lon,
+            COUNT(*)::bigint AS c
+          FROM "vessel_positions"
+          WHERE "timestamp" >= ${since}
+            AND "latitude" BETWEEN ${Number(south)} AND ${Number(north)}
+            AND "longitude" BETWEEN ${Number(west)} AND ${Number(east)}
+          GROUP BY lat, lon
+          ORDER BY c DESC
+          LIMIT ${limit}
+        `)
+      : await prisma.$queryRaw<Array<{ lat: number; lon: number; c: bigint }>>(Prisma.sql`
+          SELECT
+            ROUND("latitude" / ${precision}) * ${precision} AS lat,
+            ROUND("longitude" / ${precision}) * ${precision} AS lon,
+            COUNT(*)::bigint AS c
+          FROM "vessel_positions"
+          WHERE "timestamp" >= ${since}
+          GROUP BY lat, lon
+          ORDER BY c DESC
+          LIMIT ${limit}
+        `)
 
     const cells = rows.map(r => ({ lat: Number(r.lat), lon: Number(r.lon), count: Number(r.c) }))
 

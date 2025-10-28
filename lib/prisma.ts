@@ -5,11 +5,15 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 const baseUrl = process.env.DATABASE_URL || ''
+const poolLimit = String(process.env.DATABASE_POOL_LIMIT || '15')
+const poolTimeout = String(process.env.DATABASE_POOL_TIMEOUT || '10')
 let augmentedUrl = baseUrl
 try {
   const u = new URL(baseUrl)
-  if (!u.searchParams.has('connection_limit')) u.searchParams.set('connection_limit', '5')
-  if (!u.searchParams.has('pool_timeout')) u.searchParams.set('pool_timeout', '5')
+  u.searchParams.set('connection_limit', poolLimit)
+  u.searchParams.set('pool_max', poolLimit)
+  u.searchParams.set('max', poolLimit)
+  u.searchParams.set('pool_timeout', poolTimeout)
   augmentedUrl = u.toString()
 } catch {
   augmentedUrl = baseUrl

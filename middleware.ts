@@ -20,11 +20,13 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Allow public access to homepage, login page, public pages, and API routes
+        // Allow public access to homepage, login page, public pages, and certain API routes
         if (pathname === '/' ||
             pathname.startsWith('/login') || 
             pathname.startsWith('/api/auth') || 
             pathname.startsWith('/api/health') ||
+            pathname.startsWith('/api/database') ||
+            pathname.startsWith('/api/vessels') ||
             
             pathname === '/privacy' ||
             pathname === '/terms' ||
@@ -39,7 +41,7 @@ export default withAuth(
           return true
         }
 
-        // Require authentication for all other routes (dashboard, admin pages, etc.)
+        // Require authentication for dashboard pages
         return !!token
       },
     },
@@ -55,6 +57,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map)$).*)',
   ],
 }

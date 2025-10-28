@@ -43,17 +43,33 @@ function CameraAnimator({
   useEffect(() => {
     if (!enabled) return
 
-    const introZoom = clamp(targetZoom - 2.2, 1.5, 8)
-    map.setView([0, 20], introZoom, { animate: false })
+    let cancelled = false
+    let raf = 0
+    let t: ReturnType<typeof setTimeout> | null = null
 
-    const id = requestAnimationFrame(() => {
-      map.flyTo([lat, lng], introZoom + 1, { duration: 0.9, easeLinearity: 0.2, noMoveStart: true })
-      setTimeout(() => {
-        map.flyTo([lat, lng], targetZoom, { duration: 1.0, easeLinearity: 0.25 })
-      }, 950)
-    })
+    const run = () => {
+      if (cancelled) return
+      const introZoom = clamp(targetZoom - 2.2, 1.5, 8)
+      try { map.invalidateSize() } catch {}
+      map.setView([0, 20], introZoom, { animate: false })
 
-    return () => cancelAnimationFrame(id)
+      raf = requestAnimationFrame(() => {
+        if (cancelled) return
+        map.flyTo([lat, lng], introZoom + 1, { duration: 0.9, easeLinearity: 0.2, noMoveStart: true })
+        t = setTimeout(() => {
+          if (cancelled) return
+          map.flyTo([lat, lng], targetZoom, { duration: 1.0, easeLinearity: 0.25 })
+        }, 950)
+      })
+    }
+
+    map.whenReady(run)
+
+    return () => {
+      cancelled = true
+      if (raf) cancelAnimationFrame(raf)
+      if (t) clearTimeout(t)
+    }
   }, [enabled, lat, lng, map, targetZoom])
 
   return null
