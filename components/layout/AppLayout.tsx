@@ -220,8 +220,7 @@ export default function AppLayout({
           name: 'Fleets', 
           href: '/dashboard/fleets', 
           icon: Ship, 
-          current: pathname?.startsWith('/dashboard/fleets'),
-          description: 'Manage vessel groups'
+          current: pathname?.startsWith('/dashboard/fleets')
         },
       ]
     },
