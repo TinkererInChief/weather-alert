@@ -216,6 +216,13 @@ export default function AppLayout({
           badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'blue', pulse: true } : undefined,
           highlight: shouldHighlight('Vessels')
         },
+        { 
+          name: 'Fleets', 
+          href: '/dashboard/fleets', 
+          icon: Ship, 
+          current: pathname?.startsWith('/dashboard/fleets'),
+          description: 'Manage vessel groups'
+        },
       ]
     },
     {
