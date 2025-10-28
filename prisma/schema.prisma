@@ -521,11 +521,11 @@ model Fleet {
   id          String        @id @default(cuid())
   name        String
   description String?
-  ownerId     String
+  ownerId     String        @map("owner_id")
   metadata    Json          @default("{}")
   active      Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
   vessels     FleetVessel[]
 
   @@index([ownerId])
@@ -535,12 +535,12 @@ model Fleet {
 
 model FleetVessel {
   id        String   @id @default(cuid())
-  fleetId   String
-  vesselId  String
+  fleetId   String   @map("fleet_id")
+  vesselId  String   @map("vessel_id")
   role      String   @default("primary")  // "primary", "backup", "auxiliary"
   priority  Int      @default(1)          // 1 = highest priority
   metadata  Json     @default("{}")
-  addedAt   DateTime @default(now())
+  addedAt   DateTime @default(now()) @map("added_at")
   fleet     Fleet    @relation(fields: [fleetId], references: [id], onDelete: Cascade)
   vessel    Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
 
