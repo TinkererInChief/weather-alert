@@ -57,8 +57,20 @@ export async function GET(req: NextRequest) {
     }
 
     const currentUser = session.user as any
+    
+    // Ensure user has an ID
+    if (!currentUser.id) {
+      console.error('User session missing ID:', currentUser)
+      return NextResponse.json(
+        { error: 'Invalid user session' },
+        { status: 400 }
+      )
+    }
+
     const searchParams = req.nextUrl.searchParams
     const includeInactive = searchParams.get('includeInactive') === 'true'
+
+    console.log('Fetching fleets for user:', currentUser.id)
 
     const fleets = await prisma.fleet.findMany({
       where: {
@@ -84,11 +96,20 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
+    console.log('Found fleets:', fleets.length)
     return NextResponse.json(fleets)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching fleets:', error)
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      meta: error.meta
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch fleets' },
+      { 
+        error: 'Failed to fetch fleets',
+        details: error.message 
+      },
       { status: 500 }
     )
   }

@@ -36,16 +36,22 @@ export default function FleetsPage() {
   const fetchFleets = async () => {
     try {
       setLoading(true)
+      setError(null)
       const res = await fetch('/api/fleets')
       const data = await res.json()
 
       if (res.ok) {
         setFleets(data)
       } else {
-        setError(data.error || 'Failed to load fleets')
+        const errorMsg = data.details 
+          ? `${data.error}: ${data.details}` 
+          : data.error || 'Failed to load fleets'
+        setError(errorMsg)
+        console.error('API Error:', { status: res.status, data })
       }
-    } catch (err) {
-      setError('Failed to connect to server')
+    } catch (err: any) {
+      const errorMsg = err.message || 'Failed to connect to server'
+      setError(errorMsg)
       console.error('Error fetching fleets:', err)
     } finally {
       setLoading(false)
