@@ -6,9 +6,43 @@ import { Permission, withPermission, logAudit } from '@/lib/rbac'
 /**
  * GET /api/contacts
  * List all contacts (requires VIEW_CONTACTS permission)
+ * Supports ?search=query parameter for filtering
  */
 export const GET = withPermission(Permission.VIEW_CONTACTS, async (req, session) => {
   try {
+    const { searchParams } = new URL(req.url)
+    const search = searchParams.get('search')
+    
+    // If search parameter provided, use Prisma for better filtering
+    if (search && search.trim().length > 0) {
+      const { prisma } = await import('@/lib/prisma')
+      const contacts = await prisma.contact.findMany({
+        where: {
+          OR: [
+            { name: { contains: search, mode: 'insensitive' } },
+            { email: { contains: search, mode: 'insensitive' } },
+            { phone: { contains: search, mode: 'insensitive' } }
+          ],
+          active: true
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          whatsapp: true
+        },
+        take: 20,
+        orderBy: { name: 'asc' }
+      })
+      
+      return NextResponse.json({
+        success: true,
+        contacts
+      })
+    }
+    
+    // Otherwise use existing db method
     const contacts = await db.getAllContacts()
     
     return NextResponse.json({
