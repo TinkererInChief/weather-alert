@@ -1,11 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
-
-// Force dynamic rendering since we use searchParams
-export const dynamic = 'force-dynamic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -34,7 +31,7 @@ type Vessel = {
   vesselType: string
 }
 
-export default function BulkAssignContactsPage() {
+function BulkAssignContactsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const contactIds = searchParams.get('contacts')?.split(',') || []
@@ -393,5 +390,21 @@ export default function BulkAssignContactsPage() {
         </Card>
       </div>
     </AppLayout>
+  )
+}
+
+export default function BulkAssignContactsPage() {
+  return (
+    <Suspense fallback={
+      <AppLayout title="Bulk Assign Contacts to Vessels">
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </AppLayout>
+    }>
+      <BulkAssignContactsPageContent />
+    </Suspense>
   )
 }
