@@ -40,10 +40,10 @@ export default function ContactsPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddForm, setShowAddForm] = useState(false)
-  const [newContact, setNewContact] = useState({ name: '', phone: '', email: '', whatsapp: '' })
+  const [newContact, setNewContact] = useState({ name: '', phone: '', email: '', whatsapp: '', location: '', role: '' })
   const [submitting, setSubmitting] = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', whatsapp: '' })
+  const [editForm, setEditForm] = useState({ name: '', phone: '', email: '', whatsapp: '', location: '', role: '' })
   const [deletingContact, setDeletingContact] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Contact | null>(null)
   const [addErrors, setAddErrors] = useState<{ name?: string; phone?: string; email?: string; whatsapp?: string }>({})
@@ -159,7 +159,7 @@ export default function ContactsPage() {
         const r = await fetch('/api/contacts')
         const j = await r.json()
         setContacts((j?.data ?? []) as Contact[])
-        setNewContact({ name: '', phone: '', email: '', whatsapp: '' })
+        setNewContact({ name: '', phone: '', email: '', whatsapp: '', location: '', role: '' })
         setShowAddForm(false)
         setAddErrors({})
         addToast('Contact added successfully', 'success')
@@ -174,12 +174,19 @@ export default function ContactsPage() {
 
   const startEdit = (c: Contact) => {
     setEditingContact(c)
-    setEditForm({ name: c.name, phone: c.phone, email: c.email ?? '', whatsapp: c.whatsapp ?? '' })
+    setEditForm({ 
+      name: c.name, 
+      phone: c.phone, 
+      email: c.email ?? '', 
+      whatsapp: c.whatsapp ?? '',
+      location: c.location ?? '',
+      role: c.role ?? ''
+    })
   }
 
   const cancelEdit = () => {
     setEditingContact(null)
-    setEditForm({ name: '', phone: '', email: '', whatsapp: '' })
+    setEditForm({ name: '', phone: '', email: '', whatsapp: '', location: '', role: '' })
   }
 
   const saveEdit = async (e: FormEvent) => {
@@ -701,6 +708,41 @@ export default function ContactsPage() {
                   />
                   {addErrors.whatsapp && <p className="text-xs text-red-600 mt-1">{addErrors.whatsapp}</p>}
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={newContact.location}
+                    onChange={(e) => setNewContact({ ...newContact, location: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., San Francisco, CA"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                  <select
+                    value={newContact.role}
+                    onChange={(e) => setNewContact({ ...newContact, role: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Select a role...</option>
+                    <option value="EMERGENCY_COORDINATOR">Emergency Coordinator</option>
+                    <option value="FIRST_RESPONDER">First Responder</option>
+                    <option value="CAPTAIN">Captain</option>
+                    <option value="CHIEF_OFFICER">Chief Officer</option>
+                    <option value="ENGINEERING_OFFICER">Engineering Officer</option>
+                    <option value="CREW_MEMBER">Crew Member</option>
+                    <option value="PORT_AUTHORITY">Port Authority</option>
+                    <option value="COAST_GUARD">Coast Guard</option>
+                    <option value="FLEET_MANAGER">Fleet Manager</option>
+                    <option value="VESSEL_OWNER">Vessel Owner</option>
+                    <option value="OPERATIONS_MANAGER">Operations Manager</option>
+                    <option value="SAFETY_OFFICER">Safety Officer</option>
+                    <option value="MARINE_SURVEYOR">Marine Surveyor</option>
+                    <option value="AGENT">Agent</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
                 <div className="md:col-span-2 flex gap-2">
                   <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60">
                     {submitting ? 'Adding...' : 'Add Contact'}
@@ -813,6 +855,41 @@ export default function ContactsPage() {
                     className={`w-full px-3 py-2 border ${editErrors.whatsapp ? 'border-red-500' : 'border-slate-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                   />
                   {editErrors.whatsapp && <p className="text-xs text-red-600 mt-1">{editErrors.whatsapp}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., San Francisco, CA"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                  <select
+                    value={editForm.role}
+                    onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="">Select a role...</option>
+                    <option value="EMERGENCY_COORDINATOR">Emergency Coordinator</option>
+                    <option value="FIRST_RESPONDER">First Responder</option>
+                    <option value="CAPTAIN">Captain</option>
+                    <option value="CHIEF_OFFICER">Chief Officer</option>
+                    <option value="ENGINEERING_OFFICER">Engineering Officer</option>
+                    <option value="CREW_MEMBER">Crew Member</option>
+                    <option value="PORT_AUTHORITY">Port Authority</option>
+                    <option value="COAST_GUARD">Coast Guard</option>
+                    <option value="FLEET_MANAGER">Fleet Manager</option>
+                    <option value="VESSEL_OWNER">Vessel Owner</option>
+                    <option value="OPERATIONS_MANAGER">Operations Manager</option>
+                    <option value="SAFETY_OFFICER">Safety Officer</option>
+                    <option value="MARINE_SURVEYOR">Marine Surveyor</option>
+                    <option value="AGENT">Agent</option>
+                    <option value="OTHER">Other</option>
+                  </select>
                 </div>
                 <div className="md:col-span-2 flex gap-2">
                   <button type="submit" disabled={submitting} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60">

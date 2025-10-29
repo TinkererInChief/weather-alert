@@ -45,7 +45,7 @@ export default function BulkAssignContactsPage() {
   const [progress, setProgress] = useState({ current: 0, total: 0 })
   
   // Assignment settings
-  const [role, setRole] = useState('crew')
+  const [role, setRole] = useState('CREW')
   const [priority, setPriority] = useState(1)
   const [notifyOn, setNotifyOn] = useState<string[]>(['critical', 'high'])
 
@@ -227,13 +227,25 @@ export default function BulkAssignContactsPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <Label htmlFor="role">Role</Label>
-                <Input
+                <Label htmlFor="role">Vessel Role</Label>
+                <select
                   id="role"
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  placeholder="e.g., crew, captain, officer"
-                />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="OWNER">Owner</option>
+                  <option value="OPERATOR">Operator</option>
+                  <option value="MANAGER">Manager</option>
+                  <option value="CAPTAIN">Captain</option>
+                  <option value="CHIEF_OFFICER">Chief Officer</option>
+                  <option value="CHIEF_ENGINEER">Chief Engineer</option>
+                  <option value="CREW">Crew</option>
+                  <option value="AGENT">Agent</option>
+                  <option value="EMERGENCY_CONTACT">Emergency Contact</option>
+                  <option value="TECHNICAL_SUPPORT">Technical Support</option>
+                  <option value="OTHER">Other</option>
+                </select>
               </div>
               
               <div>
