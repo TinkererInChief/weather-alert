@@ -7,7 +7,7 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import { 
   Users, Plus, Search, Phone, Mail, MapPin, Edit, Trash2, MessageCircle,
   RefreshCw, Download, Upload, CheckSquare, Square, MoreVertical,
-  Filter, SortAsc, Clock, TrendingUp, UserCheck, AlertCircle, X
+  Filter, SortAsc, Clock, TrendingUp, UserCheck, AlertCircle, X, Ship
 } from 'lucide-react'
 import { z } from 'zod'
 
@@ -587,7 +587,19 @@ export default function ContactsPage() {
                   </button>
                   
                   {showBulkActions && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50">
+                      <button
+                        onClick={() => {
+                          const ids = Array.from(selectedContacts).join(',')
+                          window.location.href = `/dashboard/contacts/bulk-assign?contacts=${ids}`
+                        }}
+                        disabled={bulkActionInProgress}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-blue-50 disabled:opacity-50 text-blue-600 font-medium"
+                      >
+                        <Ship className="inline h-4 w-4 mr-2" />
+                        Assign to Vessels
+                      </button>
+                      <div className="border-t border-slate-100 my-1" />
                       <button
                         onClick={bulkActivate}
                         disabled={bulkActionInProgress}
