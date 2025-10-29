@@ -132,7 +132,7 @@ export class ContactHierarchyService {
     const vesselContacts = await prisma.vesselContact.findMany({
       where: {
         vesselId,
-        role
+        role: role as any
       },
       include: {
         contact: true
