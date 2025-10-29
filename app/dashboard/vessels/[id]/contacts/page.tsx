@@ -58,6 +58,7 @@ export default function VesselContactsPage({ params }: { params: { id: string } 
   const [searchResults, setSearchResults] = useState<Contact[]>([])
   const [searching, setSearching] = useState(false)
   const [assigningContact, setAssigningContact] = useState<string | null>(null)
+  const [selectedRole, setSelectedRole] = useState('CREW')
 
   useEffect(() => {
     fetchVessel()
@@ -122,7 +123,7 @@ export default function VesselContactsPage({ params }: { params: { id: string } 
     }
   }
 
-  const handleAssignContact = async (contactId: string, role: string = 'crew') => {
+  const handleAssignContact = async (contactId: string) => {
     try {
       setAssigningContact(contactId)
       const res = await fetch(`/api/vessels/${params.id}/contacts`, {
@@ -130,7 +131,7 @@ export default function VesselContactsPage({ params }: { params: { id: string } 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contactId,
-          role,
+          role: selectedRole,
           priority: vesselContacts.length + 1,
           notifyOn: ['critical', 'high']
         })
@@ -313,18 +314,45 @@ export default function VesselContactsPage({ params }: { params: { id: string } 
             {/* Add Contact Search */}
             {showAddContact && (
               <div className="mb-6 p-4 border border-blue-200 bg-blue-50 rounded-lg">
-                <Label htmlFor="contact-search" className="text-sm font-medium mb-2 block">
-                  Search for contacts to add
-                </Label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="contact-search"
-                    placeholder="Search by name, email, or phone..."
-                    value={contactSearch}
-                    onChange={(e) => setContactSearch(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <Label htmlFor="vessel-role" className="text-sm font-medium mb-2 block">
+                      Assign as
+                    </Label>
+                    <select
+                      id="vessel-role"
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="OWNER">Owner</option>
+                      <option value="OPERATOR">Operator</option>
+                      <option value="MANAGER">Manager</option>
+                      <option value="CAPTAIN">Captain</option>
+                      <option value="CHIEF_OFFICER">Chief Officer</option>
+                      <option value="CHIEF_ENGINEER">Chief Engineer</option>
+                      <option value="CREW">Crew</option>
+                      <option value="AGENT">Agent</option>
+                      <option value="EMERGENCY_CONTACT">Emergency Contact</option>
+                      <option value="TECHNICAL_SUPPORT">Technical Support</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label htmlFor="contact-search" className="text-sm font-medium mb-2 block">
+                      Search for contacts
+                    </Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                      <Input
+                        id="contact-search"
+                        placeholder="Search by name, email, or phone..."
+                        value={contactSearch}
+                        onChange={(e) => setContactSearch(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {searching && (
