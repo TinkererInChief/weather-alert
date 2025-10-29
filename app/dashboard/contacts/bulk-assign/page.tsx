@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AppLayout from '@/components/layout/AppLayout'
+
+// Force dynamic rendering since we use searchParams
+export const dynamic = 'force-dynamic'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
