@@ -62,7 +62,14 @@ export default function BulkAssignContactsPage() {
         fetch(`/api/contacts/${id}`).then(r => r.json())
       )
       const results = await Promise.all(promises)
-      setContacts(results.filter(r => r.success).map(r => r.contact))
+      const validContacts = results
+        .filter(r => r && r.success && r.contact)
+        .map(r => r.contact)
+      setContacts(validContacts)
+      
+      if (validContacts.length === 0) {
+        console.warn('No valid contacts found')
+      }
     } catch (err) {
       console.error('Failed to fetch contacts:', err)
     }
@@ -195,13 +202,13 @@ export default function BulkAssignContactsPage() {
               </div>
             ) : (
               <div className="flex flex-wrap gap-2">
-                {contacts.map((contact) => (
+                {contacts.filter(c => c && c.id).map((contact) => (
                   <div
                     key={contact.id}
                     className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg"
                   >
                     <UserCircle className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">{contact.name}</span>
+                    <span className="text-sm font-medium">{contact.name || 'Unknown'}</span>
                   </div>
                 ))}
               </div>

@@ -66,7 +66,7 @@ export const GET = withPermission(Permission.VIEW_CONTACTS, async (req, session)
  */
 export const POST = withPermission(Permission.CREATE_CONTACTS, async (request, session) => {
   try {
-    const { name, phone, email, whatsapp } = await request.json()
+    const { name, phone, email, whatsapp, location, role } = await request.json()
     
     if (!name || !phone) {
       return NextResponse.json(
@@ -129,6 +129,8 @@ export const POST = withPermission(Permission.CREATE_CONTACTS, async (request, s
         phone: formattedPhone,
         email: email && email.trim() ? email.trim() : null,
         whatsapp: formattedWhatsApp,
+        location: location && location.trim() ? location.trim() : null,
+        role: role || null,
         active: true
       }
     })

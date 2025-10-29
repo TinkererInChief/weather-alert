@@ -92,12 +92,32 @@ model SmsOtp {
   @@map("sms_otps")
 }
 
+enum ContactRole {
+  EMERGENCY_COORDINATOR
+  FIRST_RESPONDER
+  CAPTAIN
+  CHIEF_OFFICER
+  ENGINEERING_OFFICER
+  CREW_MEMBER
+  PORT_AUTHORITY
+  COAST_GUARD
+  FLEET_MANAGER
+  VESSEL_OWNER
+  OPERATIONS_MANAGER
+  SAFETY_OFFICER
+  MARINE_SURVEYOR
+  AGENT
+  OTHER
+}
+
 model Contact {
   id                   String               @id @default(cuid())
   name                 String
   email                String?
   phone                String?              @unique
   whatsapp             String?
+  location             String?
+  role                 ContactRole?
   language             String               @default("en")
   timezone             String               @default("UTC")
   elevationMeters      Float?
@@ -498,17 +518,31 @@ model VesselAlert {
   @@map("vessel_alerts")
 }
 
+enum VesselContactRole {
+  OWNER
+  OPERATOR
+  MANAGER
+  CAPTAIN
+  CHIEF_OFFICER
+  CHIEF_ENGINEER
+  CREW
+  AGENT
+  EMERGENCY_CONTACT
+  TECHNICAL_SUPPORT
+  OTHER
+}
+
 model VesselContact {
-  id        String   @id @default(cuid())
+  id        String             @id @default(cuid())
   vesselId  String
   contactId String
-  role      String
-  primary   Boolean  @default(false)
-  priority  Int      @default(1)  // 1 = highest priority
-  notifyOn  String[] @default(["critical", "high"])  // Alert levels to notify
-  createdAt DateTime @default(now())
-  vessel    Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
-  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  role      VesselContactRole  @default(CREW)
+  primary   Boolean            @default(false)
+  priority  Int                @default(1)  // 1 = highest priority
+  notifyOn  String[]           @default(["critical", "high"])  // Alert levels to notify
+  createdAt DateTime           @default(now())
+  vessel    Vessel             @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  contact   Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@unique([vesselId, contactId])
   @@index([vesselId])

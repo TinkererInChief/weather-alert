@@ -25,7 +25,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 
     const contactId = context.params.id
-    const { name, phone, email, whatsapp } = await request.json()
+    const { name, phone, email, whatsapp, location, role } = await request.json()
     
     if (!name || !phone) {
       return NextResponse.json(
@@ -88,7 +88,9 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         name,
         phone: formattedPhone,
         email: email && email.trim() ? email.trim() : null,
-        whatsapp: formattedWhatsApp
+        whatsapp: formattedWhatsApp,
+        location: location && location.trim() ? location.trim() : null,
+        role: role || null
       }
     })
     
