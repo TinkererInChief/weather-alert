@@ -5,7 +5,19 @@ import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
 const updateContactSchema = z.object({
-  role: z.string().optional(),
+  role: z.enum([
+    'OWNER',
+    'OPERATOR', 
+    'MANAGER',
+    'CAPTAIN',
+    'CHIEF_OFFICER',
+    'CHIEF_ENGINEER',
+    'CREW',
+    'AGENT',
+    'EMERGENCY_CONTACT',
+    'TECHNICAL_SUPPORT',
+    'OTHER'
+  ]).optional(),
   priority: z.number().int().min(1).optional(),
   notifyOn: z.array(z.enum(['critical', 'high', 'moderate', 'low'])).optional()
 })
@@ -29,7 +41,11 @@ export async function PUT(
         vesselId: params.id,
         contactId: params.contactId
       },
-      data: validated
+      data: {
+        ...(validated.role && { role: validated.role as any }),
+        ...(validated.priority && { priority: validated.priority }),
+        ...(validated.notifyOn && { notifyOn: validated.notifyOn })
+      }
     })
 
     if (vesselContact.count === 0) {

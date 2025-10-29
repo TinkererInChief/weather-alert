@@ -6,7 +6,19 @@ import { z } from 'zod'
 
 const assignContactSchema = z.object({
   contactId: z.string(),
-  role: z.string().default('crew'),
+  role: z.enum([
+    'OWNER',
+    'OPERATOR', 
+    'MANAGER',
+    'CAPTAIN',
+    'CHIEF_OFFICER',
+    'CHIEF_ENGINEER',
+    'CREW',
+    'AGENT',
+    'EMERGENCY_CONTACT',
+    'TECHNICAL_SUPPORT',
+    'OTHER'
+  ]).default('CREW'),
   priority: z.number().int().min(1).default(1),
   notifyOn: z.array(z.enum(['critical', 'high', 'moderate', 'low'])).default(['critical', 'high'])
 })
@@ -98,7 +110,7 @@ export async function POST(
       data: {
         vesselId: params.id,
         contactId: validated.contactId,
-        role: validated.role,
+        role: validated.role as any,
         priority: validated.priority,
         notifyOn: validated.notifyOn
       },
