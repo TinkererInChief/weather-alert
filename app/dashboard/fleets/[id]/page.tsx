@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Ship, ArrowLeft, Plus, X, Search, AlertCircle } from 'lucide-react'
+import { Ship, ArrowLeft, Plus, X, Search, AlertCircle, UserCircle } from 'lucide-react'
 import Link from 'next/link'
 
 type Vessel = {
@@ -313,15 +313,25 @@ export default function FleetDetailPage({ params }: { params: { id: string } }) 
                           Inactive
                         </span>
                       )}
+                      <Link href={`/dashboard/vessels/${fv.vessel.id}/contacts`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          title="Manage Contacts"
+                        >
+                          <UserCircle className="h-4 w-4 mr-1" />
+                          Contacts
+                        </Button>
+                      </Link>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleRemoveVessel(fv.vessel.id)}
+                        title="Remove from fleet"
                       >
                         <X className="h-4 w-4 text-red-500" />
                       </Button>
-                    </div>
-                  </div>
+                    </div>                  </div>
                 ))}
               </div>
             )}

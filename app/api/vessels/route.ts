@@ -17,8 +17,12 @@ export async function GET(request: Request) {
     const activeOnly = searchParams.get('active') === 'true'
     const withPosition = searchParams.get('withPosition') === 'true'
     const fleetOnly = searchParams.get('fleetOnly') === 'true'
-    const limitParam = parseInt(searchParams.get('limit') || '1000')
-    const limit = Math.min(isNaN(limitParam) ? 1000 : limitParam, 10000)
+    const search = searchParams.get('search')
+    
+    // For search queries, default to smaller limit for speed
+    const defaultLimit = search && search.trim().length > 0 ? 50 : 1000
+    const limitParam = parseInt(searchParams.get('limit') || defaultLimit.toString())
+    const limit = Math.min(isNaN(limitParam) ? defaultLimit : limitParam, 10000)
     const skipParam = parseInt(searchParams.get('skip') || '0')
     const skip = isNaN(skipParam) ? 0 : Math.max(0, skipParam)
     
@@ -33,14 +37,14 @@ export async function GET(request: Request) {
     const owner = searchParams.get('owner')
     const operator = searchParams.get('operator')
     const flag = searchParams.get('flag')
-    const search = searchParams.get('search')
     
     const where: any = activeOnly ? { active: true } : {}
     
     // Search filter (MMSI, name, or vessel type)
+    // Use startsWith for better performance on large datasets
     if (search && search.trim().length > 0) {
       where.OR = [
-        { mmsi: { contains: search, mode: 'insensitive' } },
+        { mmsi: { startsWith: search, mode: 'insensitive' } },
         { name: { contains: search, mode: 'insensitive' } },
         { vesselType: { contains: search, mode: 'insensitive' } }
       ]
@@ -79,8 +83,14 @@ export async function GET(request: Request) {
       where.flag = flag
     }
     
-    // Only show vessels seen in last hour for better performance
-    if (activeOnly) {
+    // Speed optimization: For search queries, limit to active vessels only
+    if (search && search.trim().length > 0) {
+      // When searching, only show recently active vessels
+      where.lastSeen = {
+        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+      }
+    } else if (activeOnly) {
+      // Only show vessels seen in last hour for better performance
       where.lastSeen = {
         gte: new Date(Date.now() - 60 * 60 * 1000)
       }

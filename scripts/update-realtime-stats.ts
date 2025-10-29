@@ -78,14 +78,9 @@ async function updateStats() {
       SET 
         "positions_last_hour" = ${pos1h},
         "positions_last_15min" = ${pos15m},
-        "positions_today" = ${posToday},
         "vessels_active_last_hour" = ${vessels1h},
-        "vessels_new_today" = ${vesselsToday},
         "total_vessels" = ${totalVessels},
         "total_positions_estimate" = ${totalPos},
-        "db_size_bytes" = ${Number(dbSize.bytes)},
-        "db_size_pretty" = ${dbSize.pretty},
-        "table_count" = ${tableCount},
         "updated_at" = now()
       WHERE id = 'singleton'
     `
