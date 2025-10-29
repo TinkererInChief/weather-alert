@@ -93,12 +93,22 @@ export default function DatabaseDashboard() {
         fetch('/api/database/stats-cached', { cache: 'no-store' }),
         10000
       )
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Stats API error:', { status: response.status, body: errorText })
+        setError(`API Error ${response.status}: ${errorText.substring(0, 200)}`)
+        return
+      }
+      
       const data = await response.json()
       if (data.success) {
         setStats(data.stats)
         setError(null)
       } else {
-        setError(data.details || data.error || 'Unknown error')
+        const errorMsg = data.details || data.error || 'Unknown error'
+        console.error('Stats data error:', data)
+        setError(errorMsg)
       }
     } catch (err) {
       console.error('Failed to fetch database stats:', err)
