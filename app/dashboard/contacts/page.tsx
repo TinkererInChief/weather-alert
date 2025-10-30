@@ -10,6 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import CityTypeahead from '@/components/ui/CityTypeahead'
 import { z } from 'zod'
+import { useContactsTour } from '@/hooks/useTour'
+import { TourId } from '@/lib/guidance/tours'
+import HelpButton from '@/components/guidance/HelpButton'
 
 type Contact = {
   id: string
@@ -34,6 +37,9 @@ type CSVRow = {
 }
 
 export default function ContactsPage() {
+  // Tour integration
+  const contactsTour = useContactsTour(true)
+  
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -502,10 +508,10 @@ export default function ContactsPage() {
       >
         <div className="space-y-6">
           {/* Header Actions */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div id="contacts-header" className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
               {/* Search */}
-              <div className="relative flex-1 max-w-md">
+              <div id="search-contacts" className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
@@ -574,6 +580,7 @@ export default function ContactsPage() {
 
               {/* Import CSV */}
               <button
+                id="csv-import"
                 onClick={() => setShowCSVImport(true)}
                 className="inline-flex items-center px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-all shadow-sm"
               >
@@ -583,7 +590,7 @@ export default function ContactsPage() {
 
               {/* Bulk Actions */}
               {selectedContacts.size > 0 && (
-                <div className="relative">
+                <div id="bulk-actions" className="relative">
                   <button
                     onClick={() => setShowBulkActions(!showBulkActions)}
                     className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-sm"
@@ -639,12 +646,24 @@ export default function ContactsPage() {
 
               {/* Add Contact */}
               <button
+                id="add-contact-button"
                 onClick={() => setShowAddForm(!showAddForm)}
                 className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg shadow-blue-200"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Contact
               </button>
+              
+              {/* Help Button */}
+              <HelpButton 
+                tours={[
+                  {
+                    id: TourId.CONTACTS,
+                    label: 'Contacts Tour',
+                    onStart: () => contactsTour.restartTour()
+                  }
+                ]}
+              />
             </div>
           </div>
 
@@ -754,7 +773,7 @@ export default function ContactsPage() {
           )}
 
           {/* Hero Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div id="contact-statistics" className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Total Contacts */}
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
               <div className="flex items-center justify-between mb-3">
@@ -1101,9 +1120,10 @@ export default function ContactsPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {paginatedContacts.map((contact: Contact) => (
+                  {paginatedContacts.map((contact: Contact, index: number) => (
                     <div 
-                      key={contact.id} 
+                      key={contact.id}
+                      id={index === 0 ? 'contact-card' : undefined} 
                       className={`relative border rounded-xl p-5 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 ${
                         selectedContacts.has(contact.id) 
                           ? 'border-blue-500 bg-blue-50' 
@@ -1183,7 +1203,7 @@ export default function ContactsPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="p-6 border-t border-slate-200">
+              <div id="pagination" className="p-6 border-t border-slate-200">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-slate-600">
                     Page {currentPage} of {totalPages}

@@ -288,6 +288,84 @@ export const earthquakeTourSteps: DriveStep[] = [
 ]
 
 /**
+ * Contacts Management Tour
+ */
+export const contactsManagementTourSteps: DriveStep[] = [
+  {
+    element: '#contacts-header',
+    popover: {
+      title: '👥 Contacts Management',
+      description: 'Manage all emergency contacts and notification recipients. Add individuals, import CSV files, and organize by groups.',
+      side: "bottom",
+      align: 'start'
+    }
+  },
+  {
+    element: '#search-contacts',
+    popover: {
+      title: '🔍 Search & Filter',
+      description: 'Quickly find contacts by name, phone, email, or location. Filter by active/inactive status.',
+      side: "bottom",
+      align: 'start'
+    }
+  },
+  {
+    element: '#add-contact-button',
+    popover: {
+      title: '➕ Add Contact',
+      description: 'Create new contacts manually. Enter name, phone, email, WhatsApp, location, and role.',
+      side: "left",
+      align: 'start'
+    }
+  },
+  {
+    element: '#bulk-actions',
+    popover: {
+      title: '☑️ Bulk Actions',
+      description: 'Select multiple contacts to activate, deactivate, or delete in one action. Saves time when managing large lists.',
+      side: "bottom",
+      align: 'start'
+    }
+  },
+  {
+    element: '#csv-import',
+    popover: {
+      title: '📤 CSV Import',
+      description: 'Upload a CSV file to add many contacts at once. Download the template to see the required format.',
+      side: "left",
+      align: 'start'
+    }
+  },
+  {
+    element: '#contact-card',
+    popover: {
+      title: '📇 Contact Details',
+      description: 'Each card shows contact info and available channels (SMS, Email, WhatsApp). Click to edit or delete.',
+      side: "top",
+      align: 'start'
+    }
+  },
+  {
+    element: '#contact-statistics',
+    popover: {
+      title: '📊 Contact Stats',
+      description: 'See total contacts, active/inactive counts, and alert engagement metrics.',
+      side: "right",
+      align: 'start'
+    }
+  },
+  {
+    element: '#pagination',
+    popover: {
+      title: '📄 Pagination',
+      description: 'Navigate through pages of contacts. Adjust items per page in settings if needed.',
+      side: "top",
+      align: 'start'
+    }
+  }
+]
+
+/**
  * Create a tour with the given steps
  */
 export const createTour = (steps: DriveStep[], config: Partial<Config> = {}) => {
@@ -307,6 +385,7 @@ export enum TourId {
   DELIVERY_LOGS = 'delivery-logs-tour',
   COMMUNICATIONS = 'communications-tour',
   EARTHQUAKE = 'earthquake-tour',
+  CONTACTS = 'contacts-tour',
 }
 
 /**

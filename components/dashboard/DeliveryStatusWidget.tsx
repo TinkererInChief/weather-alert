@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, Clock, Send, Eye, Mail, MessageSquare, Phone } from 'lucide-react'
 import WidgetCard from './WidgetCard'
+import HelpTooltip from '../guidance/HelpTooltip'
 
 type DeliveryStats = {
   total: number
@@ -151,6 +152,11 @@ export default function DeliveryStatusWidget({ timeRangeExternal, refreshKey }: 
             <CheckCircle className="h-4 w-4 text-green-600" />
             <span className="text-slate-600">Delivery Rate:</span>
             <span className="font-semibold text-slate-900">{deliveryRate}%</span>
+            <HelpTooltip 
+              title="Success Rate"
+              content="Percentage of messages successfully delivered across all channels. Target: >95%."
+              side="top"
+            />
           </div>
           <div className="flex items-center gap-2">
             <Eye className="h-4 w-4 text-purple-600" />

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Users, Phone, Mail, MessageCircle, PhoneCall, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import WidgetCard from './WidgetCard'
+import HelpTooltip from '../guidance/HelpTooltip'
 
 type ContactStats = {
   total: number
@@ -141,6 +142,11 @@ export default function ActiveContactsWidget() {
         <div className="flex items-baseline gap-2">
           <span className="text-4xl font-bold text-slate-900">{stats.active}</span>
           <span className="text-sm text-slate-500">/ {stats.total} total</span>
+          <HelpTooltip 
+            title="Contacts Notified"
+            content="Total number of unique contacts notified across all alerts in selected time period."
+            side="right"
+          />
         </div>
         <p className="text-xs text-slate-500 mt-1">Ready to receive alerts</p>
       </div>

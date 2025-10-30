@@ -10,7 +10,8 @@ import {
   alertCreationTourSteps,
   deliveryLogsTourSteps,
   communicationsTourSteps,
-  earthquakeTourSteps
+  earthquakeTourSteps,
+  contactsManagementTourSteps
 } from '@/lib/guidance/tours'
 
 /**
@@ -93,4 +94,8 @@ export const useCommunicationsTour = (autoStart = false) => {
 
 export const useEarthquakeTour = (autoStart = false) => {
   return useTour(TourId.EARTHQUAKE, earthquakeTourSteps, { autoStart })
+}
+
+export const useContactsTour = (autoStart = false) => {
+  return useTour(TourId.CONTACTS, contactsManagementTourSteps, { autoStart })
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Activity, CheckCircle, AlertTriangle, XCircle, Clock, Wifi, Radio } from 'lucide-react'
 import WidgetCard from './WidgetCard'
+import HelpTooltip from '../guidance/HelpTooltip'
 
 type FeedStatus = {
   id: string
@@ -161,7 +162,14 @@ export default function FeedStatusWidget({ refreshKey }: FeedStatusWidgetProps =
           <div className="flex items-center gap-3">
             <Wifi className="h-5 w-5 text-slate-600" />
             <div>
-              <div className="text-sm font-medium text-slate-900">Overall Health</div>
+              <div className="flex items-center gap-2">
+                <div className="text-sm font-medium text-slate-900">Overall Health</div>
+                <HelpTooltip 
+                  title="Multi-Source Aggregation"
+                  content="Events aggregated from USGS, EMSC, JMA, and IRIS. Color indicates source quality."
+                  side="right"
+                />
+              </div>
               <div className="text-xs text-slate-500 mt-0.5">
                 {health.healthyCount} of {health.totalCount} feeds operational
               </div>
