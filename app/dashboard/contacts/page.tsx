@@ -2,13 +2,13 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react'
 import type { FormEvent, ChangeEvent } from 'react'
+
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
-import { 
-  Users, Plus, Search, Phone, Mail, MapPin, Edit, Trash2, MessageCircle,
-  RefreshCw, Download, Upload, CheckSquare, Square, MoreVertical,
-  Filter, SortAsc, Clock, TrendingUp, UserCheck, AlertCircle, X, Ship
-} from 'lucide-react'
+import { Users, Plus, Download, Upload, X, Edit2, Trash2, Mail, Phone, MessageSquare, MapPin, UserCircle, Check, Search, Filter, MoreVertical, ChevronDown, SortAsc, AlertCircle, RefreshCw, CheckSquare, Square, Ship, UserCheck, Clock, TrendingUp, MessageCircle, Edit } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import CityTypeahead from '@/components/ui/CityTypeahead'
 import { z } from 'zod'
 
 type Contact = {
@@ -710,12 +710,10 @@ export default function ContactsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    value={newContact.location}
-                    onChange={(e) => setNewContact({ ...newContact, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., San Francisco, CA"
+                  <CityTypeahead
+                    value={newContact.location || ''}
+                    onChange={(value) => setNewContact({ ...newContact, location: value })}
+                    placeholder="Search world cities..."
                   />
                 </div>
                 <div>
@@ -858,12 +856,10 @@ export default function ContactsPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>
-                  <input
-                    type="text"
-                    value={editForm.location}
-                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., San Francisco, CA"
+                  <CityTypeahead
+                    value={editForm.location || ''}
+                    onChange={(value) => setEditForm({ ...editForm, location: value })}
+                    placeholder="Search world cities..."
                   />
                 </div>
                 <div>

@@ -146,15 +146,33 @@ export function withPermission(
         )
       }
       
+      // Ensure user ID is present
+      if (!session.user?.id) {
+        console.error('[RBAC] Session user ID missing', { session })
+        return NextResponse.json(
+          { success: false, error: 'Invalid session: user ID not found' },
+          { status: 401 }
+        )
+      }
+
       // Get user from database to check role
       const user = await prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { id: true, role: true, isActive: true }
+        select: { id: true, role: true, isActive: true, name: true, email: true, phone: true }
       })
       
-      if (!user || !user.isActive) {
+      if (!user) {
+        console.error('[RBAC] User not found in database', { userId: session.user.id })
         return NextResponse.json(
-          { success: false, error: 'User not found or inactive' },
+          { success: false, error: `User not found in database. Please log out and log in again.` },
+          { status: 403 }
+        )
+      }
+      
+      if (!user.isActive) {
+        console.error('[RBAC] User is inactive', { userId: session.user.id })
+        return NextResponse.json(
+          { success: false, error: 'Your account is currently inactive. Please contact an administrator.' },
           { status: 403 }
         )
       }
