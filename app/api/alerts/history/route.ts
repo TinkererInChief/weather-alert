@@ -64,9 +64,27 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
     }
     
     // Fetch alerts with magnitude-first ordering to prioritize critical events
+    // Use select to reduce payload size (lean DTO pattern)
     const [alerts, total] = await Promise.all([
       prisma.alertLog.findMany({
         where,
+        select: {
+          id: true,
+          earthquakeId: true,
+          magnitude: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          depth: true,
+          timestamp: true,
+          contactsNotified: true,
+          success: true,
+          errorMessage: true,
+          primarySource: true,
+          dataSources: true,
+          createdAt: true
+          // Excluded: updatedAt, rawData, severity (not in schema), and other heavy fields
+        },
         orderBy: [
           { magnitude: 'desc' },  // Critical events first
           { timestamp: 'desc' }   // Then by recency within magnitude
