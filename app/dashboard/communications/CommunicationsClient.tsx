@@ -3,15 +3,14 @@
 import { useState, useEffect } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
-import { Bell, AlertTriangle, BarChart3 } from 'lucide-react'
+import { Bell, AlertTriangle } from 'lucide-react'
 import VesselAlertsTab from './tabs/VesselAlertsTab'
 import DeliveryLogsTab from './tabs/DeliveryLogsTab'
-import AnalyticsTab from './tabs/AnalyticsTab'
 import { useCommunicationsTour } from '@/hooks/useTour'
 import { TourId } from '@/lib/guidance/tours'
 import HelpButton from '@/components/guidance/HelpButton'
 
-type TabKey = 'vessel-alerts' | 'delivery-logs' | 'analytics'
+type TabKey = 'vessel-alerts' | 'delivery-logs'
 
 export default function CommunicationsClient() {
   const [activeTab, setActiveTab] = useState<TabKey>('vessel-alerts')
@@ -22,7 +21,7 @@ export default function CommunicationsClient() {
   // URL hash navigation
   useEffect(() => {
     const hash = window.location.hash.replace('#', '') as TabKey
-    if (hash && ['vessel-alerts', 'delivery-logs', 'analytics'].includes(hash)) {
+    if (hash && ['vessel-alerts', 'delivery-logs'].includes(hash)) {
       setActiveTab(hash)
     }
   }, [])
@@ -44,12 +43,6 @@ export default function CommunicationsClient() {
       label: 'Delivery Logs',
       icon: Bell,
       description: 'Track notification delivery'
-    },
-    {
-      key: 'analytics' as TabKey,
-      label: 'Analytics',
-      icon: BarChart3,
-      description: 'Channel performance metrics'
     }
   ]
 
@@ -114,11 +107,6 @@ export default function CommunicationsClient() {
             {activeTab === 'delivery-logs' && (
               <div id="delivery-logs-section">
                 <DeliveryLogsTab />
-              </div>
-            )}
-            {activeTab === 'analytics' && (
-              <div id="channel-stats">
-                <AnalyticsTab />
               </div>
             )}
           </div>
