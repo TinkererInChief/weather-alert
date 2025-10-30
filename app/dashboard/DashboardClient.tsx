@@ -145,6 +145,7 @@ type TimelineEvent = {
   status: string
   success: boolean
   details?: string
+  location?: string
   latitude?: number
   longitude?: number
   magnitude?: number
@@ -841,6 +842,7 @@ export default function Dashboard() {
       status: String(alert.type || 'UNKNOWN').toUpperCase(),
       success: alert.severity < 3,
       details: undefined,
+      location: alert.location,
       latitude: (alert as any).latitude,
       longitude: (alert as any).longitude,
       magnitude: (alert as any).magnitude,
