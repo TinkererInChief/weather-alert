@@ -5,6 +5,7 @@ import {
   AlertTriangle, Ship, CheckCircle, XCircle, Clock, Mail, MessageSquare,
   Phone, Filter, RefreshCw, ChevronDown, ChevronUp, MapPin, Activity
 } from 'lucide-react'
+import HelpTooltip from '@/components/guidance/HelpTooltip'
 
 type Severity = 'critical' | 'high' | 'moderate' | 'low'
 type Status = 'pending' | 'sent' | 'acknowledged' | 'failed'
@@ -331,9 +332,16 @@ export default function VesselAlertsTab() {
                       <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getSeverityColor(alert.severity)}`}>
                         {alert.severity.toUpperCase()}
                       </span>
-                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(alert.status)}`}>
-                        {alert.status}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        <span className={`px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(alert.status)}`}>
+                          {alert.status}
+                        </span>
+                        <HelpTooltip 
+                          title="Alert Status"
+                          content="Tracks alert lifecycle: pending (queued), sent (delivered), acknowledged (crew confirmed). Status updates automatically."
+                          side="top"
+                        />
+                      </div>
                       <span className="text-sm text-gray-600 uppercase">{alert.eventType}</span>
                       <span className="flex items-center text-sm text-gray-600">
                         <MapPin className="h-4 w-4 mr-1" />

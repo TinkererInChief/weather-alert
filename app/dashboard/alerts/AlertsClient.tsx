@@ -21,6 +21,7 @@ import WidgetCard from '@/components/dashboard/WidgetCard'
 import { useEarthquakeTour } from '@/hooks/useTour'
 import { TourId } from '@/lib/guidance/tours'
 import HelpButton from '@/components/guidance/HelpButton'
+import HelpTooltip from '@/components/guidance/HelpTooltip'
 
 type RangeKey = '24h' | '7d' | '30d'
 type TabKey = 'live' | 'analytics'
@@ -577,6 +578,13 @@ export default function EarthquakeMonitoringPage() {
               subtitle="US Geological Survey"
               icon={Globe}
               iconColor="blue"
+              headerAction={
+                <HelpTooltip 
+                  title="Source Health"
+                  content="Real-time connectivity to data sources. Green = Operational, Yellow = Degraded, Red = Down. Response time shown in ms."
+                  side="left"
+                />
+              }
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -1019,19 +1027,45 @@ export default function EarthquakeMonitoringPage() {
                             >
                               <div className="flex items-center gap-1">
                                 Magnitude
+                                <HelpTooltip 
+                                  title="Magnitude Scale"
+                                  content="Color-coded severity: <4.0 (Minor/green), 4.0-4.9 (Light/yellow), 5.0-5.9 (Moderate/orange), 6.0-6.9 (Strong/red), 7.0+ (Major/purple). Higher = more energy."
+                                  side="top"
+                                />
                                 {sortColumn === 'magnitude' && (
                                   sortDirection === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />
                                 )}
                               </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[12%]">
-                              Depth
+                              <div className="flex items-center gap-2">
+                                Depth
+                                <HelpTooltip 
+                                  title="Earthquake Depth"
+                                  content="Distance below surface: Shallow (<70km) causes more damage, Intermediate (70-300km), Deep (>300km). Depth affects wave propagation."
+                                  side="top"
+                                />
+                              </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[10%]">
-                              Contacts
+                              <div className="flex items-center gap-2">
+                                Contacts
+                                <HelpTooltip 
+                                  title="Notified Contacts"
+                                  content="Number of contacts notified based on proximity to epicenter. Calculated using distance thresholds and severity."
+                                  side="top"
+                                />
+                              </div>
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-[10%]">
-                              Status
+                              <div className="flex items-center gap-2">
+                                Status
+                                <HelpTooltip 
+                                  title="Alert Delivery Status"
+                                  content="Success = All messages delivered. Failed = Some delivery issues. Check logs for details."
+                                  side="top"
+                                />
+                              </div>
                             </th>
                           </tr>
                         </thead>

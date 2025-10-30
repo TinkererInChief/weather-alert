@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone, CheckCircle2, MessageCircle } from 'lucide-react'
+import HelpTooltip from '@/components/guidance/HelpTooltip'
 
 type DeliveryLog = {
   id: string
@@ -171,7 +172,14 @@ export default function DeliveryLogsTab() {
           <div className="bg-white rounded-lg border border-slate-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-600">Successful</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-slate-600">Successful</p>
+                  <HelpTooltip 
+                    title="Overall Success Rate"
+                    content="Percentage of all messages successfully delivered. Includes confirmed deliveries across all channels and providers."
+                    side="right"
+                  />
+                </div>
                 <p className="text-2xl font-bold text-green-600 mt-1">
                   {stats.overview.successfulDeliveries.toLocaleString()}
                 </p>
@@ -218,9 +226,16 @@ export default function DeliveryLogsTab() {
       {/* Channel Success Rates */}
       {stats && stats.channelSuccessRates.length > 0 && (
         <div className="bg-white rounded-lg border border-slate-200 p-6">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4">
-            Channel Performance
-          </h3>
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-lg font-semibold text-slate-900">
+              Channel Performance
+            </h3>
+            <HelpTooltip 
+              title="Channel Success Rates"
+              content="Delivery success rate by channel. Compare SMS, Email, WhatsApp performance. Rates below 90% need investigation."
+              side="right"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {stats.channelSuccessRates.map((channel) => (
               <div key={channel.channel} className="p-4 bg-slate-50 rounded-lg">
@@ -380,13 +395,27 @@ export default function DeliveryLogsTab() {
                       Status
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                      Provider
+                      <div className="flex items-center gap-2">
+                        Provider
+                        <HelpTooltip 
+                          title="Message Provider"
+                          content="External service used to deliver the message (Twilio, SendGrid, etc.). Use for support tickets."
+                          side="top"
+                        />
+                      </div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Delivered
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                      Acknowledged
+                      <div className="flex items-center gap-2">
+                        Acknowledged
+                        <HelpTooltip 
+                          title="Read Receipt"
+                          content="Timestamp when recipient opened/read the message. Available for email and some messaging channels."
+                          side="top"
+                        />
+                      </div>
                     </th>
                   </tr>
                 </thead>
