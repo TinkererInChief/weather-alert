@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone, CheckCircle2 } from 'lucide-react'
+import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone, CheckCircle2, MessageCircle } from 'lucide-react'
 
 type DeliveryLog = {
   id: string
@@ -121,13 +121,13 @@ export default function DeliveryLogsTab() {
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'sms':
-        return <Phone className="h-4 w-4" />
+        return <MessageSquare className="h-4 w-4" />
       case 'email':
         return <Mail className="h-4 w-4" />
       case 'whatsapp':
-        return <MessageSquare className="h-4 w-4" />
+        return <MessageCircle className="h-4 w-4" />
       case 'voice':
-        return <Megaphone className="h-4 w-4" />
+        return <Phone className="h-4 w-4" />
       default:
         return <Bell className="h-4 w-4" />
     }

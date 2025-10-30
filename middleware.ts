@@ -27,6 +27,8 @@ export default withAuth(
             pathname.startsWith('/api/health') ||
             pathname.startsWith('/api/database') ||
             pathname.startsWith('/api/vessels') ||
+            pathname.startsWith('/api/webhooks') ||
+            pathname.startsWith('/api/test-message') ||
             
             pathname === '/privacy' ||
             pathname === '/terms' ||
