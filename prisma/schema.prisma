@@ -251,20 +251,32 @@ model AlertJob {
 
 model DeliveryLog {
   id                String    @id @default(cuid())
-  alertJobId        String
+  alertJobId        String?   // Optional: for global alerts
+  vesselAlertId     String?   // Optional: for vessel-specific alerts
   contactId         String
   channel           String
-  provider          String
+  provider          String?
   status            String
+  attempts          Int       @default(0)
   providerMessageId String?
-  errorMessage      String?
+  errorMessage      String?   @db.Text
   sentAt            DateTime?
   deliveredAt       DateTime?
   readAt            DateTime?
+  lastAttemptAt     DateTime?
+  metadata          Json      @default("{}")
   createdAt         DateTime  @default(now())
-  alertJob          AlertJob  @relation(fields: [alertJobId], references: [id], onDelete: Cascade)
-  contact           Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  updatedAt         DateTime  @updatedAt
+  
+  alertJob          AlertJob?     @relation(fields: [alertJobId], references: [id], onDelete: Cascade)
+  vesselAlert       VesselAlert?  @relation(fields: [vesselAlertId], references: [id], onDelete: Cascade)
+  contact           Contact       @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
+  @@index([alertJobId])
+  @@index([vesselAlertId])
+  @@index([contactId])
+  @@index([status])
+  @@index([channel])
   @@map("delivery_logs")
 }
 
@@ -504,17 +516,29 @@ model VesselAlert {
   recommendation String
   actions        String[]  @default([])
   aiContext      String?
+  
+  // Auto-alert fields
+  message        String?   @db.Text  // The actual alert message text
+  coordinates    Json?     // Event location: {lat, lon}
+  status         String    @default("pending")  // "pending" | "sent" | "acknowledged" | "expired"
+  sentAt         DateTime?
+  expiresAt      DateTime?
+  
   acknowledged   Boolean   @default(false)
   acknowledgedAt DateTime?
   acknowledgedBy String?
   resolvedAt     DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
-  vessel         Vessel    @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  
+  vessel         Vessel       @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  deliveryLogs   DeliveryLog[]
 
   @@index([vesselId, createdAt])
   @@index([type, severity])
   @@index([riskLevel])
+  @@index([status])
+  @@index([eventId])
   @@map("vessel_alerts")
 }
 
