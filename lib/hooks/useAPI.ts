@@ -23,20 +23,7 @@ const defaultConfig: SWRConfiguration = {
   keepPreviousData: true, // Keep showing old data while revalidating
 }
 
-// Dashboard stats hook
-export function useDashboardStats(timeFilter = '30d', config: SWRConfiguration = {}) {
-  return useSWR(
-    `/api/dashboard?timeFilter=${timeFilter}`,
-    fetcher,
-    {
-      ...defaultConfig,
-      refreshInterval: 30000, // Auto-refresh every 30s
-      ...config,
-    }
-  )
-}
-
-// General stats hook (legacy)
+// General stats hook
 export function useStats(config: SWRConfiguration = {}) {
   return useSWR(
     '/api/stats',
