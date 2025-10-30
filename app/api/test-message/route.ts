@@ -129,14 +129,23 @@ export async function POST(req: Request) {
       }
 
       const twilio = require('twilio')(twilioSid, twilioToken)
-      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-
-      const result = await twilio.messages.create({
+      
+      // For webhooks to work, use your public ngrok URL
+      // Set WEBHOOK_BASE_URL env var to your ngrok URL
+      const webhookBaseUrl = process.env.WEBHOOK_BASE_URL || process.env.NEXTAUTH_URL
+      
+      const messageOptions: any = {
         body: '🧪 TEST: This is a test message to verify webhook tracking. Check your delivery logs!',
         from: twilioPhone,
-        to: phone,
-        statusCallback: `${baseUrl}/api/webhooks/twilio`
-      })
+        to: phone
+      }
+      
+      // Only add statusCallback if we have a public URL (not localhost)
+      if (webhookBaseUrl && !webhookBaseUrl.includes('localhost')) {
+        messageOptions.statusCallback = `${webhookBaseUrl}/api/webhooks/twilio`
+      }
+
+      const result = await twilio.messages.create(messageOptions)
 
       // Create delivery log
       const deliveryLog = await prisma.deliveryLog.create({

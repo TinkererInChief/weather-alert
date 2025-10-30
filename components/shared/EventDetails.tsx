@@ -77,13 +77,16 @@ export default function EventDetails({
 
       {/* Core Details Grid */}
       <div className="grid grid-cols-2 gap-3">
-        {/* Coordinates */}
+        {/* Location */}
         {event.latitude !== undefined && event.longitude !== undefined && (
           <div className="flex items-start gap-2">
             <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5" />
             <div>
               <div className="text-xs text-slate-500">Location</div>
               <div className="text-sm font-medium text-slate-900">
+                {event.location}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">
                 {event.latitude.toFixed(2)}°N, {Math.abs(event.longitude).toFixed(2)}°
                 {event.longitude >= 0 ? 'E' : 'W'}
               </div>
