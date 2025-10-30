@@ -15,18 +15,18 @@ model User {
   name            String?
   email           String?       @unique
   phone           String?       @unique
-  emailVerified   DateTime?
+  emailVerified   DateTime?     @db.Timestamptz(6)
   image           String?
   role            String        @default("VIEWER")
   organizationId  String?
   isActive        Boolean       @default(true)
-  lastLoginAt     DateTime?
+  lastLoginAt     DateTime?     @db.Timestamptz(6)
   approvalStatus  String        @default("pending")
   approvedBy      String?
-  approvedAt      DateTime?
+  approvedAt      DateTime?     @db.Timestamptz(6)
   rejectionReason String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
   accounts        Account[]
   sessions        Session[]
   organization    Organization? @relation(fields: [organizationId], references: [id])
@@ -48,8 +48,8 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(6)
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
@@ -60,9 +60,9 @@ model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
   userId       String
-  expires      DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  expires      DateTime @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(6)
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
@@ -71,9 +71,9 @@ model Session {
 model VerificationToken {
   identifier String
   token      String   @unique
-  expires    DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  expires    DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(6)
 
   @@unique([identifier, token])
   @@map("verification_tokens")
@@ -83,10 +83,10 @@ model SmsOtp {
   id         String    @id @default(cuid())
   phone      String
   tokenHash  String
-  expires    DateTime
+  expires    DateTime  @db.Timestamptz(6)
   attempts   Int       @default(0)
-  createdAt  DateTime  @default(now())
-  consumedAt DateTime?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  consumedAt DateTime? @db.Timestamptz(6)
 
   @@index([phone])
   @@map("sms_otps")
@@ -125,8 +125,8 @@ model Contact {
   notificationChannels Json                 @default("[]")
   notificationSettings Json                 @default("{}")
   active               Boolean              @default(true)
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
+  createdAt            DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime             @updatedAt @db.Timestamptz(6)
   groupMemberships     ContactGroupMember[]
   deliveryLogs         DeliveryLog[]
   vesselAssignments    VesselContact[]
@@ -139,7 +139,9 @@ model ContactGroup {
   name        String
   description String?
   metadata    Json                 @default("{}")
-  createdAt   DateTime             @default(now())
+  active      Boolean              @default(true)
+  createdAt   DateTime             @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime             @updatedAt @db.Timestamptz(6)
   members     ContactGroupMember[]
 
   @@map("contact_groups")
@@ -162,7 +164,7 @@ model AlertZone {
   zoneCode  String?  @unique
   priority  Int      @default(1)
   metadata  Json     @default("{}")
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("alert_zones")
 }
@@ -176,13 +178,13 @@ model EarthquakeEvent {
   latitude        Float
   longitude       Float
   location        String
-  occurredAt      DateTime
+  occurredAt      DateTime       @db.Timestamptz(6)
   tsunamiPossible Boolean        @default(false)
   rawData         Json           @default("{}")
   status          String         @default("active")
   processed       Boolean        @default(false)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(6)
   tsunamiAlerts   TsunamiAlert[]
   alertJobs       AlertJob[]
 
@@ -196,12 +198,12 @@ model TsunamiAlert {
   alertType            String
   severityLevel        Int
   estimatedWaveHeight  Float?
-  estimatedArrivalTime DateTime?
+  estimatedArrivalTime DateTime?        @db.Timestamptz(6)
   affectedZones        String[]         @default([])
   sourceEarthquakeId   String?
-  cancellationTime     DateTime?
+  cancellationTime     DateTime?        @db.Timestamptz(6)
   rawData              Json             @default("{}")
-  createdAt            DateTime         @default(now())
+  createdAt            DateTime         @default(now()) @db.Timestamptz(6)
   sourceEarthquake     EarthquakeEvent? @relation(fields: [sourceEarthquakeId], references: [id])
   alertJobs            AlertJob[]
 
@@ -219,8 +221,8 @@ model MessageTemplate {
   variables Json     @default("[]")
   version   Int      @default(1)
   isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
 
   @@unique([name, channel, language, version])
   @@map("message_templates")
@@ -236,12 +238,12 @@ model AlertJob {
   priority          Int              @default(1)
   targetingSnapshot Json
   status            String           @default("pending")
-  scheduledFor      DateTime         @default(now())
-  startedAt         DateTime?
-  completedAt       DateTime?
+  scheduledFor      DateTime         @default(now()) @db.Timestamptz(6)
+  startedAt         DateTime?        @db.Timestamptz(6)
+  completedAt       DateTime?        @db.Timestamptz(6)
   errorMessage      String?
   metadata          Json             @default("{}")
-  createdAt         DateTime         @default(now())
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
   earthquakeEvent   EarthquakeEvent? @relation(fields: [earthquakeEventId], references: [id])
   tsunamiAlert      TsunamiAlert?    @relation(fields: [tsunamiAlertId], references: [id])
   deliveryLogs      DeliveryLog[]
@@ -260,13 +262,13 @@ model DeliveryLog {
   attempts          Int       @default(0)
   providerMessageId String?
   errorMessage      String?   @db.Text
-  sentAt            DateTime?
-  deliveredAt       DateTime?
-  readAt            DateTime?
-  lastAttemptAt     DateTime?
+  sentAt            DateTime? @db.Timestamptz(6)
+  deliveredAt       DateTime? @db.Timestamptz(6)
+  readAt            DateTime? @db.Timestamptz(6)
+  lastAttemptAt     DateTime? @db.Timestamptz(6)
   metadata          Json      @default("{}")
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @db.Timestamptz(6)
   
   alertJob          AlertJob?     @relation(fields: [alertJobId], references: [id], onDelete: Cascade)
   vesselAlert       VesselAlert?  @relation(fields: [vesselAlertId], references: [id], onDelete: Cascade)
@@ -287,8 +289,8 @@ model Organization {
   description String?
   isActive    Boolean  @default(true)
   settings    Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
   users       User[]
 
   @@map("organizations")
@@ -319,7 +321,7 @@ model AuditLog {
   success        Boolean?
   severity       String?
   category       String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
   user           User?    @relation(fields: [userId], references: [id])
 
   @@index([action, createdAt])
@@ -338,14 +340,14 @@ model AlertLog {
   latitude         Float?
   longitude        Float?
   depth            Float?
-  timestamp        DateTime @default(now())
+  timestamp        DateTime @default(now()) @db.Timestamptz(6)
   contactsNotified Int      @default(0)
   success          Boolean  @default(false)
   errorMessage     String?
   dataSources      String[] @default([])
   primarySource    String?
   sourceMetadata   Json?    @default("{}")
-  createdAt        DateTime @default(now())
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("alert_logs")
 }
@@ -358,9 +360,9 @@ model EarthquakeCache {
   latitude     Float?
   longitude    Float?
   depth        Float?
-  timestamp    DateTime
+  timestamp    DateTime @db.Timestamptz(6)
   processed    Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("earthquake_cache")
 }
@@ -372,8 +374,8 @@ model VoiceCall {
   alertType   String
   status      String
   duration    Int?
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  completedAt DateTime? @db.Timestamptz(6)
 
   @@map("voice_calls")
 }
@@ -385,7 +387,7 @@ model BulkCallJob {
   successfulCalls Int
   failedCalls     Int
   customMessage   String?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("bulk_call_jobs")
 }
@@ -393,7 +395,7 @@ model BulkCallJob {
 model SystemSettings {
   id        String   @id @default("global")
   settings  Json     @default("{}")
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
   updatedBy String?
 
   @@map("system_settings")
@@ -405,7 +407,7 @@ model HealthSnapshot {
   status    HealthStatus
   latencyMs Int?
   error     String?
-  createdAt DateTime      @default(now())
+  createdAt DateTime      @default(now()) @db.Timestamptz(6)
 
   @@index([service, createdAt])
   @@map("health_snapshots")
@@ -420,7 +422,7 @@ model HealthEvent {
   oldStatus HealthStatus?
   newStatus HealthStatus?
   metadata  Json            @default("{}")
-  createdAt DateTime        @default(now())
+  createdAt DateTime        @default(now()) @db.Timestamptz(6)
 
   @@index([createdAt])
   @@index([service, createdAt])
@@ -431,11 +433,11 @@ model MaintenanceWindow {
   id               String   @id @default(cuid())
   title            String
   description      String?
-  startTime        DateTime
-  endTime          DateTime
+  startTime        DateTime @db.Timestamptz(6)
+  endTime          DateTime @db.Timestamptz(6)
   affectedServices String[] @default([])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime @updatedAt @db.Timestamptz(6)
 
   @@index([startTime, endTime])
   @@map("maintenance_windows")
@@ -457,9 +459,9 @@ model Vessel {
   operator          String?
   owner             String?
   active            Boolean          @default(true)
-  lastSeen          DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  lastSeen          DateTime?        @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
   buildYear         Int?             @map("build_year")
   manager           String?
   enrichedAt        DateTime?        @map("enriched_at") @db.Timestamptz(6)
@@ -485,12 +487,12 @@ model VesselPosition {
   heading           Float?
   navStatus         String?
   destination       String?
-  eta               DateTime?
+  eta               DateTime? @db.Timestamptz(6)
   draught           Float?
   captain           String?
-  timestamp         DateTime
+  timestamp         DateTime  @db.Timestamptz(6)
   dataSource        String    @default("marinetraffic")
-  createdAt         DateTime  @default(now())
+  createdAt         DateTime  @default(now()) @db.Timestamptz(6)
   rateOfTurn        Float?    @map("rate_of_turn")
   positionAccuracy  Boolean?  @map("position_accuracy")
   vessel            Vessel    @relation(fields: [vesselId], references: [id], onDelete: Cascade)
@@ -521,15 +523,15 @@ model VesselAlert {
   message        String?   @db.Text  // The actual alert message text
   coordinates    Json?     // Event location: {lat, lon}
   status         String    @default("pending")  // "pending" | "sent" | "acknowledged" | "expired"
-  sentAt         DateTime?
-  expiresAt      DateTime?
+  sentAt         DateTime? @db.Timestamptz(6)
+  expiresAt      DateTime? @db.Timestamptz(6)
   
   acknowledged   Boolean   @default(false)
-  acknowledgedAt DateTime?
+  acknowledgedAt DateTime? @db.Timestamptz(6)
   acknowledgedBy String?
-  resolvedAt     DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  resolvedAt     DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
   
   vessel         Vessel       @relation(fields: [vesselId], references: [id], onDelete: Cascade)
   deliveryLogs   DeliveryLog[]
@@ -564,7 +566,7 @@ model VesselContact {
   primary   Boolean            @default(false)
   priority  Int                @default(1)  // 1 = highest priority
   notifyOn  String[]           @default(["critical", "high"])  // Alert levels to notify
-  createdAt DateTime           @default(now())
+  createdAt DateTime           @default(now()) @db.Timestamptz(6)
   vessel    Vessel             @relation(fields: [vesselId], references: [id], onDelete: Cascade)
   contact   Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
@@ -582,8 +584,8 @@ model Fleet {
   ownerId     String        @map("owner_id")
   metadata    Json          @default("{}")
   active      Boolean       @default(true)
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
   vessels     FleetVessel[]
 
   @@index([ownerId])
@@ -598,7 +600,7 @@ model FleetVessel {
   role      String   @default("primary")  // "primary", "backup", "auxiliary"
   priority  Int      @default(1)          // 1 = highest priority
   metadata  Json     @default("{}")
-  addedAt   DateTime @default(now()) @map("added_at")
+  addedAt   DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
   fleet     Fleet    @relation(fields: [fleetId], references: [id], onDelete: Cascade)
   vessel    Vessel   @relation(fields: [vesselId], references: [id], onDelete: Cascade)
 
