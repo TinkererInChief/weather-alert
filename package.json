@@ -26,6 +26,7 @@
     "ais:start": "TZ=UTC tsx scripts/start-ais-streaming.ts",
     "stats:update": "TZ=UTC tsx scripts/update-realtime-stats.ts",
     "monitor": "TZ=UTC tsx scripts/monitor-services.ts",
+    "monitor:vessels": "TZ=UTC tsx scripts/monitor-vessel-proximity.ts",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx scripts/seed-database.ts",
     "user:promote": "tsx scripts/promote-user.ts",
