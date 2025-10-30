@@ -39,6 +39,11 @@ export const GET = withPermission(Permission.VIEW_CONTACTS, async (req, session)
       return NextResponse.json({
         success: true,
         contacts
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'CDN-Cache-Control': 'public, s-maxage=30'
+        }
       })
     }
     
@@ -48,6 +53,11 @@ export const GET = withPermission(Permission.VIEW_CONTACTS, async (req, session)
     return NextResponse.json({
       success: true,
       data: contacts
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'public, s-maxage=30'
+      }
     })
   } catch (error) {
     return NextResponse.json(
