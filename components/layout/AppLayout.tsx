@@ -229,6 +229,13 @@ export default function AppLayout({
       icon: Bell,
       items: [
         { 
+          name: 'Communications', 
+          href: '/dashboard/communications', 
+          icon: Bell, 
+          current: pathname === '/dashboard/communications',
+          badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'red', pulse: true } : undefined
+        },
+        { 
           name: 'Contacts', 
           href: '/dashboard/contacts', 
           icon: UserCircle, 
@@ -239,13 +246,6 @@ export default function AppLayout({
           href: '/dashboard/groups', 
           icon: Users, 
           current: pathname?.startsWith('/dashboard/groups')
-        },
-        { 
-          name: 'Notifications', 
-          href: '/dashboard/notifications', 
-          icon: Bell, 
-          current: pathname === '/dashboard/notifications',
-          badge: liveCounts.notifications > 0 ? { count: liveCounts.notifications, color: 'blue', pulse: false } : undefined
         },
       ]
     },
