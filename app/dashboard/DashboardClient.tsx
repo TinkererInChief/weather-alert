@@ -31,6 +31,9 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import { useSession } from 'next-auth/react'
 import NotificationPermissionBanner from '@/components/notifications/NotificationPermissionBanner'
 import { useNotifications } from '@/hooks/useNotifications'
+import { useDashboardTour } from '@/hooks/useTour'
+import { TourId } from '@/lib/guidance/tours'
+import HelpButton from '@/components/guidance/HelpButton'
 
 // Phase 1 & 2 Dashboard Enhancements
 // Dynamic import for Leaflet map (requires window object)
@@ -256,6 +259,9 @@ export default function Dashboard() {
   const { data: session } = useSession()
   const { showEmergencyAlert, showSystemNotification } = useNotifications()
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  
+  // Tour integration - auto-start for new users
+  const dashboardTour = useDashboardTour(true)
   const [recentAlerts, setRecentAlerts] = useState<AlertLog[]>([])
   const [monitoringStatus, setMonitoringStatus] = useState<MonitoringStatus | null>(null)
   const [tsunamiStats, setTsunamiStats] = useState<TsunamiStats | null>(null)
@@ -1105,19 +1111,30 @@ export default function Dashboard() {
 
         {/* Welcome Section */}
         {session?.user && (
-          <div className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 p-6">
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center">
-                <Shield className="h-6 w-6" />
+          <div id="dashboard-greeting" className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-100 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 text-white flex items-center justify-center">
+                  <Shield className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">
+                    Welcome back, {session.user.name || 'Operator'}
+                  </h2>
+                  <p className="text-sm text-slate-600"> 
+                    Emergency Alert Command Center
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-xl font-semibold text-slate-900">
-                  Welcome back, {session.user.name || 'Operator'}
-                </h2>
-                <p className="text-sm text-slate-600"> 
-                  Emergency Alert Command Center
-                </p>
-              </div>
+              <HelpButton 
+                tours={[
+                  {
+                    id: TourId.DASHBOARD,
+                    label: 'Dashboard Tour',
+                    onStart: () => dashboardTour.restartTour()
+                  }
+                ]}
+              />
             </div>
           </div>
         )}
@@ -1179,7 +1196,7 @@ export default function Dashboard() {
 
         {/* Phase 1: Global Event Map + Unified Incident Timeline */}
         <div className="grid gap-6 lg:grid-cols-3 items-start">
-          <div className="lg:col-span-2">
+          <div id="global-event-map" className="lg:col-span-2">
             {/* Filter Controls (left column) */}
             <div ref={filterRef} className="pb-4 space-y-3">
               {/* Time Filter */}
@@ -1266,14 +1283,16 @@ export default function Dashboard() {
               height="500px"
             />
           </div>
-          <UnifiedIncidentTimeline 
-            events={timelineEvents} 
-            height={`${500 + Math.max(0, filtersHeight)}px`} 
-          />
+          <div id="unified-timeline">
+            <UnifiedIncidentTimeline 
+              events={timelineEvents} 
+              height={`${500 + Math.max(0, filtersHeight)}px`} 
+            />
+          </div>
         </div>
 
         {/* Events by Type & Delivery Status - 1/3 and 2/3 */}
-        <div className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
+        <div id="stats-overview" className="grid gap-6 lg:grid-cols-3 lg:items-stretch">
           <EventsByTypeWidget 
             earthquakes={recentAlerts}
             tsunamis={tsunamiAlerts}
@@ -1337,7 +1356,8 @@ export default function Dashboard() {
       </div>
 
       {/* Phase 2: Quick Action Command Palette (Floating) */}
-      <QuickActionPalette
+      <div id="quick-actions">
+        <QuickActionPalette
         actions={[
           {
             id: 'manual-earthquake',
@@ -1375,7 +1395,8 @@ export default function Dashboard() {
         onActionExecute={(id) => {
           logOperation(`Quick action executed: ${id}`, 'info')
         }}
-      />
+        />
+      </div>
       </AppLayout>
     </AuthGuard>
   )
