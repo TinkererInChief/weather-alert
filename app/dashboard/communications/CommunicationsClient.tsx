@@ -7,11 +7,17 @@ import { Bell, AlertTriangle, BarChart3 } from 'lucide-react'
 import VesselAlertsTab from './tabs/VesselAlertsTab'
 import DeliveryLogsTab from './tabs/DeliveryLogsTab'
 import AnalyticsTab from './tabs/AnalyticsTab'
+import { useCommunicationsTour } from '@/hooks/useTour'
+import { TourId } from '@/lib/guidance/tours'
+import HelpButton from '@/components/guidance/HelpButton'
 
 type TabKey = 'vessel-alerts' | 'delivery-logs' | 'analytics'
 
 export default function CommunicationsClient() {
   const [activeTab, setActiveTab] = useState<TabKey>('vessel-alerts')
+  
+  // Tour integration
+  const communicationsTour = useCommunicationsTour(true)
 
   // URL hash navigation
   useEffect(() => {
@@ -57,8 +63,25 @@ export default function CommunicationsClient() {
         ]}
       >
         <div className="space-y-6">
+          {/* Header with Help Button */}
+          <div id="communications-header" className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Communications Hub</h2>
+              <p className="text-sm text-slate-600 mt-1">Manage all notification channels and delivery tracking</p>
+            </div>
+            <HelpButton 
+              tours={[
+                {
+                  id: TourId.COMMUNICATIONS,
+                  label: 'Communications Tour',
+                  onStart: () => communicationsTour.restartTour()
+                }
+              ]}
+            />
+          </div>
+
           {/* Tab Navigation */}
-          <div className="border-b border-gray-200 bg-white rounded-t-xl">
+          <div id="communications-tabs" className="border-b border-gray-200 bg-white rounded-t-xl">
             <nav className="flex gap-8 px-6" role="tablist">
               {tabs.map((tab) => {
                 const Icon = tab.icon
@@ -89,9 +112,21 @@ export default function CommunicationsClient() {
 
           {/* Tab Content */}
           <div className="min-h-[600px]">
-            {activeTab === 'vessel-alerts' && <VesselAlertsTab />}
-            {activeTab === 'delivery-logs' && <DeliveryLogsTab />}
-            {activeTab === 'analytics' && <AnalyticsTab />}
+            {activeTab === 'vessel-alerts' && (
+              <div id="vessel-alerts-section">
+                <VesselAlertsTab />
+              </div>
+            )}
+            {activeTab === 'delivery-logs' && (
+              <div id="delivery-logs-section">
+                <DeliveryLogsTab />
+              </div>
+            )}
+            {activeTab === 'analytics' && (
+              <div id="channel-stats">
+                <AnalyticsTab />
+              </div>
+            )}
           </div>
         </div>
       </AppLayout>

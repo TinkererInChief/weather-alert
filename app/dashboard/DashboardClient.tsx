@@ -34,6 +34,7 @@ import { useNotifications } from '@/hooks/useNotifications'
 import { useDashboardTour } from '@/hooks/useTour'
 import { TourId } from '@/lib/guidance/tours'
 import HelpButton from '@/components/guidance/HelpButton'
+import HelpTooltip from '@/components/guidance/HelpTooltip'
 
 // Phase 1 & 2 Dashboard Enhancements
 // Dynamic import for Leaflet map (requires window object)
@@ -1204,6 +1205,11 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-slate-600" />
                   <span className="text-sm font-medium text-slate-700">Time Period:</span>
+                  <HelpTooltip 
+                    title="Time Range Selection"
+                    content="Filter events by time period. Use 24h for recent activity, 30d for trends and historical analysis."
+                    side="top"
+                  />
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1245,6 +1251,11 @@ export default function Dashboard() {
                   <div className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-slate-600" />
                     <span className="text-sm font-medium text-slate-700">Min Magnitude:</span>
+                    <HelpTooltip 
+                      title="Magnitude Threshold"
+                      content="Show only earthquakes above this magnitude. Lower values = more events, higher values = significant events only."
+                      side="right"
+                    />
                   </div>
                   <div className="flex items-center gap-3 flex-1 max-w-md">
                     <input

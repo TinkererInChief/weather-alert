@@ -172,38 +172,47 @@ export const deliveryLogsTourSteps: DriveStep[] = [
  */
 export const communicationsTourSteps: DriveStep[] = [
   {
-    element: '#communications-tabs',
+    element: '#communications-header',
     popover: {
       title: '📱 Communications Hub',
-      description: 'Manage all communication channels from one place. Switch between delivery logs, settings, and analytics.',
+      description: 'Central management for all notification channels and delivery tracking. Monitor SMS, Email, WhatsApp, and Voice communications from one place.',
       side: "bottom",
       align: 'start'
     }
   },
   {
-    element: '#delivery-logs-tab',
+    element: '#communications-tabs',
     popover: {
-      title: '📊 Delivery Logs',
-      description: 'Track all outgoing messages, delivery status, and acknowledgments in real-time.',
+      title: '📊 Three Key Areas',
+      description: 'Switch between Vessel Alerts (proximity notifications), Delivery Logs (message tracking), and Analytics (performance metrics).',
       side: "bottom",
       align: 'start'
     }
   },
   {
-    element: '#channel-settings-tab',
+    element: '#vessel-alerts-section',
     popover: {
-      title: '⚙️ Channel Settings',
-      description: 'Configure Twilio (SMS/Voice), SendGrid (Email), and WhatsApp integration settings.',
-      side: "bottom",
+      title: '🚢 Vessel Alerts',
+      description: 'Manage proximity-based alerts for vessels near earthquake zones. Set custom alert thresholds and notification preferences.',
+      side: "right",
       align: 'start'
     }
   },
   {
-    element: '#analytics-tab',
+    element: '#delivery-logs-section',
     popover: {
-      title: '📈 Analytics',
-      description: 'Visualize delivery performance, channel effectiveness, and recipient engagement over time.',
-      side: "bottom",
+      title: '📨 Delivery Tracking',
+      description: 'Real-time tracking of all sent messages. See delivery status, acknowledgments, and failure reasons for each channel.',
+      side: "top",
+      align: 'start'
+    }
+  },
+  {
+    element: '#channel-stats',
+    popover: {
+      title: '📈 Channel Performance',
+      description: 'Compare effectiveness across SMS, Email, WhatsApp, and Voice. Use data to optimize your communication strategy.',
+      side: "left",
       align: 'start'
     }
   }
@@ -214,29 +223,65 @@ export const communicationsTourSteps: DriveStep[] = [
  */
 export const earthquakeTourSteps: DriveStep[] = [
   {
-    element: '#earthquake-filters',
+    element: '#earthquake-header',
     popover: {
-      title: '🔍 Filter Earthquakes',
-      description: 'Filter by magnitude, time range, and data sources (USGS, EMSC, JMA). Adjust sensitivity based on your needs.',
+      title: '🌍 Earthquake Monitoring',
+      description: 'Real-time earthquake tracking from multiple global data sources (USGS, EMSC, JMA). Filter and analyze seismic events.',
       side: "bottom",
+      align: 'start'
+    }
+  },
+  {
+    element: '#live-analytics-tabs',
+    popover: {
+      title: '📊 Live Feed vs Analytics',
+      description: 'Live Feed shows real-time earthquakes. Analytics provides historical trends and performance metrics.',
+      side: "bottom",
+      align: 'start'
+    }
+  },
+  {
+    element: '#magnitude-filter',
+    popover: {
+      title: '🎚️ Magnitude Filter',
+      description: 'Filter earthquakes by magnitude (e.g., show only M5.0+). Adjust to focus on significant events that require action.',
+      side: "right",
+      align: 'start'
+    }
+  },
+  {
+    element: '#data-sources',
+    popover: {
+      title: '🌐 Data Sources',
+      description: 'Select which seismic networks to monitor. Each source provides different coverage and update frequencies.',
+      side: "right",
       align: 'start'
     }
   },
   {
     element: '#earthquake-list',
     popover: {
-      title: '📋 Earthquake List',
-      description: 'All recent earthquakes sorted by time. Click any earthquake to see details, population impact, and create alerts.',
+      title: '📋 Earthquake Feed',
+      description: 'Recent earthquakes sorted by time. Click any event to see details and create alerts for affected contacts.',
       side: "left",
       align: 'start'
     }
   },
   {
-    element: '#create-alert-button',
+    element: '#source-health',
     popover: {
-      title: '🚨 Quick Alert Creation',
-      description: 'Click to instantly create an alert for any earthquake. Event details will be pre-filled automatically.',
+      title: '💚 Source Health',
+      description: 'Monitor the status of each data source. Green = operational, Red = issues detected.',
       side: "top",
+      align: 'start'
+    }
+  },
+  {
+    element: '#quick-alert-button',
+    popover: {
+      title: '⚡ Quick Alert',
+      description: 'Click to instantly create an alert for any earthquake. Event details auto-populate the alert form.',
+      side: "left",
       align: 'start'
     }
   }

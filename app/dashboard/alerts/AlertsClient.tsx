@@ -18,6 +18,9 @@ import { getMagnitudeClasses } from '@/lib/utils/event-colors'
 import EventHoverCard from '@/components/shared/EventHoverCard'
 import { EarthquakeEvent } from '@/types/event-hover'
 import WidgetCard from '@/components/dashboard/WidgetCard'
+import { useEarthquakeTour } from '@/hooks/useTour'
+import { TourId } from '@/lib/guidance/tours'
+import HelpButton from '@/components/guidance/HelpButton'
 
 type RangeKey = '24h' | '7d' | '30d'
 type TabKey = 'live' | 'analytics'
@@ -69,6 +72,9 @@ type Stats = {
 }
 
 export default function EarthquakeMonitoringPage() {
+  // Tour integration
+  const earthquakeTour = useEarthquakeTour(true)
+  
   // Tab state
   const [activeTab, setActiveTab] = useState<TabKey>('live')
   
@@ -381,8 +387,25 @@ export default function EarthquakeMonitoringPage() {
         ]}
       >
         <div className="space-y-6">
+          {/* Header with Help Button */}
+          <div id="earthquake-header" className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Earthquake Monitoring</h2>
+              <p className="text-sm text-slate-600 mt-1">Real-time tracking from global seismic networks</p>
+            </div>
+            <HelpButton 
+              tours={[
+                {
+                  id: TourId.EARTHQUAKE,
+                  label: 'Earthquake Tour',
+                  onStart: () => earthquakeTour.restartTour()
+                }
+              ]}
+            />
+          </div>
+
           {/* Tab Navigation */}
-          <div className="border-b border-slate-200">
+          <div id="live-analytics-tabs" className="border-b border-slate-200">
             <nav className="flex gap-8" role="tablist">
               <button
                 onClick={() => setActiveTab('live')}
@@ -553,10 +576,12 @@ export default function EarthquakeMonitoringPage() {
           {activeTab === 'live' ? (
             <>
               {/* Source Health - Live Feed Only */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div id="source-health" data-tour-target="source-health" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <WidgetCard
               title="USGS"
-              icon={Globe}
+              subtitle="US Geological Survey"
+              id="data-sources"
+              data-tour-target="data-sources"
               iconColor="blue"
               subtitle="Primary earthquake source"
             >
@@ -660,6 +685,7 @@ export default function EarthquakeMonitoringPage() {
           </div>
 
           {/* Alerts List */}
+          <div id="earthquake-list">
           <WidgetCard
             title="Recent Earthquake Alerts"
             icon={AlertTriangle}
@@ -668,7 +694,7 @@ export default function EarthquakeMonitoringPage() {
             className="flex flex-col min-h-0"
             noPadding
             headerAction={
-              <div className="flex items-center gap-3">
+              <div id="magnitude-filter" className="flex items-center gap-3">
                 <span className="text-xs text-slate-500">Auto-refresh every 30s</span>
                 <TimeRangeSwitcher value={timeRange} onChange={setTimeRange} />
                 <button
@@ -775,6 +801,7 @@ export default function EarthquakeMonitoringPage() {
               )}
             </div>
           </WidgetCard>
+          </div>
             </>
           ) : (
             <Can permission={Permission.VIEW_ALERTS} fallback={
