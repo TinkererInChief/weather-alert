@@ -195,7 +195,7 @@ export default function AppLayout({
           icon: AlertTriangle, 
           current: pathname === '/dashboard/alerts',
           shortcut: '⌘2',
-          badge: liveCounts.earthquakeAlerts > 0 ? { count: liveCounts.earthquakeAlerts, color: 'red', pulse: true } : undefined,
+          badge: liveCounts.earthquakeAlerts > 0 ? { count: liveCounts.earthquakeAlerts, color: 'red', pulse: false } : undefined,
           highlight: shouldHighlight('Earthquake')
         },
         { 
@@ -204,7 +204,7 @@ export default function AppLayout({
           icon: Waves, 
           current: pathname === '/dashboard/tsunami',
           shortcut: '⌘3',
-          badge: liveCounts.tsunamiAlerts > 0 ? { count: liveCounts.tsunamiAlerts, color: 'orange', pulse: true } : undefined,
+          badge: liveCounts.tsunamiAlerts > 0 ? { count: liveCounts.tsunamiAlerts, color: 'orange', pulse: false } : undefined,
           highlight: shouldHighlight('Tsunami')
         },
         { 
@@ -213,7 +213,7 @@ export default function AppLayout({
           icon: Ship, 
           current: pathname === '/dashboard/vessels',
           shortcut: '⌘4',
-          badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'blue', pulse: true } : undefined,
+          badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'blue', pulse: false } : undefined,
           highlight: shouldHighlight('Vessels')
         },
         { 
@@ -233,7 +233,7 @@ export default function AppLayout({
           href: '/dashboard/communications', 
           icon: Bell, 
           current: pathname === '/dashboard/communications',
-          badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'red', pulse: true } : undefined
+          badge: liveCounts.vesselAlerts > 0 ? { count: liveCounts.vesselAlerts, color: 'red', pulse: false } : undefined
         },
         { 
           name: 'Contacts', 
@@ -828,7 +828,6 @@ export default function AppLayout({
                               ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
                               : 'text-slate-700 hover:bg-slate-100/80'
                             }
-                            ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
                           `}
                           onClick={() => setSidebarOpen(false)}
                         >
@@ -906,7 +905,6 @@ export default function AppLayout({
                                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md'
                                   : 'text-slate-700 hover:bg-slate-100/80'
                                 }
-                                ${(item as any).highlight ? 'ring-2 ring-orange-400 ring-offset-2' : ''}
                               `}
                               onClick={(e) => {
                                 if (!isCompact) {
