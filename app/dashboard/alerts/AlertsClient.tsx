@@ -576,14 +576,13 @@ export default function EarthquakeMonitoringPage() {
           {activeTab === 'live' ? (
             <>
               {/* Source Health - Live Feed Only */}
-              <div id="source-health" data-tour-target="source-health" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div id="source-health" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div id="data-sources">
             <WidgetCard
               title="USGS"
               subtitle="US Geological Survey"
-              id="data-sources"
-              data-tour-target="data-sources"
+              icon={Globe}
               iconColor="blue"
-              subtitle="Primary earthquake source"
             >
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
@@ -604,6 +603,7 @@ export default function EarthquakeMonitoringPage() {
                 )}
               </div>
             </WidgetCard>
+            </div>
 
             <WidgetCard
               title="EMSC"
