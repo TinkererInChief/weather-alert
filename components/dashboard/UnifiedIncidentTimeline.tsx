@@ -18,6 +18,7 @@ type TimelineEvent = {
   status: string
   success: boolean
   details?: string
+  location?: string
   latitude?: number
   longitude?: number
   magnitude?: number
@@ -154,7 +155,7 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
                 hoverEvent = {
                   id: event.id,
                   magnitude: event.magnitude || 0,
-                  location: event.subtitle || event.title,
+                  location: event.location || event.title,
                   latitude: event.latitude,
                   longitude: event.longitude,
                   depth: event.depth || 0,
@@ -165,7 +166,7 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
               } else if (event.type === 'tsunami' && event.latitude !== undefined && event.longitude !== undefined) {
                 hoverEvent = {
                   id: event.id,
-                  location: event.subtitle || event.title,
+                  location: event.location || event.title,
                   latitude: event.latitude,
                   longitude: event.longitude,
                   magnitude: event.magnitude,
