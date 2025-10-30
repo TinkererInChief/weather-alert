@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone } from 'lucide-react'
+import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone, CheckCircle2 } from 'lucide-react'
 
 type DeliveryLog = {
   id: string
@@ -385,6 +385,9 @@ export default function DeliveryLogsTab() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                       Delivered
                     </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                      Acknowledged
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -419,6 +422,18 @@ export default function DeliveryLogsTab() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                         {formatDate(log.deliveredAt)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {log.readAt ? (
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                            <span className="text-sm text-slate-600">
+                              {formatDate(log.readAt)}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
                       </td>
                     </tr>
                   ))}
