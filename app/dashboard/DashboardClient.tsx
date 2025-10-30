@@ -38,17 +38,34 @@ import HelpTooltip from '@/components/guidance/HelpTooltip'
 
 // Phase 1 & 2 Dashboard Enhancements
 // Dynamic import for Leaflet map (requires window object)
-const GlobalEventMap = nextDynamic(() => import('@/components/dashboard/GlobalEventMap'), {
-  ssr: false,
-  loading: () => (
-    <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height: '500px' }}>
-      <div className="flex flex-col items-center justify-center h-full">
-        <MapPin className="h-12 w-12 text-slate-300 mb-4 animate-pulse" />
-        <p className="text-sm text-slate-600">Loading map...</p>
+const GlobalEventMap = nextDynamic(
+  () => import('@/components/dashboard/GlobalEventMap').catch((err) => {
+    console.error('Failed to load GlobalEventMap:', err)
+    // Return a fallback component
+    return {
+      default: () => (
+        <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height: '500px' }}>
+          <div className="flex flex-col items-center justify-center h-full">
+            <MapPin className="h-12 w-12 text-red-300 mb-4" />
+            <p className="text-sm text-red-600 font-medium mb-2">Map unavailable</p>
+            <p className="text-xs text-slate-500">Please refresh the page</p>
+          </div>
+        </div>
+      )
+    }
+  }),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="relative bg-white rounded-xl border border-slate-200 p-8 text-center" style={{ height: '500px' }}>
+        <div className="flex flex-col items-center justify-center h-full">
+          <MapPin className="h-12 w-12 text-slate-300 mb-4 animate-pulse" />
+          <p className="text-sm text-slate-600">Loading map...</p>
+        </div>
       </div>
-    </div>
-  )
-})
+    )
+  }
+)
 import RealTimeActivityFeed from '@/components/dashboard/RealTimeActivityFeed'
 import ContactEngagementAnalytics from '@/components/dashboard/ContactEngagementAnalytics'
 import QuickActionPalette from '@/components/dashboard/QuickActionPalette'
