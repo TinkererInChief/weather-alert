@@ -15,6 +15,7 @@ type EventMarker = {
   magnitude?: number
   severity?: number
   title: string
+  location?: string  // Descriptive location (e.g., "Offshore, 386 km W of Newport")
   timestamp: string
   contactsAffected?: number
   sources?: string[]  // Data sources (USGS, EMSC, JMA, etc.)

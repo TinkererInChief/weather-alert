@@ -823,6 +823,7 @@ export default function Dashboard() {
       status: alert.success ? 'Delivered' : 'Delivery Issues',
       success: alert.success,
       details: alert.errorMessage,
+      location: alert.location,
       latitude: alert.latitude,
       longitude: alert.longitude,
       magnitude: alert.magnitude,
@@ -912,6 +913,7 @@ export default function Dashboard() {
       lng: number
       magnitude: number
       title: string
+      location: string
       timestamp: string
       contactsAffected: number
       sources: Set<string>
@@ -927,23 +929,26 @@ export default function Dashboard() {
           lng: a.longitude!,
           magnitude: a.magnitude,
           title: `M${typeof a.magnitude === 'number' ? a.magnitude?.toFixed(1) : '?' } ${a.location}`,
+          location: a.location,
           timestamp: a.timestamp,
           contactsAffected: a.contactsNotified,
           sources: new Set(a.dataSources ?? []),
           primarySource: a.primarySource
         })
       } else {
-        // Use latest timestamp and corresponding coords/title
+        // Use latest timestamp and corresponding coords/title/location
         if (new Date(a.timestamp).getTime() > new Date(existing.timestamp).getTime()) {
           existing.timestamp = a.timestamp
           existing.lat = a.latitude!
           existing.lng = a.longitude!
           existing.title = `M${typeof a.magnitude === 'number' ? a.magnitude.toFixed(1) : '?' } ${a.location}`
+          existing.location = a.location
         }
         // Keep the maximum magnitude observed across sources
         if (a.magnitude > existing.magnitude) {
           existing.magnitude = a.magnitude
           existing.title = `M${typeof a.magnitude === 'number' ? a.magnitude.toFixed(1) : '?' } ${a.location}`
+          existing.location = a.location
         }
         // Merge sources
         for (const s of (a.dataSources ?? [])) existing.sources.add(s)
@@ -961,6 +966,7 @@ export default function Dashboard() {
       type: 'earthquake' as const,
       magnitude: e.magnitude,
       title: e.title,
+      location: e.location,
       timestamp: e.timestamp,
       contactsAffected: e.contactsAffected,
       sources: Array.from(e.sources),
