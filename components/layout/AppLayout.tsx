@@ -32,6 +32,7 @@ import {
   Database
 } from 'lucide-react'
 import { Role, Permission, hasPermission } from '@/lib/rbac/roles'
+import { useAlertStats, useVesselAlertsActive, useHealthCheck } from '@/lib/hooks/useAPI'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -75,14 +76,21 @@ export default function AppLayout({
   const [pinnedItems, setPinnedItems] = useState<string[]>(['Dashboard', 'Earthquake'])
   const [recentItems, setRecentItems] = useState<string[]>([])
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
-  const [liveCounts, setLiveCounts] = useState({
-    earthquakeAlerts: 0,
-    tsunamiAlerts: 0,
-    vesselAlerts: 0,
-    notifications: 0,
-    systemStatus: 'healthy' as 'healthy' | 'warning' | 'critical'
-  })
   const { data: session, status } = useSession()
+  
+  // OPTIMIZED: Use SWR hooks - automatic caching & deduplication!
+  const { data: alertStats } = useAlertStats(30, { refreshInterval: 30000 })
+  const { data: vesselAlerts } = useVesselAlertsActive(true, { refreshInterval: 30000 })
+  const { data: healthData } = useHealthCheck(false, { refreshInterval: 60000 })
+  
+  // Compute live counts from cached SWR data
+  const liveCounts = {
+    earthquakeAlerts: alertStats?.data?.activeAlerts || 0,
+    tsunamiAlerts: alertStats?.data?.tsunamiAlerts || 0,
+    vesselAlerts: (vesselAlerts?.stats?.bySeverity?.critical || 0) + (vesselAlerts?.stats?.bySeverity?.high || 0),
+    notifications: 0, // Will be fetched by NotificationCenter component
+    systemStatus: (healthData?.status as 'healthy' | 'warning' | 'critical') || 'healthy'
+  }
 
   const sessionUser = session?.user
   const effectiveUser = sessionUser ? {
@@ -94,39 +102,6 @@ export default function AppLayout({
 
   const isAuthenticated = status === 'authenticated'
   const isLoadingUser = status === 'loading'
-
-  // Fetch live counts for badges
-  useEffect(() => {
-    const fetchLiveCounts = async () => {
-      try {
-        const [alertsRes, vesselsRes, notificationsRes, healthRes] = await Promise.all([
-          fetch('/api/alerts/stats', { cache: 'no-store' }).catch(() => null),
-          fetch('/api/vessels/alerts?active=true', { cache: 'no-store' }).catch(() => null),
-          fetch('/api/notifications', { cache: 'no-store' }).catch(() => null),
-          fetch('/api/health', { cache: 'no-store' }).catch(() => null)
-        ])
-
-        const alertsData = alertsRes ? await alertsRes.json() : null
-        const vesselsData = vesselsRes ? await vesselsRes.json() : null
-        const notificationsData = notificationsRes ? await notificationsRes.json() : null
-        const healthData = healthRes ? await healthRes.json() : null
-
-        setLiveCounts({
-          earthquakeAlerts: alertsData?.data?.activeAlerts || 0,
-          tsunamiAlerts: alertsData?.data?.tsunamiAlerts || 0,
-          vesselAlerts: vesselsData?.stats?.bySeverity?.critical + vesselsData?.stats?.bySeverity?.high || 0,
-          notifications: notificationsData?.data?.unreadCount || 0,
-          systemStatus: healthData?.status || 'healthy'
-        })
-      } catch (error) {
-        console.error('Failed to fetch live counts:', error)
-      }
-    }
-
-    fetchLiveCounts()
-    const interval = setInterval(fetchLiveCounts, 30000) // Refresh every 30s
-    return () => clearInterval(interval)
-  }, [])
 
   // Track recent items
   useEffect(() => {
