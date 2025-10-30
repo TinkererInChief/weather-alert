@@ -231,12 +231,12 @@ export class AlertRoutingService {
       let providerMessageId: string | null | undefined = null
 
       if (channel === 'sms' && contact.phone) {
-        const result = await this.sendSMS(contact.phone, alert.message)
+        const result = await this.sendSMS(contact.phone, alert.message, alert.id)
         success = result.success
         errorMessage = result.error
         providerMessageId = result.messageId || null
       } else if (channel === 'email' && contact.email) {
-        const result = await this.sendEmail(contact.email, contact.name, alert, vessel)
+        const result = await this.sendEmail(contact.email, contact.name, alert, vessel, alert.id)
         success = result.success
         errorMessage = result.error
         providerMessageId = result.messageId || null
@@ -282,7 +282,7 @@ export class AlertRoutingService {
   /**
    * Send SMS via Twilio
    */
-  private async sendSMS(phone: string, message: string) {
+  private async sendSMS(phone: string, message: string, alertId?: string) {
     try {
       const twilioSid = process.env.TWILIO_ACCOUNT_SID
       const twilioToken = process.env.TWILIO_AUTH_TOKEN
@@ -294,8 +294,16 @@ export class AlertRoutingService {
 
       const twilio = require('twilio')(twilioSid, twilioToken)
       
+      // Add acknowledgment link if alertId provided
+      let smsBody = message
+      if (alertId) {
+        const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+        const ackUrl = `${baseUrl}/alerts/${alertId}/acknowledge`
+        smsBody += `\n\nAcknowledge: ${ackUrl}`
+      }
+      
       const result = await twilio.messages.create({
-        body: message,
+        body: smsBody,
         from: twilioPhone,
         to: phone
       })
@@ -317,7 +325,7 @@ export class AlertRoutingService {
   /**
    * Send Email via SendGrid
    */
-  private async sendEmail(email: string, name: string, alert: any, vessel: any) {
+  private async sendEmail(email: string, name: string, alert: any, vessel: any, alertId?: string) {
     try {
       const apiKey = process.env.SENDGRID_API_KEY
       const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'alerts@maritime-alert.com'
@@ -337,11 +345,15 @@ export class AlertRoutingService {
       }
       const emoji = severityEmoji[alert.severity] || '⚠️'
 
+      // Generate acknowledgment URL
+      const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      const ackUrl = alertId ? `${baseUrl}/alerts/${alertId}/acknowledge` : null
+
       await sgMail.send({
         to: email,
         from: fromEmail,
         subject: `${emoji} MARITIME ALERT: ${alert.severity.toUpperCase()} - ${vessel.name}`,
-        text: alert.message,
+        text: alert.message + (ackUrl ? `\n\nAcknowledge this alert: ${ackUrl}` : ''),
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #1e40af; color: white; padding: 20px; text-align: center;">
@@ -375,9 +387,17 @@ export class AlertRoutingService {
               </p>
             </div>
 
+            ${ackUrl ? `
+            <div style="text-align: center; padding: 30px;">
+              <a href="${ackUrl}" style="display: inline-block; background: #dc2626; color: white; padding: 15px 40px; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px;">
+                ✓ ACKNOWLEDGE ALERT
+              </a>
+            </div>
+            ` : ''}
+
             <div style="text-align: center; padding: 20px; color: #6b7280; font-size: 12px;">
               <p>This is an automated alert from your Maritime Alert System.</p>
-              <p>To acknowledge this alert, please log in to your dashboard.</p>
+              ${ackUrl ? `<p>Click the button above or visit: ${ackUrl}</p>` : ''}
             </div>
           </div>
         `
