@@ -86,6 +86,11 @@ export async function GET(request: Request) {
       success: true,
       alerts: formattedAlerts,
       stats
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30',
+        'CDN-Cache-Control': 'public, s-maxage=15'
+      }
     })
   } catch (error) {
     console.error('Error fetching vessel alerts:', error)

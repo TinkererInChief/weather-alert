@@ -83,21 +83,26 @@ export async function GET() {
       success: true,
       filters: {
         vesselTypes: vesselTypes.map(v => ({
-          value: v.v,
+          value: String(v.v),
           count: Number(v.c)
         })),
         owners: owners.map(o => ({
-          value: o.owner,
+          value: String(o.owner),
           count: o._count.owner
         })),
         operators: operators.map(o => ({
-          value: o.operator,
+          value: String(o.operator),
           count: o._count.operator
         })),
         flags: flags.map(f => ({
-          value: f.v,
+          value: String(f.v),
           count: Number(f.c)
         }))
+      }
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'CDN-Cache-Control': 'public, s-maxage=300'
       }
     })
   } catch (error) {

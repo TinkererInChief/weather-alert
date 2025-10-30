@@ -189,6 +189,11 @@ export async function GET(request: Request) {
       success: true,
       vessels: vesselsWithPosition,
       count: vesselsWithPosition.length
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=40',
+        'CDN-Cache-Control': 'public, s-maxage=20'
+      }
     })
   } catch (error) {
     console.error('Error fetching vessels:', error)

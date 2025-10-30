@@ -236,3 +236,50 @@ export function useAuditLogs(params: {
     }
   )
 }
+
+// Vessels hook
+export function useVessels(params: Record<string, any> = {}, config: SWRConfiguration = {}) {
+  const searchParams = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      searchParams.append(key, String(value))
+    }
+  })
+  
+  const queryString = searchParams.toString()
+  return useSWR(
+    `/api/vessels${queryString ? `?${queryString}` : ''}`,
+    fetcher,
+    {
+      ...defaultConfig,
+      refreshInterval: 30000, // Refresh every 30s for vessel positions
+      ...config,
+    }
+  )
+}
+
+// Vessel alerts (by vessel) hook
+export function useVesselAlertsActive(active = true, config: SWRConfiguration = {}) {
+  return useSWR(
+    `/api/vessels/alerts?active=${active}`,
+    fetcher,
+    {
+      ...defaultConfig,
+      refreshInterval: 15000, // Refresh alerts every 15s
+      ...config,
+    }
+  )
+}
+
+// Vessel filters hook
+export function useVesselFilters(config: SWRConfiguration = {}) {
+  return useSWR(
+    '/api/vessels/filters',
+    fetcher,
+    {
+      ...defaultConfig,
+      dedupingInterval: 60000, // Cache filters for 1 minute
+      ...config,
+    }
+  )
+}
