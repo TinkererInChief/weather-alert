@@ -302,10 +302,13 @@ export class AlertRoutingService {
         smsBody += `\n\nAcknowledge: ${ackUrl}`
       }
       
+      const baseUrlForWebhook = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+      
       const result = await twilio.messages.create({
         body: smsBody,
         from: twilioPhone,
-        to: phone
+        to: phone,
+        statusCallback: `${baseUrlForWebhook}/api/webhooks/twilio`
       })
 
       return {
@@ -354,6 +357,10 @@ export class AlertRoutingService {
         from: fromEmail,
         subject: `${emoji} MARITIME ALERT: ${alert.severity.toUpperCase()} - ${vessel.name}`,
         text: alert.message + (ackUrl ? `\n\nAcknowledge this alert: ${ackUrl}` : ''),
+        trackingSettings: {
+          clickTracking: { enable: true },
+          openTracking: { enable: true }
+        },
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: #1e40af; color: white; padding: 20px; text-align: center;">

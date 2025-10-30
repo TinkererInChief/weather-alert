@@ -65,6 +65,10 @@ export class EmailService {
         customArgs: {
           type: 'emergency',
           timestamp: new Date().toISOString()
+        },
+        trackingSettings: {
+          clickTracking: { enable: true },
+          openTracking: { enable: true }
         }
       }
 
