@@ -35,6 +35,7 @@ import { useDashboardTour } from '@/hooks/useTour'
 import { TourId } from '@/lib/guidance/tours'
 import HelpButton from '@/components/guidance/HelpButton'
 import HelpTooltip from '@/components/guidance/HelpTooltip'
+import { useDashboardStats } from '@/lib/hooks/useAPI'
 
 // Phase 1 & 2 Dashboard Enhancements
 // Dynamic import for Leaflet map (requires window object)
@@ -276,6 +277,10 @@ const dedupeTsunamiAlerts = (alerts: TsunamiAlert[]) => {
 export default function Dashboard() {
   const { data: session } = useSession()
   const { showEmergencyAlert, showSystemNotification } = useNotifications()
+  
+  // SWR-based data fetching (Performance optimization)
+  const USE_SWR = true // Toggle between old and new fetching
+  
   const [stats, setStats] = useState<DashboardStats | null>(null)
   
   // Tour integration - auto-start for new users

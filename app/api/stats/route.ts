@@ -25,6 +25,11 @@ export async function GET() {
           tsunami: tsunamiMonitorStatus.isMonitoring
         }
       }
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        'CDN-Cache-Control': 'public, s-maxage=30'
+      }
     })
   } catch (error) {
     return NextResponse.json(

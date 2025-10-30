@@ -13,6 +13,11 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
     return NextResponse.json({
       success: true,
       ...status
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30',
+        'CDN-Cache-Control': 'public, s-maxage=15'
+      }
     })
   } catch (error) {
     return NextResponse.json(

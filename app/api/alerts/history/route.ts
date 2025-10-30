@@ -147,6 +147,11 @@ export const GET = withPermission(Permission.VIEW_ALERTS, async (req, session) =
           requestedCoordsOnly: coordsOnly,
         }
       }
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        'CDN-Cache-Control': 'public, s-maxage=60'
+      }
     })
   } catch (error) {
     console.error('Error fetching alert history:', error)

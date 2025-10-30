@@ -103,6 +103,11 @@ export async function GET(request: Request) {
           sources: Array.from(new Set(alerts.map((a: any) => a.source))),
           lastChecked: new Date().toISOString()
         }
+      }, {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'CDN-Cache-Control': 'public, s-maxage=60'
+        }
       })
     }
 
