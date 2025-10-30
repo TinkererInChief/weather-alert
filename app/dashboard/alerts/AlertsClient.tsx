@@ -387,26 +387,9 @@ export default function EarthquakeMonitoringPage() {
         ]}
       >
         <div className="space-y-6">
-          {/* Header with Help Button */}
-          <div id="earthquake-header" className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Earthquake Monitoring</h2>
-              <p className="text-sm text-slate-600 mt-1">Real-time tracking from global seismic networks</p>
-            </div>
-            <HelpButton 
-              tours={[
-                {
-                  id: TourId.EARTHQUAKE,
-                  label: 'Earthquake Tour',
-                  onStart: () => earthquakeTour.restartTour()
-                }
-              ]}
-            />
-          </div>
-
-          {/* Tab Navigation */}
-          <div id="live-analytics-tabs" className="border-b border-slate-200">
-            <nav className="flex gap-8" role="tablist">
+          {/* Tab Navigation with Help Button */}
+          <div id="earthquake-header" className="flex items-center justify-between border-b border-slate-200">
+            <nav id="live-analytics-tabs" className="flex gap-8" role="tablist">
               <button
                 onClick={() => setActiveTab('live')}
                 className={`pb-4 px-1 font-medium text-sm transition-colors relative ${
@@ -438,6 +421,17 @@ export default function EarthquakeMonitoringPage() {
                 )}
               </button>
             </nav>
+            <div className="flex items-center">
+              <HelpButton 
+                tours={[
+                  {
+                    id: TourId.EARTHQUAKE,
+                    label: 'Earthquake Tour',
+                    onStart: () => earthquakeTour.restartTour()
+                  }
+                ]}
+              />
+            </div>
           </div>
 
           {/* Header Actions */}

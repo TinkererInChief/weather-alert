@@ -63,26 +63,9 @@ export default function CommunicationsClient() {
         ]}
       >
         <div className="space-y-6">
-          {/* Header with Help Button */}
-          <div id="communications-header" className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">Communications Hub</h2>
-              <p className="text-sm text-slate-600 mt-1">Manage all notification channels and delivery tracking</p>
-            </div>
-            <HelpButton 
-              tours={[
-                {
-                  id: TourId.COMMUNICATIONS,
-                  label: 'Communications Tour',
-                  onStart: () => communicationsTour.restartTour()
-                }
-              ]}
-            />
-          </div>
-
-          {/* Tab Navigation */}
-          <div id="communications-tabs" className="border-b border-gray-200 bg-white rounded-t-xl">
-            <nav className="flex gap-8 px-6" role="tablist">
+          {/* Tab Navigation with Help Button */}
+          <div id="communications-header" className="flex items-center justify-between border-b border-gray-200 bg-white rounded-t-xl">
+            <nav id="communications-tabs" className="flex gap-8 px-6" role="tablist">
               {tabs.map((tab) => {
                 const Icon = tab.icon
                 return (
@@ -108,6 +91,17 @@ export default function CommunicationsClient() {
                 )
               })}
             </nav>
+            <div className="px-6 flex items-center">
+              <HelpButton 
+                tours={[
+                  {
+                    id: TourId.COMMUNICATIONS,
+                    label: 'Communications Tour',
+                    onStart: () => communicationsTour.restartTour()
+                  }
+                ]}
+              />
+            </div>
           </div>
 
           {/* Tab Content */}
