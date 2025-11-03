@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { TsunamiService } from '@/lib/services/tsunami-service'
 import { prisma } from '@/lib/prisma'
+import { dartEnrichmentService } from '@/lib/services/dart-enrichment.service'
+import { dataAggregator } from '@/lib/data-sources/aggregator'
 
 export async function GET(request: Request) {
   try {
@@ -111,35 +113,59 @@ export async function GET(request: Request) {
       })
     }
 
-    // Otherwise, fetch new alerts from external sources (existing behavior)
-    console.log('🌊 Starting tsunami alert monitoring...')
+    // Otherwise, fetch new alerts from external sources with DART enrichment
+    console.log('🌊 Starting tsunami alert monitoring with DART enrichment...')
     
-    const tsunamiService = TsunamiService.getInstance()
-    const alerts = await tsunamiService.getNewTsunamiAlerts()
+    // Fetch from all tsunami sources (PTWC, JMA, DART, GeoNet)
+    const rawAlerts = await dataAggregator.fetchAggregatedTsunamiAlerts()
     
-    if (alerts.length === 0) {
+    // Enrich with DART confirmation data
+    const enrichedAlerts = await dartEnrichmentService.enrichAlerts(rawAlerts)
+    
+    if (enrichedAlerts.length === 0) {
       return NextResponse.json({
         success: true,
         message: 'No active tsunami alerts',
         data: {
           alertCount: 0,
           alerts: [],
-          sources: ['noaa', 'ptwc'],
+          sources: ['PTWC', 'JMA', 'DART', 'GeoNet'],
           lastChecked: new Date().toISOString()
         }
       })
     }
 
-    // Store alerts in database
+    // Store enriched alerts in database (maintain backwards compatibility)
+    const tsunamiService = TsunamiService.getInstance()
     const storedAlerts = []
     
-    for (const alert of alerts) {
+    for (const alert of enrichedAlerts) {
       try {
-        await tsunamiService.storeTsunamiAlert(alert)
+        // Convert to legacy format for storage
+        const legacyAlert = {
+          id: alert.id,
+          source: alert.source,
+          title: alert.title,
+          category: alert.category,
+          urgency: alert.severity >= 4 ? 'Immediate' : alert.severity >= 3 ? 'Expected' : 'Future',
+          severity: alert.severity >= 4 ? 'Extreme' : alert.severity >= 3 ? 'Severe' : 'Moderate',
+          description: alert.description || '',
+          instruction: alert.instructions || '',
+          location: alert.affectedRegions.join(', '),
+          latitude: alert.latitude,
+          longitude: alert.longitude,
+          threat: {
+            level: alert.category.toLowerCase(),
+            confidence: alert.confidence || 50,
+            affectedRegions: alert.affectedRegions
+          },
+          processedAt: new Date().toISOString()
+        }
+        
+        await tsunamiService.storeTsunamiAlert(legacyAlert as any)
         storedAlerts.push({
           ...alert,
-          processedAt: new Date().toISOString(),
-          formattedMessage: tsunamiService.formatTsunamiAlert(alert)
+          processedAt: new Date().toISOString()
         })
       } catch (error) {
         console.error(`❌ Error storing alert ${alert.id}:`, error)
@@ -148,11 +174,12 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Processed ${storedAlerts.length} tsunami alerts`,
+      message: `Processed ${storedAlerts.length} tsunami alerts with DART enrichment`,
       data: {
         alertCount: storedAlerts.length,
         alerts: storedAlerts,
         sources: Array.from(new Set(storedAlerts.map(a => a.source))),
+        dartEnabled: true,
         lastChecked: new Date().toISOString()
       }
     })

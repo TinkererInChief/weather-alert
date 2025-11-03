@@ -35,6 +35,8 @@ import { useDashboardTour } from '@/hooks/useTour'
 import { TourId } from '@/lib/guidance/tours'
 import HelpButton from '@/components/guidance/HelpButton'
 import HelpTooltip from '@/components/guidance/HelpTooltip'
+import { useDartStatus } from '@/hooks/useDartStatus'
+import Link from 'next/link'
 
 // Phase 1 & 2 Dashboard Enhancements
 // Dynamic import for Leaflet map (requires window object)
@@ -271,6 +273,58 @@ const dedupeTsunamiAlerts = (alerts: TsunamiAlert[]) => {
   }
 
   return Array.from(byKey.values()).sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime())
+}
+
+/**
+ * DART Network Status Widget
+ */
+function DartNetworkWidget() {
+  const { status, loading } = useDartStatus()
+  
+  if (loading) {
+    return (
+      <div className="bg-white rounded-xl border border-slate-200 p-6">
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    )
+  }
+  
+  const healthColor = status && status.health > 90 ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+  
+  return (
+    <Link href="/dashboard/tsunami">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-shadow cursor-pointer h-full">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-medium text-gray-600">DART Network</h3>
+          <Waves className="h-5 w-5 text-blue-600" />
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-3xl font-bold text-gray-900">
+              {status?.active || 0}/{status?.total || 71}
+            </span>
+            <span className={`px-2 py-1 text-xs rounded-full font-medium ${healthColor}`}>
+              {status?.health || 0}% Online
+            </span>
+          </div>
+          
+          <div className="flex items-center text-xs text-gray-600">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2" />
+            <span>Monitoring 71 sensors globally</span>
+          </div>
+          
+          {status?.lastUpdate && (
+            <div className="text-xs text-gray-500">
+              Updated: {new Date(status.lastUpdate).toLocaleTimeString()}
+            </div>
+          )}
+        </div>
+      </div>
+    </Link>
+  )
 }
 
 export default function Dashboard() {
@@ -1333,7 +1387,7 @@ export default function Dashboard() {
         </div>
 
         {/* New Usability Widgets - Reduced height with scroll */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-4">
           <div className="max-h-[400px] overflow-y-auto">
             <ActiveContactsWidget />
           </div>
@@ -1342,6 +1396,9 @@ export default function Dashboard() {
           </div>
           <div className="max-h-[400px] overflow-y-auto">
             <ChannelStatusWidget timeRangeExternal={timeFilter} refreshKey={refreshTick} />
+          </div>
+          <div className="max-h-[400px] overflow-y-auto">
+            <DartNetworkWidget />
           </div>
         </div>
 

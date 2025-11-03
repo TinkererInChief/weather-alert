@@ -17,6 +17,24 @@ export type TsunamiAlert = {
   description?: string
   instructions?: string
   rawData: any
+  
+  // DART enrichment fields
+  dartConfirmation?: {
+    stationId: string
+    stationName: string
+    height: number // meters
+    timestamp: Date
+    region: string
+  }
+  confidence?: number // 0-100
+  sources?: string[] // Array of source names that detected this event
+  sourceCount?: number // Number of sources
+  waveTrains?: Array<{
+    number: number
+    height: number // meters
+    eta: Date
+    isStrongest: boolean
+  }>
 }
 
 /**
