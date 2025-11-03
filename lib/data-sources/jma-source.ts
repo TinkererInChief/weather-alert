@@ -1,5 +1,5 @@
 import { EarthquakeFeature } from '@/types/earthquake'
-import { BaseDataSource, FetchOptions } from './base-source'
+import { BaseDataSource, FetchOptions, TsunamiAlert } from './base-source'
 
 /**
  * JMA (Japan Meteorological Agency) earthquake data source
@@ -264,5 +264,159 @@ export class JMASource extends BaseDataSource {
   private parseDepth(item: any): number {
     const depth = parseFloat(item.depth || item.dep || 10)
     return isNaN(depth) ? 10 : depth
+  }
+
+  /**
+   * Fetch tsunami alerts from JMA
+   * JMA includes tsunami information in earthquake detail JSON
+   */
+  async fetchTsunamiAlerts(): Promise<TsunamiAlert[]> {
+    const fetchStartTime = Date.now()
+    
+    try {
+      // First get the list of recent earthquakes
+      const response = await fetch(this.bosaiUrl, {
+        signal: AbortSignal.timeout(10000),
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'EmergencyAlertSystem/1.0',
+          'Cache-Control': 'no-cache'
+        }
+      })
+
+      if (!response.ok) {
+        this.recordFailure(new Error(`JMA tsunami fetch failed: ${response.status}`))
+        return []
+      }
+
+      const earthquakeList = await response.json()
+      const alerts: TsunamiAlert[] = []
+
+      // Fetch details for recent significant earthquakes
+      const recentEarthquakes = (Array.isArray(earthquakeList) ? earthquakeList : [])
+        .filter(item => {
+          const mag = parseFloat(item.mag || '0')
+          const timeIso = item.at || item.rdt
+          const ageMinutes = timeIso ? (Date.now() - Date.parse(timeIso)) / 60000 : Infinity
+          // Only check earthquakes M5+ in last 6 hours
+          return mag >= 5.0 && ageMinutes < 360
+        })
+        .slice(0, 5) // Limit to 5 most recent
+
+      // Fetch detail JSON for each earthquake to check tsunami info
+      for (const item of recentEarthquakes) {
+        if (!item.json) continue
+
+        try {
+          const detailUrl = `https://www.jma.go.jp/bosai/quake/data/${item.json}`
+          const detailResponse = await fetch(detailUrl, {
+            signal: AbortSignal.timeout(5000),
+            headers: { 'User-Agent': 'EmergencyAlertSystem/1.0' }
+          })
+
+          if (!detailResponse.ok) continue
+
+          const detail = await detailResponse.json()
+          
+          // Check for tsunami information
+          if (detail.tsunami && detail.tsunami !== '00') {
+            const alert = this.parseTsunamiAlert(detail, item)
+            if (alert) alerts.push(alert)
+          }
+        } catch (err) {
+          // Skip this earthquake if detail fetch fails
+          continue
+        }
+      }
+
+      this.recordSuccess()
+      this.recordResponseTime(Date.now() - fetchStartTime)
+      return alerts
+
+    } catch (error) {
+      this.recordFailure(error instanceof Error ? error : new Error('Unknown error'))
+      return []
+    }
+  }
+
+  private parseTsunamiAlert(detail: any, listItem: any): TsunamiAlert | null {
+    try {
+      const { lon, lat } = this.parseCod(listItem.cod || '')
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+
+      const tsunamiCode = detail.tsunami || '00'
+      const magnitude = parseFloat(listItem.mag || '0')
+      const timeIso = listItem.at || listItem.rdt
+      const time = timeIso ? Date.parse(timeIso) : Date.now()
+
+      // JMA tsunami codes:
+      // 00: No tsunami
+      // 10: Tsunami forecast (under evaluation)
+      // 11: Tsunami warning
+      // 52: Major tsunami warning
+      // 62: Tsunami advisory
+      
+      let category = 'INFORMATION'
+      let severity = 1
+      let instructions = ''
+
+      switch (tsunamiCode) {
+        case '52':
+          category = 'WARNING'
+          severity = 5
+          instructions = 'MAJOR TSUNAMI WARNING: Evacuate immediately to high ground. Tsunami waves of 3m or higher expected. Extreme danger to life.'
+          break
+        case '11':
+          category = 'WARNING'
+          severity = 4
+          instructions = 'TSUNAMI WARNING: Evacuate coastal areas immediately. Tsunami waves of 1-3m expected. Significant danger.'
+          break
+        case '62':
+          category = 'ADVISORY'
+          severity = 3
+          instructions = 'TSUNAMI ADVISORY: Stay away from beaches and harbors. Waves up to 1m expected. Follow local authorities.'
+          break
+        case '10':
+          category = 'WATCH'
+          severity = 2
+          instructions = 'Tsunami forecast under evaluation. Monitor updates and be prepared to evacuate if advised.'
+          break
+        default:
+          return null // No tsunami threat
+      }
+
+      const place = listItem.en_anm || listItem.anm || 'Japan region'
+      const id = String(listItem.eid || `${time}_${lat}_${lon}`)
+
+      // Parse affected regions from detail if available
+      const affectedRegions: string[] = []
+      if (detail.areas && Array.isArray(detail.areas)) {
+        for (const area of detail.areas) {
+          if (area.name) affectedRegions.push(area.name)
+        }
+      }
+      if (affectedRegions.length === 0) {
+        affectedRegions.push(place)
+      }
+
+      return {
+        id: `jma_tsunami_${id}`,
+        source: 'JMA',
+        title: `Tsunami ${category} - ${place}`,
+        category,
+        severity,
+        latitude: lat,
+        longitude: lon,
+        affectedRegions,
+        issuedAt: new Date(time),
+        expiresAt: new Date(time + 24 * 60 * 60 * 1000), // 24 hours
+        description: `Magnitude ${magnitude.toFixed(1)} earthquake near ${place} has generated tsunami threat. ${instructions}`,
+        instructions,
+        rawData: { detail, listItem }
+      }
+    } catch (err) {
+      console.warn('Failed to parse JMA tsunami alert:', err)
+      return null
+    }
   }
 }

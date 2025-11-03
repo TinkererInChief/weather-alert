@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 // Background job to update realtime_stats table every 30 seconds
-import { PrismaClient, Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
+import { prisma } from '../lib/prisma'
 
-const prisma = new PrismaClient()
 let isRunning = true
 
 process.on('SIGINT', () => {
@@ -14,64 +14,92 @@ async function updateStats() {
   try {
     console.log(`[${new Date().toISOString()}] Updating realtime stats...`)
     
-    // Run all queries in parallel with 5s timeout each
-    const results = await Promise.allSettled([
-      prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
-        SELECT COUNT(*)::bigint AS c
-        FROM "vessel_positions"
-        WHERE "createdAt" >= (now() - interval '1 hour')
-      `),
-      prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
-        SELECT COUNT(*)::bigint AS c
-        FROM "vessel_positions"
-        WHERE "createdAt" >= (now() - interval '15 minutes')
-      `),
-      prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
-        SELECT COUNT(DISTINCT "vesselId")::bigint AS c
-        FROM "vessel_positions"
-        WHERE "createdAt" >= (now() - interval '1 hour')
-      `),
-      prisma.vessel.count(),
-      prisma.$queryRaw<Array<{ estimate: bigint }>>(Prisma.sql`
-        SELECT reltuples::bigint AS estimate
-        FROM pg_class WHERE relname = 'vessel_positions'
-      `),
-      prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
-        SELECT COUNT(*)::bigint AS c
-        FROM "vessel_positions"
-        WHERE "createdAt" >= date_trunc('day', now())
-      `),
-      prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
-        SELECT COUNT(*)::bigint AS c
-        FROM "vessels"
-        WHERE "createdAt" >= date_trunc('day', now())
-      `),
-      prisma.$queryRaw<Array<{ 
-        bytes: bigint
-        pretty: string 
-      }>>(Prisma.sql`
-        SELECT 
-          pg_database_size(current_database()) AS bytes,
-          pg_size_pretty(pg_database_size(current_database())) AS pretty
-      `),
-      prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
-        SELECT COUNT(*)::bigint AS c
-        FROM information_schema.tables
-        WHERE table_schema = 'public'
-          AND table_type = 'BASE TABLE'
-      `)
+    // Batch queries in smaller groups to reduce connection pool pressure
+    // Group 1: Critical position stats (run together for consistency)
+    const [posResults] = await Promise.allSettled([
+      Promise.all([
+        prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS c
+          FROM "vessel_positions"
+          WHERE "createdAt" >= (now() - interval '1 hour')
+        `),
+        prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS c
+          FROM "vessel_positions"
+          WHERE "createdAt" >= (now() - interval '15 minutes')
+        `),
+        prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
+          SELECT COUNT(DISTINCT "vesselId")::bigint AS c
+          FROM "vessel_positions"
+          WHERE "createdAt" >= (now() - interval '1 hour')
+        `)
+      ])
     ])
 
-    // Extract values, use 0 if query failed
-    const pos1h = results[0].status === 'fulfilled' ? Number(results[0].value[0]?.c || 0) : 0
-    const pos15m = results[1].status === 'fulfilled' ? Number(results[1].value[0]?.c || 0) : 0
-    const vessels1h = results[2].status === 'fulfilled' ? Number(results[2].value[0]?.c || 0) : 0
-    const totalVessels = results[3].status === 'fulfilled' ? results[3].value : 0
-    const totalPos = results[4].status === 'fulfilled' ? Number(results[4].value[0]?.estimate || 0) : 0
-    const posToday = results[5].status === 'fulfilled' ? Number(results[5].value[0]?.c || 0) : 0
-    const vesselsToday = results[6].status === 'fulfilled' ? Number(results[6].value[0]?.c || 0) : 0
-    const dbSize = results[7].status === 'fulfilled' ? results[7].value[0] : { bytes: BigInt(0), pretty: 'N/A' }
-    const tableCount = results[8].status === 'fulfilled' ? Number(results[8].value[0]?.c || 0) : 0
+    // Group 2: Vessel counts and estimates
+    const [vesselResults] = await Promise.allSettled([
+      Promise.all([
+        prisma.vessel.count(),
+        prisma.$queryRaw<Array<{ estimate: bigint }>>(Prisma.sql`
+          SELECT reltuples::bigint AS estimate
+          FROM pg_class WHERE relname = 'vessel_positions'
+        `)
+      ])
+    ])
+
+    // Group 3: Today's stats (less critical, can skip on failure)
+    const [todayResults] = await Promise.allSettled([
+      Promise.all([
+        prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS c
+          FROM "vessel_positions"
+          WHERE "createdAt" >= date_trunc('day', now())
+        `),
+        prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS c
+          FROM "vessels"
+          WHERE "createdAt" >= date_trunc('day', now())
+        `)
+      ])
+    ])
+
+    // Group 4: DB metadata (least critical, run separately)
+    const [metaResults] = await Promise.allSettled([
+      Promise.all([
+        prisma.$queryRaw<Array<{ 
+          bytes: bigint
+          pretty: string 
+        }>>(Prisma.sql`
+          SELECT 
+            pg_database_size(current_database()) AS bytes,
+            pg_size_pretty(pg_database_size(current_database())) AS pretty
+        `),
+        prisma.$queryRaw<Array<{ c: bigint }>>(Prisma.sql`
+          SELECT COUNT(*)::bigint AS c
+          FROM information_schema.tables
+          WHERE table_schema = 'public'
+            AND table_type = 'BASE TABLE'
+        `)
+      ])
+    ])
+
+    // Extract values directly from each group with type-safe handling
+    const pos1h = posResults.status === 'fulfilled' ? Number(posResults.value[0][0]?.c || 0) : 0
+    const pos15m = posResults.status === 'fulfilled' ? Number(posResults.value[0][1]?.c || 0) : 0
+    const vessels1h = posResults.status === 'fulfilled' ? Number(posResults.value[0][2]?.c || 0) : 0
+    
+    const totalVessels = vesselResults.status === 'fulfilled' ? vesselResults.value[0] : 0
+    const totalPos = vesselResults.status === 'fulfilled' ? Number(vesselResults.value[1][0]?.estimate || 0) : 0
+    
+    const posToday = todayResults.status === 'fulfilled' ? Number(todayResults.value[0][0]?.c || 0) : 0
+    const vesselsToday = todayResults.status === 'fulfilled' ? Number(todayResults.value[0][1]?.c || 0) : 0
+    
+    const dbSize = metaResults.status === 'fulfilled' && metaResults.value[0] && metaResults.value[0][0]
+      ? metaResults.value[0][0]
+      : { bytes: BigInt(0), pretty: 'N/A' }
+    const tableCount = metaResults.status === 'fulfilled' && metaResults.value[1]
+      ? Number(metaResults.value[1][0]?.c || 0) 
+      : 0
 
     await prisma.$executeRaw`
       UPDATE "realtime_stats"
@@ -88,14 +116,18 @@ async function updateStats() {
     console.log(`✅ Stats updated: ${pos15m} pos (15m), ${pos1h} pos (1h), ${posToday} today, ${vesselsToday} new vessels, ${dbSize.pretty} DB, ${tableCount} tables`)
     
     // Log any failures
-    results.forEach((result, i) => {
-      if (result.status === 'rejected') {
-        const names = ['pos_1h', 'pos_15m', 'vessels_1h', 'total_vessels', 'total_pos', 'pos_today', 'vessels_today', 'db_size', 'table_count']
-        console.error(`⚠️  Query ${names[i]} failed:`, result.reason.message)
-      }
-    })
-  } catch (error) {
-    console.error('❌ Failed to update stats:', error)
+    if (posResults.status === 'rejected') console.error('⚠️  Position stats failed:', posResults.reason?.message || posResults.reason)
+    if (vesselResults.status === 'rejected') console.error('⚠️  Vessel stats failed:', vesselResults.reason?.message || vesselResults.reason)
+    if (todayResults.status === 'rejected') console.error('⚠️  Today stats failed:', todayResults.reason?.message || todayResults.reason)
+    if (metaResults.status === 'rejected') console.error('⚠️  DB metadata failed:', metaResults.reason?.message || metaResults.reason)
+  } catch (error: any) {
+    // Check if it's a connection pool exhaustion error
+    if (error?.message?.includes('too many clients')) {
+      console.error('⚠️  Connection pool exhausted - waiting 10s before retry...')
+      await new Promise(resolve => setTimeout(resolve, 10000))
+    } else {
+      console.error('❌ Failed to update stats:', error?.message || error)
+    }
   }
 }
 

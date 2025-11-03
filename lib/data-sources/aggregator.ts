@@ -5,6 +5,8 @@ import { EMSCSource } from './emsc-source'
 import { JMASource } from './jma-source'
 import { PTWCSource } from './ptwc-source'
 import { IRISSource } from './iris-source'
+import { DARTBuoySource } from './dart-buoy-source'
+import { GeoNetSource } from './geonet-source'
 
 /**
  * Deduplicated earthquake event with source attribution
@@ -26,15 +28,26 @@ export class DataAggregator {
   constructor() {
     // Initialize all data sources
     const jmaEnabled = process.env.JMA_ENABLED === 'true'
+    const geonetEnabled = process.env.GEONET_ENABLED !== 'false' // Default: enabled
+    const dartEnabled = process.env.DART_ENABLED !== 'false' // Default: enabled
+    
     this.sources = [
       new USGSSource(),
       new EMSCSource(),
       ...(jmaEnabled ? [new JMASource()] : []),
-      new IRISSource()
+      new IRISSource(),
+      ...(geonetEnabled ? [new GeoNetSource()] : [])
     ]
     
+    // Tsunami-specific sources
+    const jmaSource = jmaEnabled ? new JMASource() : null
+    const geonetSource = geonetEnabled ? new GeoNetSource() : null
+    
     this.tsunamiSources = [
-      new PTWCSource()
+      new PTWCSource(), // NOAA Pacific Tsunami Warning Center
+      ...(jmaSource ? [jmaSource] : []), // JMA tsunami warnings
+      ...(dartEnabled ? [new DARTBuoySource()] : []), // DART buoy network
+      ...(geonetSource ? [geonetSource] : []) // GeoNet NZ
     ]
   }
   
