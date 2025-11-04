@@ -21,15 +21,19 @@ type DartNetworkStatus = {
 }
 
 /**
- * Fetch latest data from NOAA NDBC for a single station
+ * Fetch latest data from NOAA NDBC for a single DART station
+ * 
+ * DART stations use .dart files with format:
+ * YY MM DD hh mm ss T HEIGHT
  */
 async function fetchStationStatus(stationId: string): Promise<{
   isOnline: boolean
   lastDataTime?: Date
+  waterHeight?: number
 }> {
   try {
-    // NOAA NDBC real-time data endpoint
-    const url = `https://www.ndbc.noaa.gov/data/realtime2/${stationId}.txt`
+    // DART-specific endpoint (not .txt like regular buoys!)
+    const url = `https://www.ndbc.noaa.gov/data/realtime2/${stationId}.dart`
     
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5s timeout
@@ -50,31 +54,38 @@ async function fetchStationStatus(stationId: string): Promise<{
     const text = await response.text()
     const lines = text.trim().split('\n')
     
-    // NDBC format: First line is header, second line is units, third+ are data
+    // DART format: First line is header (#YY MM DD...), second line is units
+    // Third line onwards is data
     if (lines.length < 3) {
       return { isOnline: false }
     }
     
-    // Parse the most recent data line (line 2, after header and units)
+    // Parse the most recent data line (line 2, index after headers)
     const dataLine = lines[2].trim()
     const parts = dataLine.split(/\s+/)
     
-    if (parts.length < 5) {
+    if (parts.length < 8) {
       return { isOnline: false }
     }
     
-    // NDBC format: YY MM DD hh mm (year, month, day, hour, minute)
+    // DART format: YY MM DD hh mm ss T HEIGHT
     const year = parseInt(parts[0])
-    const month = parseInt(parts[1]) - 1 // JS months are 0-indexed
+    const month = parseInt(parts[1]) - 1 // JS months are 0-indexed  
     const day = parseInt(parts[2])
     const hour = parseInt(parts[3])
     const minute = parseInt(parts[4])
+    const second = parseInt(parts[5])
+    const waterHeight = parseFloat(parts[7])
     
-    const lastDataTime = new Date(year, month, day, hour, minute)
+    // Handle 2-digit year (2025 → 25)
+    const fullYear = year < 100 ? 2000 + year : year
+    
+    const lastDataTime = new Date(fullYear, month, day, hour, minute, second)
     
     return {
       isOnline: true,
-      lastDataTime
+      lastDataTime,
+      waterHeight
     }
   } catch (error) {
     // Network error, timeout, or parse error
@@ -113,7 +124,7 @@ function determineStatus(
  * This is the main function called by the API endpoint
  */
 export async function fetchLiveDartStatus(): Promise<DartNetworkStatus> {
-  console.log('🌊 Fetching live DART status from NOAA NDBC...')
+  console.log('🌊 Fetching REAL DART status from NOAA NDBC...')
   
   const startTime = Date.now()
   
@@ -148,7 +159,7 @@ export async function fetchLiveDartStatus(): Promise<DartNetworkStatus> {
   }
   
   const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
-  console.log(`✅ Fetched status for ${results.length} stations in ${elapsedTime}s`)
+  console.log(`✅ Fetched REAL status for ${results.length} stations in ${elapsedTime}s`)
   
   // Calculate statistics
   const stats = {

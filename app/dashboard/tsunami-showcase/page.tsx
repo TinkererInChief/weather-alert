@@ -79,7 +79,7 @@ export default function TsunamiShowcasePage() {
           {loading && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
               <RefreshCw className="h-5 w-5 text-blue-600 animate-spin" />
-              <span className="text-blue-900 font-medium">Fetching live DART status from NOAA NDBC...</span>
+              <span className="text-blue-900 font-medium">Fetching real-time DART status from NOAA NDBC...</span>
             </div>
           )}
           
