@@ -12,19 +12,17 @@ import {
   TsunamiPropagationMap,
   DartStationGlobe
 } from '@/components/tsunami'
-import { DART_STATIONS, getNetworkStats } from '@/lib/data/dart-stations'
-import { Sparkles, CheckCircle } from 'lucide-react'
+import { useLiveDartStatus } from '@/hooks/useLiveDartStatus'
+import { Sparkles, CheckCircle, RefreshCw, Wifi } from 'lucide-react'
 
 export default function TsunamiShowcasePage() {
   const [activeDemo, setActiveDemo] = useState<string>('all')
   
-  // Real DART network data - all 71 stations!
-  const dartStations = DART_STATIONS.map(station => ({
-    ...station,
-    lastPing: station.status !== 'offline' ? new Date() : undefined
-  }))
+  // Fetch LIVE DART status from NOAA NDBC (auto-refreshes every 5 minutes)
+  const { data: liveData, loading, error, refresh, isRefreshing } = useLiveDartStatus()
   
-  const networkStats = getNetworkStats()
+  const dartStations = liveData.stations
+  const networkStats = liveData.stats
   
   // Mock data for alert demonstrations
   const mockDartConfirmation = {
@@ -77,6 +75,32 @@ export default function TsunamiShowcasePage() {
         ]}
       >
         <div className="space-y-6">
+          {/* Live Status Banner */}
+          {loading && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 text-blue-600 animate-spin" />
+              <span className="text-blue-900 font-medium">Fetching live DART status from NOAA NDBC...</span>
+            </div>
+          )}
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Wifi className="h-5 w-5 text-red-600" />
+                <div>
+                  <p className="text-red-900 font-medium">Failed to fetch live data</p>
+                  <p className="text-red-700 text-sm">{error}</p>
+                </div>
+              </div>
+              <button
+                onClick={refresh}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          
           {/* Hero Banner */}
           <div className="bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-xl p-8 text-white relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600/50 to-transparent"></div>
@@ -85,9 +109,16 @@ export default function TsunamiShowcasePage() {
                 <Sparkles className="h-8 w-8" />
                 <h1 className="text-3xl font-bold">DART Enhanced Visualizations</h1>
               </div>
-              <p className="text-blue-100 text-lg mb-4">
+              <p className="text-blue-100 text-lg mb-2">
                 Interactive showcase of all Phase 1, Phase 2, and 3D Globe features
               </p>
+              <div className="flex items-center gap-2 text-sm text-green-300">
+                <Wifi className="h-4 w-4 animate-pulse" />
+                <span className="font-semibold">LIVE DATA from NOAA NDBC</span>
+                {liveData.lastUpdated && (
+                  <span className="text-blue-200">• Updates every 5 minutes</span>
+                )}
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                   <div className="text-2xl font-bold">{networkStats.total}</div>
@@ -205,7 +236,13 @@ export default function TsunamiShowcasePage() {
                 {networkStats.detecting > 0 && <span className="text-green-500 font-medium ml-2">• {networkStats.detecting} Detecting</span>}
                 {networkStats.offline > 0 && <span className="text-slate-500 font-medium ml-2">• {networkStats.offline} Offline</span>}
               </p>
-              <DartStationGlobe stations={dartStations} height={700} />
+              <DartStationGlobe 
+                stations={dartStations} 
+                height={700}
+                lastUpdated={liveData.lastUpdated}
+                onRefresh={refresh}
+                isRefreshing={isRefreshing}
+              />
             </div>
           )}
           

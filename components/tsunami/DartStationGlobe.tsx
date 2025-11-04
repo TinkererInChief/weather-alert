@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
-import { Globe as GlobeIcon, Activity, Wifi, WifiOff } from 'lucide-react'
+import { Globe as GlobeIcon, Activity, Wifi, WifiOff, RefreshCw, Clock } from 'lucide-react'
 
 // Dynamically import Globe.gl to avoid SSR issues
 const Globe = dynamic(() => import('react-globe.gl'), {
@@ -24,9 +24,19 @@ type Props = {
   stations: DartStation[]
   onStationClick?: (station: DartStation) => void
   height?: number
+  lastUpdated?: Date | null
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
-export function DartStationGlobe({ stations, onStationClick, height = 500 }: Props) {
+export function DartStationGlobe({ 
+  stations, 
+  onStationClick, 
+  height = 500,
+  lastUpdated,
+  onRefresh,
+  isRefreshing = false
+}: Props) {
   const globeEl = useRef<any>()
   const [selectedStation, setSelectedStation] = useState<DartStation | null>(null)
   const [isClient, setIsClient] = useState(false)
@@ -104,8 +114,29 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
             <div>
               <h3 className="text-white font-semibold">DART Network - Global View</h3>
               <p className="text-xs text-blue-300">{stations.length} Tsunami Detection Buoys</p>
+              {lastUpdated && (
+                <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
+                  <Clock className="h-3 w-3" />
+                  <span>
+                    Updated {new Date(lastUpdated).toLocaleTimeString()}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
+          
+          {/* Refresh Button */}
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white text-xs rounded-lg transition-colors"
+              title="Refresh live data from NOAA"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Updating...' : 'Refresh'}
+            </button>
+          )}
         </div>
       </div>
       
