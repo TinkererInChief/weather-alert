@@ -136,6 +136,9 @@ export async function fetchLiveDartStatus(): Promise<DartNetworkStatus> {
   
   const startTime = Date.now()
   
+  // Track failures for analysis
+  const failures: { id: string; reason: string }[] = []
+  
   // Fetch status for all stations in parallel (with concurrency limit)
   const BATCH_SIZE = 10 // Fetch 10 at a time to avoid overwhelming NOAA servers
   const results: DartLiveStatus[] = []
@@ -147,6 +150,11 @@ export async function fetchLiveDartStatus(): Promise<DartNetworkStatus> {
       batch.map(async (station) => {
         const { isOnline, lastDataTime } = await fetchStationStatus(station.id)
         const status = determineStatus(lastDataTime, isOnline)
+        
+        // Track failures
+        if (!isOnline) {
+          failures.push({ id: station.id, reason: 'No response or 404' })
+        }
         
         return {
           ...station,
@@ -168,6 +176,10 @@ export async function fetchLiveDartStatus(): Promise<DartNetworkStatus> {
   
   const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1)
   console.log(`✅ Fetched REAL status for ${results.length} stations in ${elapsedTime}s`)
+  console.log(`⚠️  ${failures.length} stations failed to respond (likely no .dart file on NOAA)`)
+  if (failures.length > 0 && failures.length <= 10) {
+    console.log('Failed stations:', failures.map(f => f.id).join(', '))
+  }
   
   // Calculate statistics
   const stats = {

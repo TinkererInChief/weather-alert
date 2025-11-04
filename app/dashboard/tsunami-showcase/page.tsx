@@ -236,6 +236,15 @@ export default function TsunamiShowcasePage() {
                 {networkStats.detecting > 0 && <span className="text-orange-500 font-medium ml-2">● {networkStats.detecting} Detecting (Orange)</span>}
                 {networkStats.offline > 0 && <span className="text-gray-500 font-medium ml-2">● {networkStats.offline} Offline (Gray)</span>}
               </p>
+              {networkStats.offline > networkStats.online && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                  <p className="text-blue-900">
+                    <strong>Note:</strong> High offline rate is expected - not all DART deployments publish real-time data files. 
+                    Many stations are operational but don't have public <code className="bg-blue-100 px-1 rounded">.dart</code> endpoints on NOAA's servers. 
+                    This reflects data availability, not actual network health.
+                  </p>
+                </div>
+              )}
               <DartStationGlobe 
                 stations={dartStations} 
                 height={700}
