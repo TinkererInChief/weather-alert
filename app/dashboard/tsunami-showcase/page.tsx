@@ -232,9 +232,9 @@ export default function TsunamiShowcasePage() {
               <h2 className="text-2xl font-bold text-slate-900">3D DART Station Globe</h2>
               <p className="text-slate-600 mb-4">
                 Interactive 3D visualization of all <strong>{networkStats.total} DART buoys</strong> deployed globally. 
-                <span className="text-cyan-500 font-medium ml-2">● {networkStats.online} Online (Cyan)</span>
-                {networkStats.detecting > 0 && <span className="text-green-500 font-medium ml-2">● {networkStats.detecting} Detecting (Green)</span>}
-                {networkStats.offline > 0 && <span className="text-orange-500 font-medium ml-2">● {networkStats.offline} Offline (Orange)</span>}
+                <span className="text-green-500 font-medium ml-2">● {networkStats.online} Online (Green)</span>
+                {networkStats.detecting > 0 && <span className="text-orange-500 font-medium ml-2">● {networkStats.detecting} Detecting (Orange)</span>}
+                {networkStats.offline > 0 && <span className="text-gray-500 font-medium ml-2">● {networkStats.offline} Offline (Gray)</span>}
               </p>
               <DartStationGlobe 
                 stations={dartStations} 

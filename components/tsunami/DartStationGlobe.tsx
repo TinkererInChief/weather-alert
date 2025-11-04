@@ -64,14 +64,14 @@ export function DartStationGlobe({
     }
   }, [isClient])
   
-  // Prepare point data for globe with high-contrast colors
+  // Prepare point data for globe with consistent color scheme
   const pointsData = stations.map(station => ({
     lat: station.lat,
     lng: station.lon,
     size: station.status === 'detecting' ? 1.5 : station.status === 'online' ? 1.2 : 0.9,
-    color: station.status === 'detecting' ? '#10B981' :  // Green for detecting
-           station.status === 'online' ? '#00E5FF' :      // Bright cyan for online (visible on blue)
-           '#FF9800',                                      // Orange for offline (warning)
+    color: station.status === 'detecting' ? '#FF9800' :  // Orange for detecting (alert!)
+           station.status === 'online' ? '#10B981' :      // Green for online (active/healthy)
+           '#9CA3AF',                                      // Gray for offline (inactive)
     station: station,
     altitude: 0.02
   }))
@@ -186,12 +186,12 @@ export function DartStationGlobe({
             </div>
           `}
           
-          // Animated rings around detecting stations
+          // Animated rings around detecting stations (orange alert!)
           ringsData={stations.filter(s => s.status === 'detecting').map(s => ({
             lat: s.lat,
             lng: s.lon
           }))}
-          ringColor={() => 'rgba(16, 185, 129, 0.8)'}
+          ringColor={() => 'rgba(255, 152, 0, 0.8)'}
           ringMaxRadius={3}
           ringPropagationSpeed={2}
           ringRepeatPeriod={1500}
