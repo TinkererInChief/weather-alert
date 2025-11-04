@@ -9,7 +9,7 @@ type DartStation = {
   name: string
   lat: number
   lon: number
-  status: 'active' | 'detected' | 'inactive'
+  status: 'online' | 'offline' | 'detecting'
 }
 
 type Props = {
@@ -144,7 +144,7 @@ export function TsunamiPropagationMap({
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.5 + i * 0.1 }}
               >
-                {station.status === 'detected' && (
+                {station.status === 'detecting' && (
                   <motion.circle
                     cx={x}
                     cy={y}
@@ -167,8 +167,8 @@ export function TsunamiPropagationMap({
                   cy={y}
                   r="6"
                   fill={
-                    station.status === 'detected' ? '#10B981' :
-                    station.status === 'active' ? '#3B82F6' :
+                    station.status === 'detecting' ? '#10B981' :
+                    station.status === 'online' ? '#3B82F6' :
                     '#64748B'
                   }
                   stroke="white"
@@ -210,10 +210,10 @@ export function TsunamiPropagationMap({
           <div className="flex items-center gap-4">
             <span className="text-slate-600">DART Network:</span>
             <span className="font-semibold text-blue-600">
-              {dartStations.filter(s => s.status === 'active' || s.status === 'detected').length} Active
+              {dartStations.filter(s => s.status === 'online' || s.status === 'detecting').length} Active
             </span>
             <span className="font-semibold text-green-600">
-              {dartStations.filter(s => s.status === 'detected').length} Detections
+              {dartStations.filter(s => s.status === 'detecting').length} Detections
             </span>
           </div>
           <motion.div
