@@ -131,7 +131,7 @@ export default function TsunamiShowcasePage() {
           {/* Phase 1 Features */}
           {(activeDemo === 'all' || activeDemo === 'badges') && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Phase 1: Wave Confirmation Badges</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Wave Confirmation Badges</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div>
                   <h3 className="text-sm font-medium text-slate-600 mb-3">Compact Variant</h3>
@@ -147,7 +147,7 @@ export default function TsunamiShowcasePage() {
           
           {(activeDemo === 'all' || activeDemo === 'confidence') && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Phase 1: Confidence Scoring</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Confidence Scoring</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white rounded-xl p-6 border border-slate-200">
                   <h3 className="text-sm font-medium text-slate-600 mb-4">Animated Bar (95%)</h3>
@@ -171,21 +171,21 @@ export default function TsunamiShowcasePage() {
           
           {(activeDemo === 'all' || activeDemo === 'height') && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Phase 1: Wave Height Comparison</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Wave Height Comparison</h2>
               <WaveHeightComparison height={2.3} showComparisons={true} />
             </div>
           )}
           
           {(activeDemo === 'all' || activeDemo === 'timeline') && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Phase 2: Live Wave Timeline</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Live Wave Timeline</h2>
               <LiveWaveTimeline waves={mockWaves} targetLocation="Hawaii" />
             </div>
           )}
           
           {(activeDemo === 'all' || activeDemo === 'map') && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Phase 2: Tsunami Propagation Map</h2>
+              <h2 className="text-2xl font-bold text-slate-900">Tsunami Propagation Map</h2>
               <TsunamiPropagationMap
                 epicenter={{ lat: 38.2, lon: 142.8 }}
                 magnitude={8.2}
@@ -198,14 +198,14 @@ export default function TsunamiShowcasePage() {
           
           {(activeDemo === 'all' || activeDemo === 'globe') && (
             <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-slate-900">Phase 3: 3D DART Station Globe</h2>
+              <h2 className="text-2xl font-bold text-slate-900">3D DART Station Globe</h2>
               <p className="text-slate-600 mb-4">
                 Interactive 3D visualization of all <strong>{networkStats.total} DART buoys</strong> deployed globally. 
                 <span className="text-green-600 font-medium ml-2">{networkStats.online} Online</span>
                 {networkStats.detecting > 0 && <span className="text-green-500 font-medium ml-2">• {networkStats.detecting} Detecting</span>}
                 {networkStats.offline > 0 && <span className="text-slate-500 font-medium ml-2">• {networkStats.offline} Offline</span>}
               </p>
-              <DartStationGlobe stations={dartStations} height={600} />
+              <DartStationGlobe stations={dartStations} height={700} />
             </div>
           )}
           

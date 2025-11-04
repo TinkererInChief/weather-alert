@@ -41,9 +41,11 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
       // Small delay to ensure globe is mounted
       setTimeout(() => {
         if (globeEl.current) {
-          // Auto-rotate
+          // Auto-rotate - subtle rotation simulating Earth's movement
           globeEl.current.controls().autoRotate = true
-          globeEl.current.controls().autoRotateSpeed = 0.5
+          globeEl.current.controls().autoRotateSpeed = 0.3
+          globeEl.current.controls().enableDamping = true
+          globeEl.current.controls().dampingFactor = 0.05
           
           // Initial camera position
           globeEl.current.pointOfView({ altitude: 2.5 }, 0)
@@ -56,12 +58,19 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
   const pointsData = stations.map(station => ({
     lat: station.lat,
     lng: station.lon,
-    size: station.status === 'detecting' ? 0.8 : 0.5,
+    size: station.status === 'detecting' ? 1.5 : 1.0,
     color: station.status === 'detecting' ? '#10B981' : 
            station.status === 'online' ? '#3B82F6' : 
            '#9CA3AF',
-    station: station
+    station: station,
+    altitude: 0.02
   }))
+  
+  // Log for debugging
+  useEffect(() => {
+    console.log(`DartStationGlobe: Rendering ${pointsData.length} stations`)
+    console.log('Sample stations:', pointsData.slice(0, 3))
+  }, [pointsData.length])
   
   const statusCounts = {
     online: stations.filter(s => s.status === 'online' || s.status === 'detecting').length,
@@ -124,9 +133,12 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
           waitForGlobeReady={true}
           
           pointsData={pointsData}
-          pointAltitude={0.01}
+          pointAltitude={0.02}
           pointRadius="size"
           pointColor="color"
+          pointResolution={12}
+          pointsMerge={false}
+          pointsTransitionDuration={0}
           
           onPointClick={(point: any) => {
             setSelectedStation(point.station)
