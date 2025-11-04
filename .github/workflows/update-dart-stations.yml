@@ -1,0 +1,86 @@
+name: Update DART Stations
+
+on:
+  # Run every Monday at 00:00 UTC
+  schedule:
+    - cron: '0 0 * * 1'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  update-stations:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
+      
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Update DART stations
+        run: pnpm update-dart-stations
+      
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code lib/data/dart-stations.ts || echo "changed=true" >> $GITHUB_OUTPUT
+      
+      - name: Create Pull Request
+        if: steps.git-check.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: Update DART stations from NOAA'
+          title: '🌊 Auto-update: DART Stations from NOAA'
+          body: |
+            ## 🤖 Automated DART Station Update
+            
+            This PR contains updates to the DART station list fetched from NOAA's official API.
+            
+            **Source:** https://www.ndbc.noaa.gov/activestations.xml
+            **Updated:** ${{ github.run_id }}
+            **Workflow:** Weekly automatic check
+            
+            ### Changes
+            
+            The DART station list has been updated with the latest active stations from NOAA.
+            This may include:
+            - 🆕 New station deployments
+            - ❌ Decommissioned stations removed
+            - 📝 Updated station metadata
+            
+            ### Review Checklist
+            
+            - [ ] Verify station count is reasonable (40-60 stations)
+            - [ ] Check that no critical stations were removed
+            - [ ] Review the diff for unexpected changes
+            
+            ### Testing
+            
+            This update is safe to merge as it only affects the DART station database.
+            The change will take effect on next deployment.
+            
+            ---
+            
+            *This PR was created automatically by the `update-dart-stations` workflow.*
+            *Generated from: scripts/update-dart-stations.ts*
+          branch: auto-update-dart-stations
+          delete-branch: true
+          labels: |
+            automated
+            data-update
+            dart-stations

@@ -7,6 +7,7 @@
     "dev": "TZ=UTC next dev",
     "dev:railway": "railway run next dev",
     "postinstall": "prisma generate",
+    "prebuild": "tsx scripts/update-dart-stations.ts",
     "build": "SKIP_MONITORING=1 SKIP_SECRETS_VALIDATION=true next build",
     "postbuild": "mkdir -p .next/standalone && cp -R scripts lib tsconfig.json .next/standalone/",
     "build:strict": "SKIP_MONITORING=1 next build",
@@ -30,6 +31,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx scripts/seed-database.ts",
     "user:promote": "tsx scripts/promote-user.ts",
+    "update-dart-stations": "tsx scripts/update-dart-stations.ts",
     "test": "jest"
   },
   "dependencies": {
