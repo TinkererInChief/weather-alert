@@ -1,0 +1,243 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { motion } from 'framer-motion'
+import { Globe as GlobeIcon, Activity, Wifi, WifiOff } from 'lucide-react'
+
+// Dynamically import Globe.gl to avoid SSR issues
+const Globe = dynamic(() => import('react-globe.gl'), {
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+})
+
+type DartStation = {
+  id: string
+  name: string
+  lat: number
+  lon: number
+  status: 'online' | 'offline' | 'detecting'
+  lastPing?: Date
+}
+
+type Props = {
+  stations: DartStation[]
+  onStationClick?: (station: DartStation) => void
+  height?: number
+}
+
+export function DartStationGlobe({ stations, onStationClick, height = 500 }: Props) {
+  const globeEl = useRef<any>()
+  const [selectedStation, setSelectedStation] = useState<DartStation | null>(null)
+  const [isClient, setIsClient] = useState(false)
+  
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
+  
+  useEffect(() => {
+    if (globeEl.current) {
+      // Auto-rotate
+      globeEl.current.controls().autoRotate = true
+      globeEl.current.controls().autoRotateSpeed = 0.5
+      
+      // Initial camera position
+      globeEl.current.pointOfView({ altitude: 2.5 }, 0)
+    }
+  }, [])
+  
+  // Prepare point data for globe
+  const pointsData = stations.map(station => ({
+    lat: station.lat,
+    lng: station.lon,
+    size: station.status === 'detecting' ? 0.8 : 0.5,
+    color: station.status === 'detecting' ? '#10B981' : 
+           station.status === 'online' ? '#3B82F6' : 
+           '#9CA3AF',
+    station: station
+  }))
+  
+  const statusCounts = {
+    online: stations.filter(s => s.status === 'online' || s.status === 'detecting').length,
+    detecting: stations.filter(s => s.status === 'detecting').length,
+    offline: stations.filter(s => s.status === 'offline').length
+  }
+
+  if (!isClient) {
+    return (
+      <div className="bg-slate-900 rounded-xl flex items-center justify-center" style={{ height }}>
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p>Loading 3D Globe...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative bg-slate-900 rounded-xl overflow-hidden border border-slate-700 shadow-2xl">
+      {/* Header */}
+      <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-slate-900 to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+            >
+              <GlobeIcon className="h-6 w-6 text-blue-400" />
+            </motion.div>
+            <div>
+              <h3 className="text-white font-semibold">DART Network - Global View</h3>
+              <p className="text-xs text-blue-300">{stations.length} Tsunami Detection Buoys</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Globe */}
+      <div style={{ height: `${height}px` }}>
+        <Globe
+          ref={globeEl}
+          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
+          backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+          
+          pointsData={pointsData}
+          pointAltitude={0.01}
+          pointRadius="size"
+          pointColor="color"
+          
+          onPointClick={(point: any) => {
+            setSelectedStation(point.station)
+            if (onStationClick) {
+              onStationClick(point.station)
+            }
+          }}
+          
+          pointLabel={(point: any) => `
+            <div style="background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; color: white; font-size: 12px;">
+              <div style="font-weight: bold;">${point.station.name}</div>
+              <div>Status: ${point.station.status}</div>
+              <div>Lat: ${point.station.lat.toFixed(2)}°, Lon: ${point.station.lng.toFixed(2)}°</div>
+            </div>
+          `}
+          
+          // Animated rings around detecting stations
+          ringsData={stations.filter(s => s.status === 'detecting').map(s => ({
+            lat: s.lat,
+            lng: s.lon
+          }))}
+          ringColor={() => 'rgba(16, 185, 129, 0.8)'}
+          ringMaxRadius={3}
+          ringPropagationSpeed={2}
+          ringRepeatPeriod={1500}
+          
+          // Atmosphere
+          atmosphereColor="#3B82F6"
+          atmosphereAltitude={0.2}
+          
+          // Performance
+          enablePointerInteraction={true}
+        />
+      </div>
+      
+      {/* Status Panel */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 bg-gradient-to-t from-slate-900 to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <motion.div
+              className="flex items-center gap-2 text-green-400"
+              animate={{ opacity: [1, 0.6, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <div className="w-3 h-3 rounded-full bg-green-500 shadow-lg shadow-green-500/50"></div>
+              <span className="text-sm font-medium">{statusCounts.online} Online</span>
+            </motion.div>
+            
+            {statusCounts.detecting > 0 && (
+              <motion.div
+                className="flex items-center gap-2 text-green-300"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  opacity: [1, 0.7, 1]
+                }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <Activity className="h-4 w-4" />
+                <span className="text-sm font-medium">{statusCounts.detecting} Detecting</span>
+              </motion.div>
+            )}
+            
+            {statusCounts.offline > 0 && (
+              <div className="flex items-center gap-2 text-slate-500">
+                <WifiOff className="h-4 w-4" />
+                <span className="text-sm font-medium">{statusCounts.offline} Offline</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="text-xs text-slate-400">
+            Click station for details • Drag to rotate
+          </div>
+        </div>
+      </div>
+      
+      {/* Selected Station Info */}
+      {selectedStation && (
+        <motion.div
+          className="absolute top-20 right-4 bg-slate-800 border border-slate-600 rounded-lg p-4 z-20 max-w-xs"
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 50 }}
+        >
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Wifi className={`h-5 w-5 ${
+                selectedStation.status === 'detecting' ? 'text-green-400' :
+                selectedStation.status === 'online' ? 'text-blue-400' :
+                'text-slate-500'
+              }`} />
+              <div>
+                <div className="text-white font-semibold">{selectedStation.name}</div>
+                <div className="text-xs text-slate-400">ID: {selectedStation.id}</div>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedStation(null)}
+              className="text-slate-400 hover:text-white"
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Status:</span>
+              <span className={`font-medium ${
+                selectedStation.status === 'detecting' ? 'text-green-400' :
+                selectedStation.status === 'online' ? 'text-blue-400' :
+                'text-slate-500'
+              }`}>
+                {selectedStation.status.toUpperCase()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Position:</span>
+              <span className="text-white font-mono text-xs">
+                {selectedStation.lat.toFixed(3)}°, {selectedStation.lon.toFixed(3)}°
+              </span>
+            </div>
+            {selectedStation.lastPing && (
+              <div className="flex justify-between">
+                <span className="text-slate-400">Last Ping:</span>
+                <span className="text-white text-xs">
+                  {new Date(selectedStation.lastPing).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+    </div>
+  )
+}
