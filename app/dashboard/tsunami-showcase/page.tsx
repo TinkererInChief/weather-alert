@@ -12,12 +12,21 @@ import {
   TsunamiPropagationMap,
   DartStationGlobe
 } from '@/components/tsunami'
+import { DART_STATIONS, getNetworkStats } from '@/lib/data/dart-stations'
 import { Sparkles, CheckCircle } from 'lucide-react'
 
 export default function TsunamiShowcasePage() {
   const [activeDemo, setActiveDemo] = useState<string>('all')
   
-  // Mock data
+  // Real DART network data - all 71 stations!
+  const dartStations = DART_STATIONS.map(station => ({
+    ...station,
+    lastPing: station.status !== 'offline' ? new Date() : undefined
+  }))
+  
+  const networkStats = getNetworkStats()
+  
+  // Mock data for alert demonstrations
   const mockDartConfirmation = {
     stationId: '21413',
     stationName: 'DART 21413 - Off Japan Coast',
@@ -45,14 +54,6 @@ export default function TsunamiShowcasePage() {
       eta: new Date(Date.now() + 45 * 60 * 1000),
       isStrongest: false
     }
-  ]
-  
-  const mockDartStations = [
-    { id: '21413', name: 'DART 21413 - Japan', lat: 38.2, lon: 142.8, status: 'detecting' as const, lastPing: new Date() },
-    { id: '46413', name: 'DART 46413 - Hawaii', lat: 20.0, lon: -157.5, status: 'online' as const, lastPing: new Date() },
-    { id: '55012', name: 'DART 55012 - New Zealand', lat: -37.8, lon: 179.1, status: 'online' as const, lastPing: new Date() },
-    { id: '32412', name: 'DART 32412 - Chile', lat: -33.4, lon: -71.6, status: 'online' as const, lastPing: new Date() },
-    { id: '51425', name: 'DART 51425 - Indonesia', lat: -6.2, lon: 106.8, status: 'offline' as const },
   ]
 
   const demos = [
@@ -87,15 +88,23 @@ export default function TsunamiShowcasePage() {
               <p className="text-blue-100 text-lg mb-4">
                 Interactive showcase of all Phase 1, Phase 2, and 3D Globe features
               </p>
-              <div className="flex items-center gap-2 text-sm">
-                <CheckCircle className="h-5 w-5" />
-                <span>7 New Components</span>
-                <span className="mx-2">•</span>
-                <CheckCircle className="h-5 w-5" />
-                <span>Framer Motion Animations</span>
-                <span className="mx-2">•</span>
-                <CheckCircle className="h-5 w-5" />
-                <span>Real-time Updates</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div className="text-2xl font-bold">{networkStats.total}</div>
+                  <div className="text-xs text-blue-200">DART Buoys</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div className="text-2xl font-bold text-green-300">{networkStats.online}</div>
+                  <div className="text-xs text-blue-200">Online</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div className="text-2xl font-bold">7</div>
+                  <div className="text-xs text-blue-200">New Components</div>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div className="text-2xl font-bold">{networkStats.regions}</div>
+                  <div className="text-xs text-blue-200">Global Regions</div>
+                </div>
               </div>
             </div>
           </div>
@@ -182,7 +191,7 @@ export default function TsunamiShowcasePage() {
                 magnitude={8.2}
                 waveSpeed={800}
                 timeElapsed={30}
-                dartStations={mockDartStations}
+                dartStations={dartStations.slice(0, 10)}
               />
             </div>
           )}
@@ -190,7 +199,13 @@ export default function TsunamiShowcasePage() {
           {(activeDemo === 'all' || activeDemo === 'globe') && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-slate-900">Phase 3: 3D DART Station Globe</h2>
-              <DartStationGlobe stations={mockDartStations} height={600} />
+              <p className="text-slate-600 mb-4">
+                Interactive 3D visualization of all <strong>{networkStats.total} DART buoys</strong> deployed globally. 
+                <span className="text-green-600 font-medium ml-2">{networkStats.online} Online</span>
+                {networkStats.detecting > 0 && <span className="text-green-500 font-medium ml-2">• {networkStats.detecting} Detecting</span>}
+                {networkStats.offline > 0 && <span className="text-slate-500 font-medium ml-2">• {networkStats.offline} Offline</span>}
+              </p>
+              <DartStationGlobe stations={dartStations} height={600} />
             </div>
           )}
           

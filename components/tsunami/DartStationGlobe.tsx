@@ -30,6 +30,7 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
   const globeEl = useRef<any>()
   const [selectedStation, setSelectedStation] = useState<DartStation | null>(null)
   const [isClient, setIsClient] = useState(false)
+  const [globeReady, setGlobeReady] = useState(false)
   
   useEffect(() => {
     setIsClient(true)
@@ -37,14 +38,19 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
   
   useEffect(() => {
     if (globeEl.current) {
-      // Auto-rotate
-      globeEl.current.controls().autoRotate = true
-      globeEl.current.controls().autoRotateSpeed = 0.5
-      
-      // Initial camera position
-      globeEl.current.pointOfView({ altitude: 2.5 }, 0)
+      // Small delay to ensure globe is mounted
+      setTimeout(() => {
+        if (globeEl.current) {
+          // Auto-rotate
+          globeEl.current.controls().autoRotate = true
+          globeEl.current.controls().autoRotateSpeed = 0.5
+          
+          // Initial camera position
+          globeEl.current.pointOfView({ altitude: 2.5 }, 0)
+        }
+      }, 100)
     }
-  }, [])
+  }, [isClient])
   
   // Prepare point data for globe
   const pointsData = stations.map(station => ({
@@ -95,12 +101,27 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
       </div>
       
       {/* Globe */}
-      <div style={{ height: `${height}px` }}>
+      <div style={{ height: `${height}px`, width: '100%', position: 'relative' }}>
+        {!globeReady && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900">
+            <div className="text-center text-white">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-lg">Loading 3D Globe...</p>
+              <p className="text-sm text-slate-400 mt-2">Fetching Earth textures</p>
+            </div>
+          </div>
+        )}
         <Globe
           ref={globeEl}
-          globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-          bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-          backgroundImageUrl="//unpkg.com/three-globe/example/img/night-sky.png"
+          width={undefined}
+          height={height}
+          backgroundColor="#0f172a"
+          globeImageUrl="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+          bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
+          backgroundImageUrl="https://unpkg.com/three-globe/example/img/night-sky.png"
+          
+          onGlobeReady={() => setGlobeReady(true)}
+          waitForGlobeReady={true}
           
           pointsData={pointsData}
           pointAltitude={0.01}
@@ -118,7 +139,7 @@ export function DartStationGlobe({ stations, onStationClick, height = 500 }: Pro
             <div style="background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; color: white; font-size: 12px;">
               <div style="font-weight: bold;">${point.station.name}</div>
               <div>Status: ${point.station.status}</div>
-              <div>Lat: ${point.station.lat.toFixed(2)}°, Lon: ${point.station.lng.toFixed(2)}°</div>
+              <div>Lat: ${point.lat.toFixed(2)}°, Lon: ${point.lng.toFixed(2)}°</div>
             </div>
           `}
           
