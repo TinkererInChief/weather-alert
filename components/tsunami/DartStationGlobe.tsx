@@ -64,14 +64,14 @@ export function DartStationGlobe({
     }
   }, [isClient])
   
-  // Prepare point data for globe
+  // Prepare point data for globe with high-contrast colors
   const pointsData = stations.map(station => ({
     lat: station.lat,
     lng: station.lon,
-    size: station.status === 'detecting' ? 1.5 : 1.0,
-    color: station.status === 'detecting' ? '#10B981' : 
-           station.status === 'online' ? '#3B82F6' : 
-           '#9CA3AF',
+    size: station.status === 'detecting' ? 1.5 : station.status === 'online' ? 1.2 : 0.9,
+    color: station.status === 'detecting' ? '#10B981' :  // Green for detecting
+           station.status === 'online' ? '#00E5FF' :      // Bright cyan for online (visible on blue)
+           '#FF9800',                                      // Orange for offline (warning)
     station: station,
     altitude: 0.02
   }))

@@ -68,7 +68,7 @@ async function fetchStationStatus(stationId: string): Promise<{
       return { isOnline: false }
     }
     
-    // DART format: YY MM DD hh mm ss T HEIGHT
+    // DART format: YYYY MM DD hh mm ss T HEIGHT (year is 4 digits!)
     const year = parseInt(parts[0])
     const month = parseInt(parts[1]) - 1 // JS months are 0-indexed  
     const day = parseInt(parts[2])
@@ -77,10 +77,18 @@ async function fetchStationStatus(stationId: string): Promise<{
     const second = parseInt(parts[5])
     const waterHeight = parseFloat(parts[7])
     
-    // Handle 2-digit year (2025 → 25)
-    const fullYear = year < 100 ? 2000 + year : year
+    // DART timestamps are in UTC, so use Date.UTC
+    const lastDataTime = new Date(Date.UTC(year, month, day, hour, minute, second))
     
-    const lastDataTime = new Date(fullYear, month, day, hour, minute, second)
+    // Debug logging
+    if (stationId === '46404') {
+      console.log(`📡 DART ${stationId} data:`, {
+        year, month: month + 1, day, hour, minute,
+        timestamp: lastDataTime.toISOString(),
+        waterHeight,
+        hoursAgo: ((Date.now() - lastDataTime.getTime()) / (1000 * 60 * 60)).toFixed(1)
+      })
+    }
     
     return {
       isOnline: true,
