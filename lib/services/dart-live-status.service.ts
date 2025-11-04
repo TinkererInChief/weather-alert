@@ -192,14 +192,16 @@ export async function getCachedDartStatus(): Promise<DartNetworkStatus> {
   const now = Date.now()
   
   if (cachedStatus && now < cacheExpiry) {
-    console.log('📦 Returning cached DART status')
+    const secondsUntilExpiry = Math.round((cacheExpiry - now) / 1000)
+    console.log(`📦 Returning cached DART status (expires in ${secondsUntilExpiry}s)`)
     return cachedStatus
   }
   
-  console.log('🔄 Cache expired, fetching fresh DART status...')
+  console.log('🔄 Cache expired or empty, fetching REAL data from NOAA...')
   cachedStatus = await fetchLiveDartStatus()
   cacheExpiry = now + CACHE_TTL
   
+  console.log(`💾 Cached for next ${CACHE_TTL / 1000}s`)
   return cachedStatus
 }
 
