@@ -683,6 +683,81 @@ model GlobalFleetVessel {
   @@map("global_fleet_vessels")
 }
 
+model Port {
+  id            String   @id @default(cuid())
+  
+  // Identification
+  portName      String
+  alternateNames String? // Comma-separated alternate names
+  unLocode      String?  @unique // UN/LOCODE (e.g., USNYC)
+  worldPortIndex String? // WPI Index Number
+  country       String
+  countryCode   String?  // ISO 2-letter code
+  region        String?
+  
+  // Location
+  latitude      Float
+  longitude     Float
+  
+  // Characteristics
+  harborSize    String?  // Small, Medium, Large, Very Large
+  harborType    String?  // Coastal Natural, Coastal Breakwater, River, Lake, etc.
+  shelter       String?  // Good, Fair, Poor, None
+  
+  // Entry Restrictions
+  entryRestrictions String? // Tide, Ice, Swell, etc.
+  overhead      String?  // Overhead limitations
+  channel       String?  // Channel depth
+  anchorage     String?  // Anchorage available
+  
+  // Cargo Handling
+  cargoPier     Boolean  @default(false)
+  cargoBeach    Boolean  @default(false)
+  cargoIce      Boolean  @default(false)
+  medMoor       Boolean  @default(false) // Mediterranean mooring
+  
+  // Facilities & Services
+  hasFuel       Boolean  @default(false)
+  hasRepair     Boolean  @default(false)
+  hasDrydock    Boolean  @default(false)
+  hasRailway    Boolean  @default(false)
+  hasSupplies   Boolean  @default(false)
+  hasMedical    Boolean  @default(false)
+  hasGarbage    Boolean  @default(false)
+  hasTugAssist  Boolean  @default(false)
+  hasPilotage   Boolean  @default(false)
+  
+  // Vessel Size Limits
+  maxVesselSize String?  // Maximum vessel LOA
+  maxVesselDraft Float?  // Maximum draft in meters
+  maxVesselBeam Float?   // Maximum beam in meters
+  
+  // Tides
+  meanTideRange Float?   // Mean tide range in meters
+  maxTideRange  Float?   // Maximum tide range in meters
+  
+  // Contact
+  portAuthority String?
+  telephone     String?
+  email         String?
+  website       String?
+  
+  // Metadata
+  dataSource    String   @default("manual") // nga, upply, manual
+  dataQuality   Int      @default(0)
+  searchText    String?  // For full-text search
+  
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime @updatedAt @db.Timestamptz(6)
+  
+  @@index([unLocode])
+  @@index([country])
+  @@index([countryCode])
+  @@index([latitude, longitude])
+  @@index([portName])
+  @@map("ports")
+}
+
 model RealtimeStats {
   id                      String   @id @default("singleton")
   positionsLastHour       Int      @default(0) @map("positions_last_hour")
