@@ -443,6 +443,60 @@ model MaintenanceWindow {
   @@map("maintenance_windows")
 }
 
+model GlobalVessel {
+  id                 String              @id @default(cuid())
+  imo                String              @unique
+  mmsi               String?             @unique
+  name               String
+  callsign           String?
+  vesselType         String
+  vesselTypeDetailed String?
+  flag               String?
+  length             Float?
+  width              Float?
+  height             Float?
+  grossTonnage       Float?
+  deadweight         Float?
+  netTonnage         Float?
+  buildYear          Int?
+  builder            String?
+  owner              String?
+  operator           String?
+  manager            String?
+  technicalManager   String?
+  classification     String?
+  classNumber        String?
+  portOfRegistry     String?
+  hullNumber         String?
+  status             String              @default("active")
+  
+  // Enrichment metadata
+  dataSource         String[]            @default([])
+  lastVerified       DateTime            @db.Timestamptz(6)
+  dataQuality        Int                 @default(50)
+  verifiedBy         String?
+  
+  // Search optimization
+  searchText         String?
+  
+  // Relations
+  trackedVesselId    String?             @unique @map("tracked_vessel_id")
+  trackedVessel      Vessel?             @relation(fields: [trackedVesselId], references: [id])
+  fleetAssignments   GlobalFleetVessel[]
+  
+  createdAt          DateTime            @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @db.Timestamptz(6)
+  
+  @@index([imo])
+  @@index([mmsi])
+  @@index([name])
+  @@index([vesselType])
+  @@index([flag])
+  @@index([status])
+  @@index([searchText])
+  @@map("global_vessels")
+}
+
 model Vessel {
   id                String           @id @default(cuid())
   mmsi              String           @unique
@@ -470,6 +524,7 @@ model Vessel {
   alerts            VesselAlert[]
   contacts          VesselContact[]
   fleetVessels      FleetVessel[]
+  globalVessel      GlobalVessel?
 
   @@index([mmsi])
   @@index([active])
@@ -578,15 +633,16 @@ model VesselContact {
 }
 
 model Fleet {
-  id          String        @id @default(cuid())
-  name        String
-  description String?
-  ownerId     String        @map("owner_id")
-  metadata    Json          @default("{}")
-  active      Boolean       @default(true)
-  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
-  vessels     FleetVessel[]
+  id            String              @id @default(cuid())
+  name          String
+  description   String?
+  ownerId       String              @map("owner_id")
+  metadata      Json                @default("{}")
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  vessels       FleetVessel[]
+  globalVessels GlobalFleetVessel[]
 
   @@index([ownerId])
   @@index([active])
@@ -608,6 +664,23 @@ model FleetVessel {
   @@index([fleetId])
   @@index([vesselId])
   @@map("fleet_vessels")
+}
+
+model GlobalFleetVessel {
+  id              String       @id @default(cuid())
+  fleetId         String       @map("fleet_id")
+  globalVesselId  String       @map("global_vessel_id")
+  role            String       @default("primary")  // "primary", "backup", "auxiliary"
+  priority        Int          @default(1)          // 1 = highest priority
+  metadata        Json         @default("{}")
+  addedAt         DateTime     @default(now()) @map("added_at") @db.Timestamptz(6)
+  fleet           Fleet        @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+  globalVessel    GlobalVessel @relation(fields: [globalVesselId], references: [id], onDelete: Cascade)
+
+  @@unique([fleetId, globalVesselId])
+  @@index([fleetId])
+  @@index([globalVesselId])
+  @@map("global_fleet_vessels")
 }
 
 model RealtimeStats {
