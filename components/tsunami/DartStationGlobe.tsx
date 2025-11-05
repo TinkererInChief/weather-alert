@@ -178,13 +178,20 @@ export function DartStationGlobe({
             }
           }}
           
-          pointLabel={(point: any) => `
-            <div style="background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; color: white; font-size: 12px;">
-              <div style="font-weight: bold;">${point.station.name}</div>
-              <div>Status: ${point.station.status}</div>
-              <div>Lat: ${point.lat.toFixed(2)}°, Lon: ${point.lng.toFixed(2)}°</div>
-            </div>
-          `}
+          pointLabel={(point: any) => {
+            const statusColor = 
+              point.station.status === 'detecting' ? '#f97316' :  // orange-500
+              point.station.status === 'online' ? '#10b981' :      // green-500
+              '#9ca3af'                                             // gray-500
+            
+            return `
+              <div style="background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; color: white; font-size: 12px;">
+                <div style="font-weight: bold;">${point.station.name}</div>
+                <div>Status: <span style="color: ${statusColor}; font-weight: 600;">${point.station.status.toUpperCase()}</span></div>
+                <div>Lat: ${point.lat.toFixed(2)}°, Lon: ${point.lng.toFixed(2)}°</div>
+              </div>
+            `
+          }}
           
           // Animated rings around detecting stations (orange alert!)
           ringsData={stations.filter(s => s.status === 'detecting').map(s => ({
@@ -257,9 +264,9 @@ export function DartStationGlobe({
           <div className="flex items-start justify-between mb-2">
             <div className="flex items-center gap-2">
               <Wifi className={`h-5 w-5 ${
-                selectedStation.status === 'detecting' ? 'text-green-400' :
-                selectedStation.status === 'online' ? 'text-blue-400' :
-                'text-slate-500'
+                selectedStation.status === 'detecting' ? 'text-orange-500' :
+                selectedStation.status === 'online' ? 'text-green-500' :
+                'text-gray-500'
               }`} />
               <div>
                 <div className="text-white font-semibold">{selectedStation.name}</div>
@@ -278,9 +285,9 @@ export function DartStationGlobe({
             <div className="flex justify-between">
               <span className="text-slate-400">Status:</span>
               <span className={`font-medium ${
-                selectedStation.status === 'detecting' ? 'text-green-400' :
-                selectedStation.status === 'online' ? 'text-blue-400' :
-                'text-slate-500'
+                selectedStation.status === 'detecting' ? 'text-orange-500' :
+                selectedStation.status === 'online' ? 'text-green-500' :
+                'text-gray-500'
               }`}>
                 {selectedStation.status.toUpperCase()}
               </span>
