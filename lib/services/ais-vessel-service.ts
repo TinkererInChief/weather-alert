@@ -299,7 +299,10 @@ export class AISVesselService {
           speed: position.Sog,
           course: position.Cog,
           heading: position.TrueHeading,
-          status: this.getNavigationalStatus(position.NavigationalStatus),
+          navStatus: this.getNavigationalStatus(position.NavigationalStatus),
+          rateOfTurn: position.RateOfTurn,
+          positionAccuracy: position.Valid,
+          dataSource: 'aisstream',
           timestamp: new Date(metadata.time_utc)
         }
       })

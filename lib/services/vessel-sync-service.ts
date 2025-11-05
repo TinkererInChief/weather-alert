@@ -174,8 +174,12 @@ export class VesselSyncService {
 
         console.log(`   Found ${vessels.length} vessels in ${region.name}`)
 
+        // Limit vessels per region to avoid rate limits
+        const limitedVessels = vessels.slice(0, 20) // Process max 20 vessels per region
+        console.log(`   Processing ${limitedVessels.length} vessels...`)
+
         // Process each vessel
-        for (const vessel of vessels) {
+        for (const vessel of limitedVessels) {
           try {
             // Check if vessel exists in database
             const existing = await prisma.vessel.findFirst({
@@ -221,8 +225,8 @@ export class VesselSyncService {
                   }
                 }
 
-                // Rate limiting
-                await this.delay(100)
+                // Rate limiting - longer delay to avoid 429
+                await this.delay(500)
               }
             } else {
               // Discover new vessel
@@ -250,8 +254,8 @@ export class VesselSyncService {
                 console.log(`   🆕 Discovered: ${profile.name} (IMO: ${profile.imo})`)
               }
 
-              // Rate limiting
-              await this.delay(100)
+              // Rate limiting - longer delay to avoid 429
+              await this.delay(500)
             }
 
           } catch (error) {
