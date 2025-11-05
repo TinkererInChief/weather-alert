@@ -89,10 +89,19 @@ export class PortImportService {
 
     try {
       const csvContent = buffer.toString('utf-8')
+      
+      // Detect delimiter by checking first line
+      const firstLine = csvContent.split('\n')[0]
+      const delimiter = firstLine.includes(';') ? ';' : ','
+      
       const records = parse(csvContent, {
         columns: true,
         skip_empty_lines: true,
-        trim: true
+        trim: true,
+        delimiter,
+        quote: '"',
+        relax_quotes: true,
+        relax_column_count: true
       })
 
       console.log(`📊 Processing ${records.length} port records from ${source}...`)
@@ -103,6 +112,9 @@ export class PortImportService {
           
           if (!portData) {
             result.skipped++
+            if (result.skipped <= 3) {
+              console.log('⚠️  Skipped record:', JSON.stringify(record).substring(0, 200))
+            }
             continue
           }
 
@@ -157,18 +169,22 @@ export class PortImportService {
       result.duration = Date.now() - startTime
 
       // Create audit log
-      if (userId) {
-        await prisma.auditLog.create({
-          data: {
-            userId,
-            action: 'PORT_IMPORT',
-            entityType: 'Port',
-            entityId: source,
-            changes: result,
-            ipAddress: 'system',
-            userAgent: 'port-import-service'
-          }
-        })
+      if (userId && userId !== 'system') {
+        try {
+          await prisma.auditLog.create({
+            data: {
+              user: { connect: { id: userId } },
+              action: 'PORT_IMPORT',
+              resource: 'Port',
+              resourceId: source,
+              details: JSON.stringify(result),
+              ipAddress: 'system',
+              userAgent: 'port-import-service'
+            }
+          })
+        } catch (error) {
+          console.warn('⚠️  Failed to create audit log:', error)
+        }
       }
 
       console.log(`✅ Port import complete: ${result.imported} imported, ${result.updated} updated, ${result.skipped} skipped, ${result.failed} failed`)
@@ -259,18 +275,21 @@ export class PortImportService {
     const portName = record['name'] || record['port_name']
     const latitude = parseFloat(record['latitude'] || record['lat'])
     const longitude = parseFloat(record['longitude'] || record['lon'] || record['lng'])
-    const country = record['country']
+    const countryCode = record['country_code'] || record['iso2']
+    
+    // Upply doesn't have full country names, use code as country
+    const country = countryCode || 'Unknown'
 
-    if (!portName || isNaN(latitude) || isNaN(longitude) || !country) {
+    if (!portName || isNaN(latitude) || isNaN(longitude)) {
       return null
     }
 
     return {
       portName,
-      unLocode: record['locode'] || record['un_locode'],
+      unLocode: record['code'] || record['locode'] || record['un_locode'],
       country,
-      countryCode: record['country_code'] || record['iso2'],
-      region: record['zone'] || record['region'],
+      countryCode,
+      region: record['zone_code'] || record['zone'] || record['region'],
       latitude,
       longitude
     }
