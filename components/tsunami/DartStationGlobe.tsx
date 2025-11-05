@@ -172,6 +172,13 @@ export function DartStationGlobe({
           pointsTransitionDuration={0}
           
           onPointClick={(point: any) => {
+            console.log('🔍 Station clicked:', {
+              id: point.station.id,
+              name: point.station.name,
+              lat: point.station.lat,
+              lon: point.station.lon,
+              lng: point.lng
+            })
             setSelectedStation(point.station)
             if (onStationClick) {
               onStationClick(point.station)
