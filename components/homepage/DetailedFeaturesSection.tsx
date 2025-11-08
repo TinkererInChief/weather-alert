@@ -17,7 +17,14 @@ import {
 
 export default function DetailedFeaturesSection() {
   return (
-    <section className="py-20 bg-gradient-to-b from-white to-slate-50">
+    <section 
+      className="py-20 bg-gradient-to-b from-white to-slate-50"
+      style={{ 
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden' as const
+      }}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}

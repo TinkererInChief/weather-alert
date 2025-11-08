@@ -174,14 +174,21 @@ type TimelineAnimationProps = {
 
 export default function TimelineAnimation({ autoPlay = true }: TimelineAnimationProps) {
   return (
-    <section className="py-20 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+    <section 
+      className="py-20 bg-slate-900 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden"
+      style={{ 
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+        backfaceVisibility: 'hidden' as const,
+        contain: 'paint' as const
+      }}
+    >
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Section Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3, margin: "200px" }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
@@ -202,10 +209,8 @@ export default function TimelineAnimation({ autoPlay = true }: TimelineAnimation
         <motion.div
           variants={containerVariants}
           initial={autoPlay ? "hidden" : "visible"}
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.1, margin: "100px" }}
+          animate="visible"
           className="relative"
-          style={{ willChange: 'opacity, transform' }}
         >
           {timelineSteps.map((step, index) => (
             <motion.div
@@ -270,9 +275,8 @@ export default function TimelineAnimation({ autoPlay = true }: TimelineAnimation
         {/* Bottom Stats */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.3, margin: "150px" }}
-          transition={{ duration: 0.6, delay: 0.5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.5 }}
           className="mt-16 grid md:grid-cols-3 gap-6"
         >
           <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 border border-slate-700/50 text-center">
