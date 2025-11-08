@@ -3,6 +3,8 @@
 import HeroSection from '@/components/homepage/HeroSection'
 import BenefitsSection from '@/components/homepage/BenefitsSection'
 import FeaturesSection from '@/components/homepage/FeaturesSection'
+import TimelineAnimation from '@/components/homepage/TimelineAnimation'
+import DetailedFeaturesSection from '@/components/homepage/DetailedFeaturesSection'
 import UseCasesSection from '@/components/homepage/UseCasesSection'
 import TrustSection from '@/components/homepage/TrustSection'
 import PricingTeaser from '@/components/homepage/PricingTeaser'
@@ -19,6 +21,8 @@ export default function HomePage() {
       <HeroSection />
       <BenefitsSection />
       <FeaturesSection />
+      <TimelineAnimation />
+      <DetailedFeaturesSection />
       <UseCasesSection />
       <TrustSection />
       <PricingTeaser />

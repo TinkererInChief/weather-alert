@@ -7,11 +7,16 @@ const pricingTiers = [
     description: 'Perfect for small teams and offices',
     highlight: 'Up to 50 contacts',
     features: [
-      'Real-time earthquake monitoring',
-      'SMS & email notifications',
+      'Real-time earthquake & tsunami monitoring',
+      'SMS & email notifications (2 channels)',
+      'Global seismic network access',
+      '< 30s average alert delivery',
       'Basic contact management',
-      'Standard support',
-      'Mobile app access'
+      'Multi-factor authentication (MFA)',
+      '3 dashboard users',
+      '30-day audit log retention',
+      'Mobile app access',
+      'Standard support (24-48h response)'
     ],
     cta: 'Get Started',
     popular: false
@@ -22,11 +27,15 @@ const pricingTiers = [
     highlight: 'Up to 500 contacts + advanced features',
     features: [
       'Everything in Starter',
-      'WhatsApp & voice notifications',
-      'Advanced contact grouping',
-      'Custom alert zones',
-      'Delivery tracking & analytics',
-      'Priority support'
+      'Real-time tracking for up to 50 vessels',
+      'WhatsApp & voice notifications (4 channels)',
+      'AI vessel impact scoring & geofencing',
+      'Form-based tsunami simulation',
+      '2-tier escalation & delivery analytics',
+      'Role-based access control (RBAC)',
+      '10 dashboard users',
+      '90-day audit log retention',
+      'Priority support (< 4h response)'
     ],
     cta: 'Get Started',
     popular: true
@@ -37,11 +46,15 @@ const pricingTiers = [
     highlight: 'Unlimited contacts + custom integrations',
     features: [
       'Everything in Professional',
-      'Custom integrations & API',
+      'Unlimited vessels & dashboard users',
+      'AI + Historical simulation (3 types)',
+      'Unlimited escalation tiers',
+      'Custom integrations & webhooks',
+      'Device fingerprinting & IP geo-controls',
       'Advanced reporting & analytics',
-      'Dedicated account manager',
-      'Custom SLA agreements',
-      '24/7 phone support'
+      '1-year audit log retention',
+      'White-label branding (add-on)',
+      '< 1h support response'
     ],
     cta: 'Contact Sales',
     popular: false

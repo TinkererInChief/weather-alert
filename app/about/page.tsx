@@ -54,9 +54,10 @@ export default function AboutPage() {
               </div>
               <h2 className="text-2xl font-semibold text-slate-900 mb-4 tracking-tight">Our Mission</h2>
               <p className="text-slate-700 leading-relaxed font-light">
-                To save lives by delivering the fastest, most reliable emergency alerts on the planet. 
-                We believe that every second counts in an emergency, and our technology ensures that 
-                critical safety information reaches people when they need it most.
+                To save lives through AI-powered emergency intelligence that combines global seismic 
+                networks, real-time maritime tracking, and predictive modeling to deliver actionable 
+                insights before disaster strikes. We don't just send alerts—we provide the intelligence 
+                organizations need to make life-saving decisions in seconds.
               </p>
             </GradientCard>
 
@@ -81,18 +82,22 @@ export default function AboutPage() {
               <div className="prose prose-lg prose-slate max-w-none">
                 <p className="text-slate-700 leading-relaxed mb-6 text-lg font-light">
                   Emergency Alert Command Center was founded on the belief that effective emergency 
-                  communication requires speed, reliability, and intelligence. Traditional notification 
-                  systems often fall short, leaving organizations vulnerable during critical moments.
+                  communication requires more than just notifications—it requires intelligence. Traditional 
+                  systems often fall short, unable to predict impact zones, assess maritime threats, or 
+                  provide actionable scenario planning.
                 </p>
                 <p className="text-slate-700 leading-relaxed mb-6 text-lg font-light">
-                  Our team of emergency management specialists, data scientists, and engineers developed 
-                  a next-generation alert platform designed to address these challenges. By combining 
-                  real-time event detection with secure, multi-channel communication, we ensure that 
-                  critical information is delivered to the right people, without delay.
+                  Our team of emergency management specialists, data scientists, and AI engineers developed 
+                  a next-generation intelligence platform combining advanced natural language processing for 
+                  scenario generation, real-time vessel tracking for maritime safety, and multi-source data 
+                  aggregation for comprehensive global coverage. We pioneered AI-powered impact scoring that 
+                  tells organizations exactly who needs alerts and why.
                 </p>
                 <p className="text-slate-700 leading-relaxed text-lg font-light">
-                  Today, our technology supports organizations worldwide, providing a trusted solution 
-                  that delivers alerts in seconds with exceptional reliability.
+                  Today, our technology protects both land-based workforces and maritime operations worldwide, 
+                  delivering sub-30 second alerts with 99.9% reliability. We're the only platform combining 
+                  AI scenario simulation, vessel tracking, and comprehensive multi-source intelligence in 
+                  one solution.
                 </p>
               </div>
             </Card>

@@ -91,7 +91,7 @@ async function main() {
   console.log()
   
   // Get bounding boxes for region
-  const boundingBoxes = REGIONS[region as keyof typeof REGIONS] || REGIONS.global
+  const boundingBoxes = (REGIONS[region as keyof typeof REGIONS] || REGIONS.global) as [[number, number], [number, number]][]
   
   // Start the service
   await aisVesselService.start({

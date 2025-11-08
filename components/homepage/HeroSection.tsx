@@ -54,17 +54,31 @@ export default function HeroSection() {
             {/* Main Headline */}
             <div className="space-y-4">
               <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight">
-                Protect Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">Workforce</span> with Real-Time Emergency Alerts
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">AI-Powered</span> Emergency Intelligence for Maritime & Enterprise Safety
               </h1>
               <p className="text-xl text-slate-300 leading-relaxed max-w-2xl">
-                Enterprise-grade <span className="text-red-300 font-semibold">earthquake</span> and <span className="text-cyan-300 font-semibold">tsunami</span> monitoring with instant multi-channel notifications to keep your employees safe when it matters most.
+                Advanced <span className="text-cyan-300 font-semibold">tsunami simulation</span>, real-time <span className="text-blue-300 font-semibold">vessel tracking</span>, and intelligent alerts powered by <span className="text-purple-300 font-semibold">AI and global seismic networks</span>. Protect your assets and workforce with precision targeting and quick notifications.
               </p>
             </div>
 
-            {/* Trust Indicator */}
-            <div className="inline-flex items-center space-x-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-green-300 text-sm font-medium">Trusted by 500+ organizations</span>
+            {/* Trust Indicators - Badge Strip */}
+            <div className="flex flex-wrap gap-3">
+              <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span className="text-blue-300 text-sm font-medium">Multi-Source Intelligence</span>
+              </div>
+              <div className="inline-flex items-center space-x-2 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                <span className="text-purple-300 text-sm font-medium">AI Scenario Generation</span>
+              </div>
+              <div className="inline-flex items-center space-x-2 bg-cyan-500/10 border border-cyan-500/20 rounded-full px-4 py-2">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                <span className="text-cyan-300 text-sm font-medium">Real-Time Vessel Tracking</span>
+              </div>
+              <div className="inline-flex items-center space-x-2 bg-green-500/10 border border-green-500/20 rounded-full px-4 py-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-300 text-sm font-medium">Alert Delivery & Tracking</span>
+              </div>
             </div>
 
             {/* CTA Buttons */}
@@ -109,9 +123,9 @@ export default function HeroSection() {
                   <div className="bg-white/10 rounded-xl p-4">
                     <div className="flex items-center space-x-2 mb-2">
                       <Zap className="h-4 w-4 text-yellow-400" />
-                      <span className="text-white text-sm">Alerts Sent</span>
+                      <span className="text-white text-sm">System Status</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">99.9%</p>
+                    <p className="text-2xl font-bold text-green-400">Active</p>
                   </div>
                 </div>
 

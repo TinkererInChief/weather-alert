@@ -4,30 +4,30 @@ const benefits = [
   {
     icon: Clock,
     title: 'Instant Response',
-    description: 'Get alerts within seconds of seismic events detected by global monitoring networks.',
+    description: 'Get alerts within seconds of seismic events detected by multiple global networks with advanced ocean sensors.',
     stat: '< 30 seconds',
-    statLabel: 'Alert delivery time'
+    statLabel: 'Detection to alert delivery'
   },
   {
     icon: MessageSquare,
     title: 'Multi-Channel Reach',
-    description: 'SMS, email, WhatsApp, voice calls - ensure no one misses critical safety alerts.',
+    description: 'SMS, email, WhatsApp and voice notifications - ensure no one misses critical safety alerts, anywhere in the world.',
     stat: '4 channels',
-    statLabel: 'Notification methods'
+    statLabel: 'Communication methods'
   },
   {
     icon: MapPin,
     title: 'Smart Targeting',
-    description: 'Location-based alerts for relevant threats only. No alert fatigue from distant events.',
-    stat: '99.2%',
-    statLabel: 'Relevance accuracy'
+    description: 'AI-powered precision geofencing with travel-time predictions. Only alert personnel in actual impact zones to avoid alert fatigue.',
+    stat: '100%',
+    statLabel: 'Offshore placement accuracy'
   },
   {
     icon: Shield,
     title: 'Enterprise Ready',
-    description: 'Scalable, secure, and compliant with safety regulations for organizations of any size.',
-    stat: '99.9%',
-    statLabel: 'System uptime'
+    description: 'Built on best practices, with multi-source redundancy and robust infrastructure for enterprise-grade reliability.',
+    stat: 'Multi-Tier',
+    statLabel: 'Redundant infrastructure'
   }
 ]
 

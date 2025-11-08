@@ -133,7 +133,7 @@ export default function TsunamiShowcasePage() {
                   <div className="text-xs text-blue-200">New Components</div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
-                  <div className="text-2xl font-bold">{networkStats.regions}</div>
+                  <div className="text-2xl font-bold">4</div>
                   <div className="text-xs text-blue-200">Global Regions</div>
                 </div>
               </div>

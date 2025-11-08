@@ -18,7 +18,12 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        const { pathname } = req.nextUrl
+        const { pathname, searchParams } = req.nextUrl
+
+        // Allow recording mode without authentication (for Puppeteer)
+        if (pathname.startsWith('/dashboard/simulate-tsunami-map') && searchParams.get('record') === '1') {
+          return true
+        }
 
         // Allow public access to homepage, login page, public pages, and certain API routes
         if (pathname === '/' ||
@@ -28,6 +33,7 @@ export default withAuth(
             pathname.startsWith('/api/database') ||
             pathname.startsWith('/api/vessels') ||
             pathname.startsWith('/api/webhooks') ||
+            pathname.startsWith('/api/test') || // Allow all test API routes
             pathname.startsWith('/api/test-message') ||
             
             pathname === '/privacy' ||
@@ -58,7 +64,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - audio files (for earcons)
      */
-    '/((?!_next/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map)$).*)',
+    '/((?!_next/|favicon.ico|audio/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|mp3|wav|ogg)$).*)',
   ],
 }

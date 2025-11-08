@@ -13,13 +13,13 @@ export default function CTASection() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
-            Ready to Protect Your Workforce?
+            Ready to Protect Your Team & Assets?
           </h2>
           <p className="text-xl text-slate-300 max-w-3xl mx-auto mb-4">
-            Join hundreds of organizations keeping their teams safe with real-time emergency alerts
+            Join hundreds of organizations protecting their workforce, vessels, and critical infrastructure with real-time emergency alerts
           </p>
           <p className="text-lg text-slate-400">
-            Get started in minutes with our easy setup process
+            Maritime fleets, offshore platforms, enterprise operations—all protected in minutes
           </p>
         </div>
 

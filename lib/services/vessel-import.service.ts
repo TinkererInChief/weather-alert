@@ -126,7 +126,8 @@ export class VesselImportService {
           }
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error'
-          results.errors.push(`Failed to import ${record.IMO || record.Name || 'unknown'}: ${errorMsg}`)
+          const rec = record as any
+          results.errors.push(`Failed to import ${rec.IMO || rec.Name || 'unknown'}: ${errorMsg}`)
           results.failed++
         }
       }

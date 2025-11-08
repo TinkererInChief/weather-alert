@@ -177,7 +177,7 @@ export class PortImportService {
               action: 'PORT_IMPORT',
               resource: 'Port',
               resourceId: source,
-              details: JSON.stringify(result),
+              metadata: result,
               ipAddress: 'system',
               userAgent: 'port-import-service'
             }

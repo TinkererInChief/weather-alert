@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
               </p>
               <ul className="list-disc pl-6 space-y-2 text-slate-700">
                 <li>End-to-end encryption for all data transmission</li>
-                <li>SOC 2 Type II compliance and regular security audits</li>
+                <li>Industry-standard security practices and regular security reviews</li>
                 <li>Multi-factor authentication and access controls</li>
                 <li>Regular security monitoring and incident response procedures</li>
               </ul>

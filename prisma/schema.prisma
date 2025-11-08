@@ -130,6 +130,7 @@ model Contact {
   groupMemberships     ContactGroupMember[]
   deliveryLogs         DeliveryLog[]
   vesselAssignments    VesselContact[]
+  escalationLogs       EscalationLog[]
 
   @@map("contacts")
 }
@@ -581,21 +582,32 @@ model VesselAlert {
   sentAt         DateTime? @db.Timestamptz(6)
   expiresAt      DateTime? @db.Timestamptz(6)
   
-  acknowledged   Boolean   @default(false)
-  acknowledgedAt DateTime? @db.Timestamptz(6)
-  acknowledgedBy String?
-  resolvedAt     DateTime? @db.Timestamptz(6)
-  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
-  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
+  // Escalation fields
+  escalationPolicyId String?
+  escalationStep     Int       @default(0)
+  escalationStarted  Boolean   @default(false)
+  lastEscalationAt   DateTime? @db.Timestamptz(6)
   
-  vessel         Vessel       @relation(fields: [vesselId], references: [id], onDelete: Cascade)
-  deliveryLogs   DeliveryLog[]
+  acknowledged       Boolean   @default(false)
+  acknowledgedAt     DateTime? @db.Timestamptz(6)
+  acknowledgedBy     String?
+  acknowledgmentNotes String?  @db.Text
+  resolvedAt         DateTime? @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6)
+  
+  vessel             Vessel            @relation(fields: [vesselId], references: [id], onDelete: Cascade)
+  escalationPolicy   EscalationPolicy? @relation(fields: [escalationPolicyId], references: [id])
+  deliveryLogs       DeliveryLog[]
+  escalationLogs     EscalationLog[]
 
   @@index([vesselId, createdAt])
   @@index([type, severity])
   @@index([riskLevel])
   @@index([status])
   @@index([eventId])
+  @@index([escalationPolicyId])
+  @@index([escalationStarted])
   @@map("vessel_alerts")
 }
 
@@ -633,16 +645,17 @@ model VesselContact {
 }
 
 model Fleet {
-  id            String              @id @default(cuid())
-  name          String
-  description   String?
-  ownerId       String              @map("owner_id")
-  metadata      Json                @default("{}")
-  active        Boolean             @default(true)
-  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
-  vessels       FleetVessel[]
-  globalVessels GlobalFleetVessel[]
+  id                 String              @id @default(cuid())
+  name               String
+  description        String?
+  ownerId            String              @map("owner_id")
+  metadata           Json                @default("{}")
+  active             Boolean             @default(true)
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+  vessels            FleetVessel[]
+  globalVessels      GlobalFleetVessel[]
+  escalationPolicies EscalationPolicy[]
 
   @@index([ownerId])
   @@index([active])
@@ -768,6 +781,52 @@ model RealtimeStats {
   updatedAt               DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("realtime_stats")
+}
+
+model EscalationPolicy {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?  @db.Text
+  fleetId         String?  @map("fleet_id")
+  eventTypes      String[] @default([])  // ["earthquake", "tsunami"]
+  severityLevels  String[] @default([])  // ["critical", "high", "moderate", "low"]
+  active          Boolean  @default(true)
+  steps           Json     @default("[]")  // Array of escalation steps
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  
+  fleet           Fleet?        @relation(fields: [fleetId], references: [id])
+  vesselAlerts    VesselAlert[]
+  
+  @@index([fleetId])
+  @@index([active])
+  @@map("escalation_policies")
+}
+
+model EscalationLog {
+  id              String   @id @default(cuid())
+  vesselAlertId   String   @map("vessel_alert_id")
+  step            Int
+  contactId       String   @map("contact_id")
+  channel         String   // "SMS", "EMAIL", "WHATSAPP", "VOICE"
+  status          String   // "pending", "sent", "delivered", "failed", "acknowledged"
+  attemptedAt     DateTime @default(now()) @db.Timestamptz(6)
+  deliveredAt     DateTime? @db.Timestamptz(6)
+  acknowledgedAt  DateTime? @db.Timestamptz(6)
+  errorMessage    String?  @db.Text
+  metadata        Json     @default("{}")
+  createdAt       DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @db.Timestamptz(6)
+  
+  vesselAlert     VesselAlert @relation(fields: [vesselAlertId], references: [id], onDelete: Cascade)
+  contact         Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@index([vesselAlertId])
+  @@index([contactId])
+  @@index([status])
+  @@index([step])
+  @@map("escalation_logs")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
