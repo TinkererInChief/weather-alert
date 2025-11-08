@@ -181,7 +181,7 @@ export default function TimelineAnimation({ autoPlay = true }: TimelineAnimation
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.3, margin: "200px" }}
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
@@ -203,8 +203,9 @@ export default function TimelineAnimation({ autoPlay = true }: TimelineAnimation
           variants={containerVariants}
           initial={autoPlay ? "hidden" : "visible"}
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, amount: 0.1, margin: "100px" }}
           className="relative"
+          style={{ willChange: 'opacity, transform' }}
         >
           {timelineSteps.map((step, index) => (
             <motion.div
@@ -270,7 +271,7 @@ export default function TimelineAnimation({ autoPlay = true }: TimelineAnimation
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          viewport={{ once: true, amount: 0.3, margin: "150px" }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="mt-16 grid md:grid-cols-3 gap-6"
         >
