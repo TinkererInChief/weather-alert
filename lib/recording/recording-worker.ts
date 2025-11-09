@@ -353,8 +353,8 @@ export class RecordingWorker {
           '-b:v 1M'
         ])
         .output(outputPath)
-        .on('start', (cmd) => console.log(`   ffmpeg command: ${cmd}`))
-        .on('progress', (progress) => {
+        .on('start', (cmd: string) => console.log(`   ffmpeg command: ${cmd}`))
+        .on('progress', (progress: { percent?: number }) => {
           if (progress.percent) {
             console.log(`   Video encoding: ${Math.round(progress.percent)}%`)
           }
@@ -363,7 +363,7 @@ export class RecordingWorker {
           console.log('   ✓ Video created')
           resolve()
         })
-        .on('error', (err) => {
+        .on('error', (err: Error) => {
           console.error('   ✗ Video encoding failed:', err.message)
           reject(new Error(`Video encoding failed: ${err.message}`))
         })
@@ -390,8 +390,8 @@ export class RecordingWorker {
           '-shortest'
         ])
         .output(outputPath)
-        .on('start', (cmd) => console.log(`   ffmpeg command: ${cmd}`))
-        .on('progress', (progress) => {
+        .on('start', (cmd: string) => console.log(`   ffmpeg command: ${cmd}`))
+        .on('progress', (progress: { percent?: number }) => {
           if (progress.percent) {
             console.log(`   Muxing: ${Math.round(progress.percent)}%`)
           }
@@ -400,7 +400,7 @@ export class RecordingWorker {
           console.log('   ✓ Muxing complete')
           resolve()
         })
-        .on('error', (err) => {
+        .on('error', (err: Error) => {
           console.error('   ✗ Muxing failed:', err.message)
           reject(new Error(`Muxing failed: ${err.message}`))
         })

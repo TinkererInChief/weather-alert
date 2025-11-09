@@ -127,7 +127,7 @@ class AudioTrackGenerator {
         .audioCodec('pcm_s16le')
         .output(outputPath)
         .on('end', () => resolve())
-        .on('error', reject)
+        .on('error', (err: Error) => reject(err))
         .run()
     })
   }
@@ -149,7 +149,7 @@ class AudioTrackGenerator {
             .audioFrequency(44100)
             .output(convertedPath)
             .on('end', () => resolve())
-            .on('error', reject)
+            .on('error', (err: Error) => reject(err))
             .run()
         })
         
@@ -204,7 +204,7 @@ class AudioTrackGenerator {
         ffmpeg(basePath)
           .output(outputPath)
           .on('end', () => resolve())
-          .on('error', reject)
+          .on('error', (err: Error) => reject(err))
           .run()
       })
       return outputPath
@@ -234,7 +234,7 @@ class AudioTrackGenerator {
         .duration(durationSeconds)
         .output(outputPath)
         .on('end', () => resolve(outputPath))
-        .on('error', reject)
+        .on('error', (err: Error) => reject(err))
         .run()
     })
   }
