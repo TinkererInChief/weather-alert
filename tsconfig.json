@@ -25,6 +25,7 @@
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.d.ts", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
+    "scripts",
     "components/shared/MapPreview.tsx"
   ]
 }
