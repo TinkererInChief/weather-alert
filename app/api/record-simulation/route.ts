@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { recordingManager } from '@/lib/recording/recording-manager'
 
+// Force Node.js runtime for fluent-ffmpeg support
+export const runtime = 'nodejs'
+
 /**
  * POST /api/record-simulation
  * Create a new recording job for a simulation
