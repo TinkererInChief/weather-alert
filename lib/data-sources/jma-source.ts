@@ -293,10 +293,11 @@ export class JMASource extends BaseDataSource {
       }
 
       const tsunamiList = await response.json()
+      console.log(`🌊 JMA Tsunami API: Fetched ${Array.isArray(tsunamiList) ? tsunamiList.length : 0} items`)
       const alerts: TsunamiAlert[] = []
       const now = Date.now()
       const cutoffTime = now - (lookbackMinutes * 60 * 1000)
-      const seenEventIds = new Set<string>()
+      const eventAlerts = new Map<string, TsunamiAlert>()
 
       for (const item of (Array.isArray(tsunamiList) ? tsunamiList : [])) {
         try {
@@ -307,11 +308,11 @@ export class JMASource extends BaseDataSource {
           if (!isFinite(eventTime) || eventTime < cutoffTime) continue
 
           const eventId = item.eid || `${eventTime}_${item.cod}`
-          if (seenEventIds.has(eventId)) continue
-          seenEventIds.add(eventId)
 
           const kinds = item.kind || []
           if (kinds.length === 0) continue
+
+          console.log(`🔍 JMA: Processing event ${eventId}, kinds:`, kinds.map((k: any) => k.code))
 
           const { lon, lat } = this.parseCod(item.cod || '')
           if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
@@ -359,17 +360,24 @@ export class JMASource extends BaseDataSource {
             rawData: { item, kinds }
           }
 
-          alerts.push(alert)
+          // Keep only highest severity alert per event
+          const existing = eventAlerts.get(eventId)
+          if (!existing || alert.severity > existing.severity) {
+            eventAlerts.set(eventId, alert)
+          }
         } catch (err) {
           continue
         }
       }
 
-      console.log(`✅ JMA: ${alerts.length} tsunami alerts found from dedicated tsunami API`)
+      // Convert Map to array, filtering out low-severity items
+      const finalAlerts = Array.from(eventAlerts.values()).filter(alert => alert.severity >= 3)
+      
+      console.log(`✅ JMA: ${finalAlerts.length} active tsunami alerts (${eventAlerts.size} total events processed)`)
 
       this.recordSuccess()
       this.recordResponseTime(Date.now() - fetchStartTime)
-      return alerts
+      return finalAlerts
 
     } catch (error) {
       this.recordFailure(error instanceof Error ? error : new Error('Unknown error'))
