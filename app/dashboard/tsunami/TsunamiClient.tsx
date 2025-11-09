@@ -666,6 +666,69 @@ export default function TsunamiMonitoringPage() {
                 )}
                   </div>
                 </div>
+
+                {/* JMA Card */}
+                <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-red-50 rounded-lg">
+                      <Waves className="h-5 w-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">JMA</h3>
+                      <p className="text-xs text-slate-500">Japan Meteorological Agency</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(sourceHealth.jma?.status || 'unknown')}
+                      <div className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(sourceHealth.jma?.status || 'unknown')}`}>
+                        {sourceHealth.jma?.status === 'healthy' || sourceHealth.jma?.status === 'ok' ? 'Operational' : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* DART Card */}
+                <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-blue-50 rounded-lg">
+                      <Activity className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">DART</h3>
+                      <p className="text-xs text-slate-500">NOAA Buoy Network</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(sourceHealth.dart?.status || 'unknown')}
+                      <div className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(sourceHealth.dart?.status || 'unknown')}`}>
+                        {sourceHealth.dart?.status === 'healthy' || sourceHealth.dart?.status === 'ok' ? 'Operational' : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* GeoNet Card */}
+                <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-green-50 rounded-lg">
+                      <MapPin className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-900">GeoNet</h3>
+                      <p className="text-xs text-slate-500">GeoNet New Zealand</p>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(sourceHealth.geonet?.status || 'unknown')}
+                      <div className={`px-2 py-1 text-xs font-medium rounded border ${getStatusColor(sourceHealth.geonet?.status || 'unknown')}`}>
+                        {sourceHealth.geonet?.status === 'healthy' || sourceHealth.geonet?.status === 'ok' ? 'Operational' : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Alerts List */}
