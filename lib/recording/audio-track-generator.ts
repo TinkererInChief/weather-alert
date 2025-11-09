@@ -1,5 +1,3 @@
-import ffmpeg from 'fluent-ffmpeg'
-import ffmpegStatic from 'ffmpeg-static'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { writeFile, unlink, mkdir } from 'fs/promises'
@@ -9,9 +7,23 @@ import type { RecordingEvent } from './types'
 
 const execAsync = promisify(exec)
 
-// Set ffmpeg path
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic)
+// Dynamic import of fluent-ffmpeg to avoid bundler issues
+let ffmpegModule: any = null
+let ffmpegStatic: any = null
+
+async function getFfmpeg() {
+  if (!ffmpegModule) {
+    ffmpegModule = await import('fluent-ffmpeg')
+    ffmpegStatic = await import('ffmpeg-static')
+    
+    const ffmpeg = ffmpegModule.default || ffmpegModule
+    const ffmpegPath = ffmpegStatic.default || ffmpegStatic
+    
+    if (ffmpegPath) {
+      ffmpeg.setFfmpegPath(ffmpegPath)
+    }
+  }
+  return ffmpegModule.default || ffmpegModule
 }
 
 type TTSProvider = 'espeak' | 'say' | 'none'
@@ -106,7 +118,8 @@ class AudioTrackGenerator {
   }
 
   private async createSilence(durationSeconds: number, outputPath: string): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      const ffmpeg = await getFfmpeg()
       ffmpeg()
         .input('anullsrc=channel_layout=stereo:sample_rate=44100')
         .inputFormat('lavfi')
@@ -129,7 +142,8 @@ class AudioTrackGenerator {
         
         // Convert to standard WAV
         const convertedPath = path.join(this.tempDir, `tts-${timestamp}-converted.wav`)
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>(async (resolve, reject) => {
+          const ffmpeg = await getFfmpeg()
           ffmpeg(outputPath)
             .audioCodec('pcm_s16le')
             .audioFrequency(44100)
@@ -185,7 +199,8 @@ class AudioTrackGenerator {
   ): Promise<string> {
     if (clips.length === 0) {
       // No clips to mix, just copy the base
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>(async (resolve, reject) => {
+        const ffmpeg = await getFfmpeg()
         ffmpeg(basePath)
           .output(outputPath)
           .on('end', () => resolve())
@@ -204,7 +219,8 @@ class AudioTrackGenerator {
       `${mixInputs.join('')}amix=inputs=${inputs.length}:duration=first:dropout_transition=0[out]`
     ].join(';')
 
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      const ffmpeg = await getFfmpeg()
       const command = ffmpeg()
 
       // Add all inputs

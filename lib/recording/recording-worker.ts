@@ -1,14 +1,27 @@
 import puppeteer, { Browser, Page } from 'puppeteer'
-import ffmpeg from 'fluent-ffmpeg'
-import ffmpegStatic from 'ffmpeg-static'
 import { writeFile, unlink, mkdir } from 'fs/promises'
 import { existsSync } from 'fs'
 import path from 'path'
 import { audioTrackGenerator } from './audio-track-generator'
 import type { RecordingOptions, RecordingResult, RecordingEvent } from './types'
 
-if (ffmpegStatic) {
-  ffmpeg.setFfmpegPath(ffmpegStatic)
+// Dynamic import of fluent-ffmpeg to avoid bundler issues
+let ffmpegModule: any = null
+let ffmpegStatic: any = null
+
+async function getFfmpeg() {
+  if (!ffmpegModule) {
+    ffmpegModule = await import('fluent-ffmpeg')
+    ffmpegStatic = await import('ffmpeg-static')
+    
+    const ffmpeg = ffmpegModule.default || ffmpegModule
+    const ffmpegPath = ffmpegStatic.default || ffmpegStatic
+    
+    if (ffmpegPath) {
+      ffmpeg.setFfmpegPath(ffmpegPath)
+    }
+  }
+  return ffmpegModule.default || ffmpegModule
 }
 
 export class RecordingWorker {
@@ -325,11 +338,12 @@ export class RecordingWorker {
 
   private async framesToVideo(frames: string[], fps: number, outputPath: string): Promise<void> {
     console.log(`🎞️  Creating video from ${frames.length} frames at ${fps} FPS`)
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       // Use ffmpeg pattern input
       const pattern = frames[0].replace(/frame-\d+/, 'frame-%06d')
       console.log(`   Pattern: ${pattern}`)
 
+      const ffmpeg = await getFfmpeg()
       ffmpeg()
         .input(pattern)
         .inputFPS(fps)
@@ -363,7 +377,8 @@ export class RecordingWorker {
     console.log(`   Audio: ${audioPath}`)
     console.log(`   Output: ${outputPath}`)
     
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+      const ffmpeg = await getFfmpeg()
       ffmpeg()
         .input(videoPath)
         .input(audioPath)
