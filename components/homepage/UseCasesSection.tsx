@@ -52,7 +52,7 @@ export default function UseCasesSection() {
             Protecting Teams Across Industries
           </h2>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            See how organizations like yours use our emergency alert system to keep their workforce safe and informed during critical situations.
+            See how organizations like yours can use our emergency alert system to keep their workforce safe and informed during critical situations.
           </p>
         </div>
 

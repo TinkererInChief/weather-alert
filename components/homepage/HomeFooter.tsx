@@ -1,4 +1,4 @@
-import { Shield, Linkedin, Twitter, Mail, Phone } from 'lucide-react'
+import { Shield, Linkedin, Twitter } from 'lucide-react'
 import Link from 'next/link'
 
 const footerLinks = {
@@ -47,17 +47,6 @@ export default function HomeFooter() {
               Protecting workforces worldwide with enterprise-grade emergency alert systems. 
               Real-time monitoring, instant notifications, and comprehensive safety management.
             </p>
-
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <Phone className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-300">+1 (555) 123-4567</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="h-4 w-4 text-slate-400" />
-                <span className="text-slate-300">sales@emergencyalert.com</span>
-              </div>
-            </div>
 
             <div className="flex space-x-4">
               <a href="#" className="text-slate-400 hover:text-white transition-colors">

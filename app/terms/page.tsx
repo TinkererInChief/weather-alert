@@ -117,8 +117,7 @@ export default function TermsOfServicePage() {
               </p>
               <div className="bg-slate-50 rounded-lg p-4 mt-4">
                 <p className="text-slate-700">
-                  <strong>Email:</strong> legal@emergencyalert.com<br />
-                  <strong>Phone:</strong> +1 (555) 123-4567<br />
+                  <strong>Contact:</strong> Please use the contact form to reach our legal team<br />
                   <strong>Address:</strong> Emergency Alert Command Center, Legal Department
                 </p>
               </div>

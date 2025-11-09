@@ -150,7 +150,7 @@ export default function SecurityPolicyPage() {
               </p>
               <div className="bg-slate-50 rounded-lg p-4">
                 <p className="text-slate-700 mb-2">
-                  <strong>Security Contact:</strong> security@emergencyalert.com
+                  <strong>Security Contact:</strong> Available via contact form
                 </p>
                 <p className="text-slate-700 mb-2">
                   <strong>PGP Key:</strong> Available upon request

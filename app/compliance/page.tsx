@@ -182,7 +182,7 @@ export default function CompliancePage() {
                   <li>• Security questionnaire responses</li>
                 </ul>
                 <p className="text-sm text-slate-600 mt-4">
-                  Contact your account manager or email security@emergencyalert.com for documentation requests.
+                  Contact your account manager or use the contact form for documentation requests.
                 </p>
               </div>
             </section>
@@ -194,9 +194,8 @@ export default function CompliancePage() {
               </p>
               <div className="bg-slate-50 rounded-lg p-4 mt-4">
                 <p className="text-slate-700">
-                  <strong>Email:</strong> security@emergencyalert.com<br />
-                  <strong>Phone:</strong> +1 (555) 123-4567<br />
-                  <strong>Response Time:</strong> Within 48 hours for security inquiries
+                  <strong>Response Time:</strong> Within 48 hours for security inquiries<br />
+                  <strong>Contact:</strong> Please use the contact form to reach our security team
                 </p>
               </div>
             </section>

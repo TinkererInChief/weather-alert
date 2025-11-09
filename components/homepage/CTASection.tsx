@@ -1,4 +1,4 @@
-import { ArrowRight, Phone, Mail } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CTASection() {
@@ -78,7 +78,7 @@ export default function CTASection() {
               className="w-full inline-flex items-center justify-center px-8 py-4 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-2xl border border-white/30 hover:bg-white/30 transition-all duration-200"
             >
               Contact Sales
-              <Mail className="ml-2 h-5 w-5" />
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </div>
         </div>
@@ -93,20 +93,6 @@ export default function CTASection() {
             Admin Login
             <ArrowRight className="ml-1 h-4 w-4" />
           </Link>
-        </div>
-
-        {/* Contact Information */}
-        <div className="mt-16 pt-8 border-t border-white/20 text-center">
-          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            <div className="flex items-center justify-center space-x-3">
-              <Phone className="h-5 w-5 text-slate-400" />
-              <span className="text-slate-300">+1 (555) 123-4567</span>
-            </div>
-            <div className="flex items-center justify-center space-x-3">
-              <Mail className="h-5 w-5 text-slate-400" />
-              <span className="text-slate-300">sales@emergencyalert.com</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

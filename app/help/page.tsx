@@ -111,7 +111,7 @@ export default function HelpCenterPage() {
               <Phone className="h-8 w-8 text-blue-600 mx-auto mb-3" />
               <h3 className="font-semibold text-slate-900 mb-2">Emergency Support</h3>
               <p className="text-sm text-slate-600 mb-3">24/7 emergency hotline for critical issues</p>
-              <p className="font-semibold text-blue-600">+1 (555) 911-HELP</p>
+              <button className="text-blue-600 font-semibold hover:text-blue-700">Contact Support</button>
             </div>
             <div className="bg-white rounded-xl p-6 text-center shadow-sm">
               <MessageCircle className="h-8 w-8 text-green-600 mx-auto mb-3" />
@@ -123,7 +123,7 @@ export default function HelpCenterPage() {
               <Mail className="h-8 w-8 text-purple-600 mx-auto mb-3" />
               <h3 className="font-semibold text-slate-900 mb-2">Email Support</h3>
               <p className="text-sm text-slate-600 mb-3">Get detailed help via email</p>
-              <p className="font-semibold text-purple-600">support@emergencyalert.com</p>
+              <button className="text-purple-600 font-semibold hover:text-purple-700">Send Email</button>
             </div>
           </div>
         </div>

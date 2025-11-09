@@ -59,7 +59,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900">Phone</h3>
-                    <p className="text-slate-600">+1 (555) 123-4567</p>
+                    <p className="text-slate-600">Available via contact form</p>
                     <p className="text-sm text-slate-500">Monday - Friday, 9am - 6pm EST</p>
                   </div>
                 </div>
@@ -70,7 +70,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-slate-900">Email</h3>
-                    <p className="text-slate-600">sales@emergencyalert.com</p>
+                    <p className="text-slate-600">Available via contact form</p>
                     <p className="text-sm text-slate-500">We'll respond within 24 hours</p>
                   </div>
                 </div>
@@ -94,8 +94,8 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-slate-900">Emergency Support</h3>
                     <p className="text-slate-600">24/7 Emergency Hotline</p>
-                    <p className="text-slate-600">+1 (555) 911-HELP</p>
-                    <p className="text-sm text-slate-500">For existing customers only</p>
+                    <p className="text-slate-600">Available to existing customers</p>
+                    <p className="text-sm text-slate-500">Contact via customer portal</p>
                   </div>
                 </div>
               </div>
@@ -107,13 +107,12 @@ export default function ContactPage() {
                 Looking for a custom solution for your organization? Our enterprise team can help design 
                 a tailored emergency alert system that meets your specific requirements.
               </p>
-              <Link 
-                href="mailto:enterprise@emergencyalert.com"
+              <button
                 className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
               >
-                enterprise@emergencyalert.com
+                Contact Enterprise Sales
                 <Mail className="ml-2 h-4 w-4" />
-              </Link>
+              </button>
             </div>
           </div>
 
@@ -192,7 +191,7 @@ export default function ContactPage() {
                         value={formData.phone}
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="+1 (555) 123-4567"
+                        placeholder="Your phone number"
                       />
                     </div>
                   </div>
