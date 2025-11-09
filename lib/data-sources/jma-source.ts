@@ -15,6 +15,7 @@ export class JMASource extends BaseDataSource {
   
   private readonly baseUrl = 'https://www.data.jma.go.jp/multi/quake/'
   private readonly bosaiUrl = 'https://www.jma.go.jp/bosai/quake/data/list.json'
+  private readonly userAgent = process.env.EXTERNAL_REQUEST_USER_AGENT || 'EmergencyAlertSystem/1.0'
   
   protected async healthCheck(): Promise<void> {
     // Simple health check - try to fetch the main page
@@ -38,7 +39,7 @@ export class JMASource extends BaseDataSource {
           method: 'HEAD',
           signal: AbortSignal.timeout(8000),
           headers: {
-            'User-Agent': 'EmergencyAlertSystem/1.0'
+            'User-Agent': this.userAgent
           }
         })
         if (response.ok) {
@@ -54,7 +55,7 @@ export class JMASource extends BaseDataSource {
         signal: AbortSignal.timeout(10000),
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EmergencyAlertSystem/1.0',
+          'User-Agent': this.userAgent,
           'Cache-Control': 'no-cache'
         }
       })
@@ -279,7 +280,7 @@ export class JMASource extends BaseDataSource {
         signal: AbortSignal.timeout(10000),
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'EmergencyAlertSystem/1.0',
+          'User-Agent': this.userAgent,
           'Cache-Control': 'no-cache'
         }
       })
@@ -295,13 +296,12 @@ export class JMASource extends BaseDataSource {
       // Fetch details for recent significant earthquakes
       const recentEarthquakes = (Array.isArray(earthquakeList) ? earthquakeList : [])
         .filter(item => {
-          const mag = parseFloat(item.mag || '0')
           const timeIso = item.at || item.rdt
           const ageMinutes = timeIso ? (Date.now() - Date.parse(timeIso)) / 60000 : Infinity
-          // Only check earthquakes M5+ in last 6 hours
-          return mag >= 5.0 && ageMinutes < 360
+          // Check earthquakes from the last 6 hours (no magnitude filter to avoid misses)
+          return ageMinutes < 360
         })
-        .slice(0, 5) // Limit to 5 most recent
+        .slice(0, 20) // Inspect more recent events to avoid missing tsunami-coded entries
 
       // Fetch detail JSON for each earthquake to check tsunami info
       for (const item of recentEarthquakes) {
@@ -311,7 +311,7 @@ export class JMASource extends BaseDataSource {
           const detailUrl = `https://www.jma.go.jp/bosai/quake/data/${item.json}`
           const detailResponse = await fetch(detailUrl, {
             signal: AbortSignal.timeout(5000),
-            headers: { 'User-Agent': 'EmergencyAlertSystem/1.0' }
+            headers: { 'User-Agent': this.userAgent }
           })
 
           if (!detailResponse.ok) continue
