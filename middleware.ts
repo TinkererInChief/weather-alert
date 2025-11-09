@@ -43,6 +43,7 @@ export default withAuth(
             pathname.startsWith('/api/database') ||
             pathname.startsWith('/api/vessels') ||
             pathname.startsWith('/api/webhooks') ||
+            pathname.startsWith('/api/tsunami') || // Allow tsunami monitoring endpoints
             pathname.startsWith('/api/test') || // Allow all test API routes
             pathname.startsWith('/api/test-message') ||
             

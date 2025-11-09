@@ -84,3 +84,6 @@ yarn.lock
 # Database dumps
 *.dump
 *.csv
+
+# Local Netlify folder
+.netlify

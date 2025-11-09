@@ -15,6 +15,7 @@ export class JMASource extends BaseDataSource {
   
   private readonly baseUrl = 'https://www.data.jma.go.jp/multi/quake/'
   private readonly bosaiUrl = 'https://www.jma.go.jp/bosai/quake/data/list.json'
+  private readonly tsunamiUrl = 'https://www.jma.go.jp/bosai/tsunami/data/list.json'
   private readonly userAgent = process.env.EXTERNAL_REQUEST_USER_AGENT || 'EmergencyAlertSystem/1.0'
   
   protected async healthCheck(): Promise<void> {
@@ -269,19 +270,15 @@ export class JMASource extends BaseDataSource {
 
   /**
    * Fetch tsunami alerts from JMA
-   * JMA includes tsunami information in earthquake detail JSON
+   * Uses dedicated tsunami list API for comprehensive coverage
    */
   async fetchTsunamiAlerts(): Promise<TsunamiAlert[]> {
     const fetchStartTime = Date.now()
     
     try {
-      // Configuration from env (with sensible defaults)
-      const lookbackMinutes = parseInt(process.env.JMA_LOOKBACK_MINUTES || '1440') // 24 hours
-      const maxDetails = parseInt(process.env.JMA_DETAIL_MAX || '50')
-      const concurrency = parseInt(process.env.JMA_DETAIL_CONCURRENCY || '5')
+      const lookbackMinutes = parseInt(process.env.JMA_LOOKBACK_MINUTES || '1440')
 
-      // First get the list of recent earthquakes
-      const response = await fetch(this.bosaiUrl, {
+      const response = await fetch(this.tsunamiUrl, {
         signal: AbortSignal.timeout(10000),
         headers: {
           'Accept': 'application/json',
@@ -295,69 +292,80 @@ export class JMASource extends BaseDataSource {
         return []
       }
 
-      const earthquakeList = await response.json()
+      const tsunamiList = await response.json()
       const alerts: TsunamiAlert[] = []
-
-      // Filter earthquakes within lookback window (no magnitude filter)
-      const candidateEarthquakes: any[] = []
       const now = Date.now()
       const cutoffTime = now - (lookbackMinutes * 60 * 1000)
+      const seenEventIds = new Set<string>()
 
-      for (const item of (Array.isArray(earthquakeList) ? earthquakeList : [])) {
-        const timeIso = item.at || item.rdt
-        if (!timeIso) continue
-
-        const eventTime = Date.parse(timeIso)
-        if (!isFinite(eventTime)) continue
-
-        // Early break: JMA list is time-sorted (newest first)
-        if (eventTime < cutoffTime) break
-
-        // Only include items with detail JSON
-        if (item.json) {
-          candidateEarthquakes.push(item)
-        }
-
-        // Stop at max limit to avoid runaway processing
-        if (candidateEarthquakes.length >= maxDetails) break
-      }
-
-      console.log(`🌊 JMA: ${candidateEarthquakes.length} candidates within ${lookbackMinutes}min (max ${maxDetails})`)
-
-      // Fetch detail JSONs with controlled concurrency
-      const detailFetches = candidateEarthquakes.map(item => async () => {
-        if (!item.json) return null
-
+      for (const item of (Array.isArray(tsunamiList) ? tsunamiList : [])) {
         try {
-          const detailUrl = `https://www.jma.go.jp/bosai/quake/data/${item.json}`
-          const detailResponse = await fetch(detailUrl, {
-            signal: AbortSignal.timeout(5000),
-            headers: { 'User-Agent': this.userAgent }
-          })
+          const timeIso = item.at || item.rdt
+          if (!timeIso) continue
 
-          if (!detailResponse.ok) return null
+          const eventTime = Date.parse(timeIso)
+          if (!isFinite(eventTime) || eventTime < cutoffTime) continue
 
-          const detail = await detailResponse.json()
-          
-          // Check for tsunami information
-          if (detail.tsunami && detail.tsunami !== '00') {
-            return this.parseTsunamiAlert(detail, item)
+          const eventId = item.eid || `${eventTime}_${item.cod}`
+          if (seenEventIds.has(eventId)) continue
+          seenEventIds.add(eventId)
+
+          const kinds = item.kind || []
+          if (kinds.length === 0) continue
+
+          const { lon, lat } = this.parseCod(item.cod || '')
+          if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
+
+          const magnitude = parseFloat(item.mag || '0')
+          const place = item.en_anm || item.anm || 'Japan region'
+
+          let category = 'INFORMATION'
+          let severity = 1
+          let instructions = ''
+
+          const maxCode = Math.max(...kinds.map((k: any) => parseInt(k.code || '0')))
+
+          if (maxCode >= 300) {
+            category = 'WARNING'
+            severity = 5
+            instructions = 'MAJOR TSUNAMI WARNING: Evacuate immediately to high ground. Tsunami waves of 3m or higher expected.'
+          } else if (maxCode >= 220) {
+            category = 'WARNING'
+            severity = 4
+            instructions = 'TSUNAMI WARNING: Evacuate coastal areas immediately. Tsunami waves of 1-3m expected.'
+          } else if (maxCode >= 200) {
+            category = 'ADVISORY'
+            severity = 3
+            instructions = 'TSUNAMI ADVISORY: Stay away from beaches and harbors. Waves up to 1m expected.'
+          } else if (maxCode >= 100) {
+            category = 'WATCH'
+            severity = 2
+            instructions = 'Tsunami forecast: Minor sea level changes expected. Monitor updates.'
           }
-          return null
-        } catch (err) {
-          return null
-        }
-      })
 
-      // Execute fetches with concurrency limit
-      const results = await this.executeConcurrent(detailFetches, concurrency)
-      
-      // Collect non-null alerts
-      for (const alert of results) {
-        if (alert) alerts.push(alert)
+          const alert: TsunamiAlert = {
+            id: `jma_tsunami_${eventId}`,
+            source: 'JMA',
+            title: `Tsunami ${category} - ${place}`,
+            category,
+            severity,
+            latitude: lat,
+            longitude: lon,
+            affectedRegions: [place],
+            issuedAt: new Date(eventTime),
+            expiresAt: new Date(eventTime + 24 * 60 * 60 * 1000),
+            description: `Magnitude ${magnitude.toFixed(1)} earthquake near ${place}. ${item.en_ttl || item.ttl || 'Tsunami information'}. ${instructions}`,
+            instructions,
+            rawData: { item, kinds }
+          }
+
+          alerts.push(alert)
+        } catch (err) {
+          continue
+        }
       }
 
-      console.log(`✅ JMA: ${alerts.length} tsunami alerts found`)
+      console.log(`✅ JMA: ${alerts.length} tsunami alerts found from dedicated tsunami API`)
 
       this.recordSuccess()
       this.recordResponseTime(Date.now() - fetchStartTime)
@@ -366,124 +374,6 @@ export class JMASource extends BaseDataSource {
     } catch (error) {
       this.recordFailure(error instanceof Error ? error : new Error('Unknown error'))
       return []
-    }
-  }
-
-  /**
-   * Execute async functions with controlled concurrency
-   */
-  private async executeConcurrent<T>(
-    tasks: Array<() => Promise<T>>,
-    concurrency: number
-  ): Promise<T[]> {
-    const results: T[] = []
-    const executing: Promise<void>[] = []
-
-    for (const task of tasks) {
-      const promise = task().then(result => {
-        results.push(result)
-      })
-
-      executing.push(promise)
-
-      if (executing.length >= concurrency) {
-        await Promise.race(executing)
-        // Remove completed promises
-        const completed = executing.filter(p => {
-          let resolved = false
-          p.then(() => { resolved = true }).catch(() => { resolved = true })
-          return resolved
-        })
-        completed.forEach(p => {
-          const index = executing.indexOf(p)
-          if (index > -1) executing.splice(index, 1)
-        })
-      }
-    }
-
-    // Wait for remaining tasks
-    await Promise.all(executing)
-    return results
-  }
-
-  private parseTsunamiAlert(detail: any, listItem: any): TsunamiAlert | null {
-    try {
-      const { lon, lat } = this.parseCod(listItem.cod || '')
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
-
-      const tsunamiCode = detail.tsunami || '00'
-      const magnitude = parseFloat(listItem.mag || '0')
-      const timeIso = listItem.at || listItem.rdt
-      const time = timeIso ? Date.parse(timeIso) : Date.now()
-
-      // JMA tsunami codes:
-      // 00: No tsunami
-      // 10: Tsunami forecast (under evaluation)
-      // 11: Tsunami warning
-      // 52: Major tsunami warning
-      // 62: Tsunami advisory
-      
-      let category = 'INFORMATION'
-      let severity = 1
-      let instructions = ''
-
-      switch (tsunamiCode) {
-        case '52':
-          category = 'WARNING'
-          severity = 5
-          instructions = 'MAJOR TSUNAMI WARNING: Evacuate immediately to high ground. Tsunami waves of 3m or higher expected. Extreme danger to life.'
-          break
-        case '11':
-          category = 'WARNING'
-          severity = 4
-          instructions = 'TSUNAMI WARNING: Evacuate coastal areas immediately. Tsunami waves of 1-3m expected. Significant danger.'
-          break
-        case '62':
-          category = 'ADVISORY'
-          severity = 3
-          instructions = 'TSUNAMI ADVISORY: Stay away from beaches and harbors. Waves up to 1m expected. Follow local authorities.'
-          break
-        case '10':
-          category = 'WATCH'
-          severity = 2
-          instructions = 'Tsunami forecast under evaluation. Monitor updates and be prepared to evacuate if advised.'
-          break
-        default:
-          return null // No tsunami threat
-      }
-
-      const place = listItem.en_anm || listItem.anm || 'Japan region'
-      const id = String(listItem.eid || `${time}_${lat}_${lon}`)
-
-      // Parse affected regions from detail if available
-      const affectedRegions: string[] = []
-      if (detail.areas && Array.isArray(detail.areas)) {
-        for (const area of detail.areas) {
-          if (area.name) affectedRegions.push(area.name)
-        }
-      }
-      if (affectedRegions.length === 0) {
-        affectedRegions.push(place)
-      }
-
-      return {
-        id: `jma_tsunami_${id}`,
-        source: 'JMA',
-        title: `Tsunami ${category} - ${place}`,
-        category,
-        severity,
-        latitude: lat,
-        longitude: lon,
-        affectedRegions,
-        issuedAt: new Date(time),
-        expiresAt: new Date(time + 24 * 60 * 60 * 1000), // 24 hours
-        description: `Magnitude ${magnitude.toFixed(1)} earthquake near ${place} has generated tsunami threat. ${instructions}`,
-        instructions,
-        rawData: { detail, listItem }
-      }
-    } catch (err) {
-      console.warn('Failed to parse JMA tsunami alert:', err)
-      return null
     }
   }
 }
