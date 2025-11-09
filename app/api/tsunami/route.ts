@@ -118,9 +118,11 @@ export async function GET(request: Request) {
     
     // Fetch from all tsunami sources (PTWC, JMA, DART, GeoNet)
     const rawAlerts = await dataAggregator.fetchAggregatedTsunamiAlerts()
+    console.log(`📊 Raw alerts fetched: ${rawAlerts.length} from sources:`, Array.from(new Set(rawAlerts.map(a => a.source))))
     
     // Enrich with DART confirmation data
     const enrichedAlerts = await dartEnrichmentService.enrichAlerts(rawAlerts)
+    console.log(`✨ Enriched alerts: ${enrichedAlerts.length}`)
     
     if (enrichedAlerts.length === 0) {
       return NextResponse.json({
@@ -172,13 +174,17 @@ export async function GET(request: Request) {
       }
     }
 
+    // Always show all configured sources, not just ones with active alerts
+    const allSources = ['PTWC', 'JMA', 'DART', 'GeoNet']
+    
     return NextResponse.json({
       success: true,
       message: `Processed ${storedAlerts.length} tsunami alerts with DART enrichment`,
       data: {
         alertCount: storedAlerts.length,
         alerts: storedAlerts,
-        sources: Array.from(new Set(storedAlerts.map(a => a.source))),
+        sources: allSources,
+        activeSources: Array.from(new Set(storedAlerts.map(a => a.source))),
         dartEnabled: true,
         lastChecked: new Date().toISOString()
       }
