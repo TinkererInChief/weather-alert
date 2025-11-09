@@ -1,11 +1,12 @@
 [build]
-  command = "pnpm build"
+  command = "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm build"
   publish = ".next"
 
 [build.environment]
   SKIP_MONITORING = "1"
   SKIP_SECRETS_VALIDATION = "true"
   NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
