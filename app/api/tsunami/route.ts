@@ -143,28 +143,24 @@ export async function GET(request: Request) {
     
     for (const alert of enrichedAlerts) {
       try {
-        // Convert to legacy format for storage
-        const legacyAlert = {
+        // Convert to database format
+        const dbAlert = {
           id: alert.id,
+          eventId: alert.id.replace('jma_tsunami_', '').replace('ptwc_', '').replace('dart_', '').replace('geonet_', ''),
           source: alert.source,
-          title: alert.title,
-          category: alert.category,
-          urgency: alert.severity >= 4 ? 'Immediate' : alert.severity >= 3 ? 'Expected' : 'Future',
-          severity: alert.severity >= 4 ? 'Extreme' : alert.severity >= 3 ? 'Severe' : 'Moderate',
-          description: alert.description || '',
-          instruction: alert.instructions || '',
+          alertType: alert.category,
+          severityLevel: alert.severity,
+          estimatedWaveHeight: null,
+          estimatedArrivalTime: null,
+          affectedZones: alert.affectedRegions,
+          sourceEarthquakeId: null,
+          rawData: alert.rawData,
           location: alert.affectedRegions.join(', '),
           latitude: alert.latitude,
-          longitude: alert.longitude,
-          threat: {
-            level: alert.category.toLowerCase(),
-            confidence: alert.confidence || 50,
-            affectedRegions: alert.affectedRegions
-          },
-          processedAt: new Date().toISOString()
+          longitude: alert.longitude
         }
         
-        await tsunamiService.storeTsunamiAlert(legacyAlert as any)
+        await tsunamiService.storeTsunamiAlert(dbAlert as any)
         storedAlerts.push({
           ...alert,
           processedAt: new Date().toISOString()
