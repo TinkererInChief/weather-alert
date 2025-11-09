@@ -275,6 +275,11 @@ export class JMASource extends BaseDataSource {
     const fetchStartTime = Date.now()
     
     try {
+      // Configuration from env (with sensible defaults)
+      const lookbackMinutes = parseInt(process.env.JMA_LOOKBACK_MINUTES || '1440') // 24 hours
+      const maxDetails = parseInt(process.env.JMA_DETAIL_MAX || '50')
+      const concurrency = parseInt(process.env.JMA_DETAIL_CONCURRENCY || '5')
+
       // First get the list of recent earthquakes
       const response = await fetch(this.bosaiUrl, {
         signal: AbortSignal.timeout(10000),
@@ -293,19 +298,35 @@ export class JMASource extends BaseDataSource {
       const earthquakeList = await response.json()
       const alerts: TsunamiAlert[] = []
 
-      // Fetch details for recent significant earthquakes
-      const recentEarthquakes = (Array.isArray(earthquakeList) ? earthquakeList : [])
-        .filter(item => {
-          const timeIso = item.at || item.rdt
-          const ageMinutes = timeIso ? (Date.now() - Date.parse(timeIso)) / 60000 : Infinity
-          // Check earthquakes from the last 6 hours (no magnitude filter to avoid misses)
-          return ageMinutes < 360
-        })
-        .slice(0, 20) // Inspect more recent events to avoid missing tsunami-coded entries
+      // Filter earthquakes within lookback window (no magnitude filter)
+      const candidateEarthquakes: any[] = []
+      const now = Date.now()
+      const cutoffTime = now - (lookbackMinutes * 60 * 1000)
 
-      // Fetch detail JSON for each earthquake to check tsunami info
-      for (const item of recentEarthquakes) {
-        if (!item.json) continue
+      for (const item of (Array.isArray(earthquakeList) ? earthquakeList : [])) {
+        const timeIso = item.at || item.rdt
+        if (!timeIso) continue
+
+        const eventTime = Date.parse(timeIso)
+        if (!isFinite(eventTime)) continue
+
+        // Early break: JMA list is time-sorted (newest first)
+        if (eventTime < cutoffTime) break
+
+        // Only include items with detail JSON
+        if (item.json) {
+          candidateEarthquakes.push(item)
+        }
+
+        // Stop at max limit to avoid runaway processing
+        if (candidateEarthquakes.length >= maxDetails) break
+      }
+
+      console.log(`🌊 JMA: ${candidateEarthquakes.length} candidates within ${lookbackMinutes}min (max ${maxDetails})`)
+
+      // Fetch detail JSONs with controlled concurrency
+      const detailFetches = candidateEarthquakes.map(item => async () => {
+        if (!item.json) return null
 
         try {
           const detailUrl = `https://www.jma.go.jp/bosai/quake/data/${item.json}`
@@ -314,20 +335,29 @@ export class JMASource extends BaseDataSource {
             headers: { 'User-Agent': this.userAgent }
           })
 
-          if (!detailResponse.ok) continue
+          if (!detailResponse.ok) return null
 
           const detail = await detailResponse.json()
           
           // Check for tsunami information
           if (detail.tsunami && detail.tsunami !== '00') {
-            const alert = this.parseTsunamiAlert(detail, item)
-            if (alert) alerts.push(alert)
+            return this.parseTsunamiAlert(detail, item)
           }
+          return null
         } catch (err) {
-          // Skip this earthquake if detail fetch fails
-          continue
+          return null
         }
+      })
+
+      // Execute fetches with concurrency limit
+      const results = await this.executeConcurrent(detailFetches, concurrency)
+      
+      // Collect non-null alerts
+      for (const alert of results) {
+        if (alert) alerts.push(alert)
       }
+
+      console.log(`✅ JMA: ${alerts.length} tsunami alerts found`)
 
       this.recordSuccess()
       this.recordResponseTime(Date.now() - fetchStartTime)
@@ -337,6 +367,43 @@ export class JMASource extends BaseDataSource {
       this.recordFailure(error instanceof Error ? error : new Error('Unknown error'))
       return []
     }
+  }
+
+  /**
+   * Execute async functions with controlled concurrency
+   */
+  private async executeConcurrent<T>(
+    tasks: Array<() => Promise<T>>,
+    concurrency: number
+  ): Promise<T[]> {
+    const results: T[] = []
+    const executing: Promise<void>[] = []
+
+    for (const task of tasks) {
+      const promise = task().then(result => {
+        results.push(result)
+      })
+
+      executing.push(promise)
+
+      if (executing.length >= concurrency) {
+        await Promise.race(executing)
+        // Remove completed promises
+        const completed = executing.filter(p => {
+          let resolved = false
+          p.then(() => { resolved = true }).catch(() => { resolved = true })
+          return resolved
+        })
+        completed.forEach(p => {
+          const index = executing.indexOf(p)
+          if (index > -1) executing.splice(index, 1)
+        })
+      }
+    }
+
+    // Wait for remaining tasks
+    await Promise.all(executing)
+    return results
   }
 
   private parseTsunamiAlert(detail: any, listItem: any): TsunamiAlert | null {
