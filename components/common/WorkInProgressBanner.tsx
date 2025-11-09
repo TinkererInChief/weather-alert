@@ -15,8 +15,7 @@ export default function WorkInProgressBanner() {
           <div className="flex items-center space-x-3">
             <AlertTriangle className="h-5 w-5 flex-shrink-0" />
             <p className="text-sm font-medium">
-              <span className="font-semibold">Work in Progress:</span> This site is currently under development and not yet live. 
-              Content and features are subject to change.
+              <span className="font-semibold">Work in Progress:</span> This site is currently under active development, content and features are subject to change.
             </p>
           </div>
           <button
