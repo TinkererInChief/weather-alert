@@ -20,6 +20,7 @@ const nextConfig = {
       scriptSrc,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: https: blob:",
+      "media-src 'self' data: https: blob:",
       "font-src 'self' https://fonts.gstatic.com",
       // Allow connections to required external APIs and captcha
       "connect-src 'self' https://api.usgs.gov https://earthquake.usgs.gov https://api.weather.gov https://www.tsunami.gov https://hcaptcha.com https://*.hcaptcha.com https://service.iris.edu https://www.seismicportal.eu https://www.data.jma.go.jp https://api.sendgrid.com https://api.twilio.com",
