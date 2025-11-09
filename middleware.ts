@@ -66,6 +66,6 @@ export const config = {
      * - public folder
      * - audio files (for earcons)
      */
-    '/((?!_next/|favicon.ico|audio/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|mp3|wav|ogg)$).*)',
+    '/((?!_next/|favicon.ico|audio/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|mp3|wav|ogg|mp4|webm|mov|m4v)$).*)',
   ],
 }
