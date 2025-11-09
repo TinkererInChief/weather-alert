@@ -1,6 +1,6 @@
 [build]
   command = "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm build"
-  publish = ".next"
+  # Note: publish directory is handled automatically by @netlify/plugin-nextjs
 
 [build.environment]
   SKIP_MONITORING = "1"
@@ -10,15 +10,6 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
-
-[functions]
-  node_bundler = "esbuild"
-
-# Redirect rules for Next.js
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
 
 # Security headers
 [[headers]]

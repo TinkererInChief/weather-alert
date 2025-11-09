@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  output: 'standalone',
+  // Note: output mode removed for Netlify - the @netlify/plugin-nextjs handles deployment
   transpilePackages: ['lucide-react'],
   eslint: {
     // Temporarily disabled due to styling warnings - can be re-enabled after cleanup
