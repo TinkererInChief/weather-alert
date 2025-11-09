@@ -20,6 +20,16 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname, searchParams } = req.nextUrl
 
+        // Always allow public static media files (defense-in-depth)
+        if (/\.(mp4|webm|mov|m4v|mp3|wav|ogg|svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map)$/i.test(pathname)) {
+          return true
+        }
+
+        // Allow Open Graph/Twitter preview image routes for crawlers
+        if (pathname === '/opengraph-image' || pathname === '/twitter-image') {
+          return true
+        }
+
         // Allow recording mode without authentication (for Puppeteer)
         if (pathname.startsWith('/dashboard/simulate-tsunami-map') && searchParams.get('record') === '1') {
           return true
