@@ -13,7 +13,11 @@ export class PTWCSource extends BaseDataSource {
   readonly updateFrequency = 300 // 5 minutes - tsunamis are less frequent
   
   private readonly baseUrl = 'https://www.tsunami.gov'
-  private readonly eventsUrl = 'https://www.tsunami.gov/events_json/events.json'
+  // Use Atom feeds instead of JSON API (which returns 403)
+  private readonly atomFeeds = [
+    'https://www.tsunami.gov/events/xml/PHEBAtom.xml', // Pacific Basin
+    'https://www.tsunami.gov/events/xml/PAAQAtom.xml'  // Alaska/West Coast
+  ]
   
   // Backoff/TTL + caching
   private nextAllowedFetchAt = 0
@@ -51,52 +55,44 @@ export class PTWCSource extends BaseDataSource {
         return []
       }
 
-      const userAgent = process.env.PTWC_USER_AGENT || process.env.EXTERNAL_REQUEST_USER_AGENT || 'weather-alert/1.0 (+https://weather-alert.app; contact@weather-alert.app)'
+      const userAgent = process.env.PTWC_USER_AGENT || process.env.EXTERNAL_REQUEST_USER_AGENT || 'Mozilla/5.0 (compatible; EmergencyAlertSystem/1.0; +https://weather-alert.app)'
       const headers: Record<string, string> = {
-        'Accept': 'application/json',
-        'User-Agent': userAgent,
-        'Referer': 'https://www.tsunami.gov/'
+        'Accept': 'application/atom+xml,application/xml,text/xml',
+        'User-Agent': userAgent
       }
-      if (this.lastModified) headers['If-Modified-Since'] = this.lastModified
-      if (this.etag) headers['If-None-Match'] = this.etag
 
-      const response = await fetch(this.eventsUrl, {
-        signal: AbortSignal.timeout(15000),
-        headers
-      })
+      // Fetch from both Atom feeds
+      const allAlerts: TsunamiAlert[] = []
       
-      if (response.status === 304) {
-        // Not modified: honor TTL
-        this.recordSuccess()
-        this.recordResponseTime(Date.now() - fetchStartTime)
-        this.nextAllowedFetchAt = now + this.ttlMs
-        return []
-      }
-
-      if (!response.ok) {
-        const status = response.status
-        // Apply backoff on 403/429
-        if (status === 403 || status === 429) {
-          this.backoffMs = Math.min(this.backoffMs ? this.backoffMs * 2 : 10 * 60 * 1000, this.maxBackoffMs)
-          this.nextAllowedFetchAt = now + this.backoffMs
-          if (now - this.lastErrorLogAt >= this.errorLogIntervalMs) {
-            console.warn(`PTWC returned ${status}. Backing off for ${Math.round(this.backoffMs / 60000)}m.`)
-            this.lastErrorLogAt = now
+      for (const feedUrl of this.atomFeeds) {
+        try {
+          const response = await fetch(feedUrl, {
+            signal: AbortSignal.timeout(15000),
+            headers
+          })
+          
+          if (!response.ok) {
+            console.warn(`PTWC feed ${feedUrl} returned ${response.status}`)
+            continue
           }
-          return []
+          
+          const xmlText = await response.text()
+          const feedAlerts = this.parseAtomFeed(xmlText)
+          allAlerts.push(...feedAlerts)
+        } catch (error) {
+          console.warn(`Failed to fetch PTWC feed ${feedUrl}:`, error instanceof Error ? error.message : 'Unknown')
+          continue
         }
-        throw new Error(`PTWC fetch failed: ${status}`)
       }
-      
-      const data = await response.json()
-      this.lastModified = response.headers.get('Last-Modified') ?? undefined
-      this.etag = response.headers.get('ETag') ?? undefined
       
       this.recordSuccess()
       this.recordResponseTime(Date.now() - fetchStartTime)
       this.nextAllowedFetchAt = now + this.ttlMs
       
-      return this.convertPTWCToStandard(data)
+      // Reset backoff on success
+      this.backoffMs = 0
+      
+      return allAlerts
       
     } catch (error) {
       this.recordFailure(error instanceof Error ? error : new Error('Unknown error'))
@@ -104,101 +100,133 @@ export class PTWCSource extends BaseDataSource {
     }
   }
   
-  private convertPTWCToStandard(data: any): TsunamiAlert[] {
+  /**
+   * Parse Atom XML feed from PTWC
+   * Uses simple regex-based parsing to avoid XML parser dependency
+   */
+  private parseAtomFeed(xmlText: string): TsunamiAlert[] {
     const alerts: TsunamiAlert[] = []
     
-    // Accept either array or object with `events` array
-    const events: any[] = Array.isArray(data) ? data : Array.isArray(data?.events) ? data.events : []
-    if (!events.length) return alerts
-    
-    for (const event of events) {
-      try {
-        // PTWC event structure
-        const alert: TsunamiAlert = {
-          id: `ptwc_${event.id || event.eventID || Date.now()}`,
-          source: 'PTWC',
-          title: event.title || event.name || 'Tsunami Event',
-          category: this.determineCategory(event),
-          severity: this.determineSeverity(event),
-          latitude: parseFloat(event.latitude || event.lat || 0),
-          longitude: parseFloat(event.longitude || event.lon || 0),
-          affectedRegions: this.parseAffectedRegions(event),
-          issuedAt: new Date(event.issuedTime || event.time || Date.now()),
-          expiresAt: event.expiresTime ? new Date(event.expiresTime) : undefined,
-          description: event.description || event.summary || '',
-          instructions: event.instructions || event.guidance || '',
-          rawData: event
+    try {
+      // Extract all <entry> elements
+      const entryMatches = xmlText.match(/<entry>([\s\S]*?)<\/entry>/g) || []
+      
+      for (const entryXml of entryMatches) {
+        try {
+          const entry = this.parseAtomEntry(entryXml)
+          if (entry) alerts.push(entry)
+        } catch (err) {
+          continue
         }
-        
-        alerts.push(alert)
-      } catch (err) {
-        console.warn('Failed to parse PTWC alert:', err)
-        continue
       }
+    } catch (error) {
+      console.warn('Failed to parse PTWC Atom feed:', error)
     }
     
     return alerts
   }
   
-  private determineCategory(event: any): string {
-    const type = (event.type || event.category || '').toLowerCase()
-    
-    if (type.includes('warning')) return 'WARNING'
-    if (type.includes('watch')) return 'WATCH'
-    if (type.includes('advisory')) return 'ADVISORY'
-    if (type.includes('information')) return 'INFORMATION'
-    
-    // Check severity indicators
-    if (event.severity === 'Extreme' || event.urgency === 'Immediate') {
-      return 'WARNING'
+  private parseAtomEntry(entryXml: string): TsunamiAlert | null {
+    try {
+      // Extract fields using regex
+      const extractTag = (tag: string): string => {
+        const match = entryXml.match(new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\/${tag}>`, 'i'))
+        return match ? match[1].trim() : ''
+      }
+      
+      const extractGeo = (tag: string): string => {
+        const match = entryXml.match(new RegExp(`<geo:${tag}>([^<]+)<\/geo:${tag}>`, 'i'))
+        return match ? match[1].trim() : '0'
+      }
+      
+      const title = extractTag('title')
+      const updated = extractTag('updated')
+      const summary = extractTag('summary')
+      const id = extractTag('id')
+      const lat = parseFloat(extractGeo('lat'))
+      const lon = parseFloat(extractGeo('long'))
+      
+      if (!title || !updated) return null
+      
+      // Extract category from summary
+      const categoryMatch = summary.match(/<strong>Category:<\/strong>\s*([^<]+)/i)
+      const category = categoryMatch ? categoryMatch[1].trim() : 'Information'
+      
+      // Extract magnitude if available
+      const magMatch = summary.match(/Magnitude[^>]*>\s*([\d.]+)/i)
+      const magnitude = magMatch ? parseFloat(magMatch[1]) : 0
+      
+      // Extract affected region
+      const regionMatch = summary.match(/<strong>Affected Region:<\/strong>\s*([^<]+)/i)
+      const affectedRegion = regionMatch ? regionMatch[1].trim() : this.inferRegionFromCoordinates(lat, lon)
+      
+      // Determine if there's a tsunami threat
+      const noThreat = summary.toLowerCase().includes('no tsunami') || 
+                       summary.toLowerCase().includes('no threat')
+      
+      // Skip information-only statements with no threat
+      if (category.toLowerCase() === 'information' && noThreat) {
+        return null
+      }
+      
+      const alert: TsunamiAlert = {
+        id: `ptwc_${id.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+        source: 'PTWC',
+        title: title,
+        category: this.mapCategoryFromPTWC(category),
+        severity: this.mapSeverityFromCategory(category),
+        latitude: lat,
+        longitude: lon,
+        affectedRegions: [affectedRegion],
+        issuedAt: new Date(updated),
+        expiresAt: new Date(new Date(updated).getTime() + 24 * 60 * 60 * 1000),
+        description: this.cleanHtmlFromSummary(summary),
+        instructions: this.extractInstructions(summary),
+        rawData: { xml: entryXml, category, magnitude, noThreat }
+      }
+      
+      return alert
+    } catch (error) {
+      return null
     }
-    if (event.severity === 'Severe') {
-      return 'WATCH'
-    }
-    
+  }
+  
+  private mapCategoryFromPTWC(ptwcCategory: string): string {
+    const cat = ptwcCategory.toLowerCase()
+    if (cat.includes('warning')) return 'WARNING'
+    if (cat.includes('watch')) return 'WATCH'
+    if (cat.includes('advisory')) return 'ADVISORY'
     return 'INFORMATION'
   }
   
-  private determineSeverity(event: any): number {
-    const category = this.determineCategory(event)
-    
-    switch (category) {
-      case 'WARNING': return 5
-      case 'WATCH': return 4
-      case 'ADVISORY': return 3
-      case 'INFORMATION': return 2
-      default: return 1
-    }
+  private mapSeverityFromCategory(category: string): number {
+    const cat = category.toLowerCase()
+    if (cat.includes('warning')) return 4
+    if (cat.includes('watch')) return 3
+    if (cat.includes('advisory')) return 3
+    return 2
   }
   
-  private parseAffectedRegions(event: any): string[] {
-    const regions: string[] = []
-    
-    // PTWC might provide affected areas in various formats
-    if (event.affectedAreas && Array.isArray(event.affectedAreas)) {
-      regions.push(...event.affectedAreas)
+  private cleanHtmlFromSummary(summary: string): string {
+    return summary
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 500)
+  }
+  
+  private extractInstructions(summary: string): string {
+    // Extract key instructions from summary
+    if (summary.toLowerCase().includes('evacuate')) {
+      return 'Evacuate coastal areas immediately and move to high ground.'
     }
-    
-    if (event.regions && Array.isArray(event.regions)) {
-      regions.push(...event.regions)
+    if (summary.toLowerCase().includes('stay away') || summary.toLowerCase().includes('avoid')) {
+      return 'Stay away from beaches, harbors, and coastal areas.'
     }
-    
-    if (event.area && typeof event.area === 'string') {
-      regions.push(event.area)
+    if (summary.toLowerCase().includes('no action')) {
+      return 'No action required. Monitor for updates.'
     }
-    
-    if (event.areaDesc && typeof event.areaDesc === 'string') {
-      regions.push(event.areaDesc)
-    }
-    
-    // If no regions specified, infer from coordinates
-    if (regions.length === 0) {
-      const lat = parseFloat(event.latitude || event.lat || 0)
-      const lon = parseFloat(event.longitude || event.lon || 0)
-      regions.push(this.inferRegionFromCoordinates(lat, lon))
-    }
-    
-    return [...new Set(regions)] // Remove duplicates
+    return 'Follow guidance from local emergency management officials.'
   }
   
   private inferRegionFromCoordinates(lat: number, lon: number): string {
