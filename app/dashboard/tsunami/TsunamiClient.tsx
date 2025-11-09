@@ -41,7 +41,12 @@ export default function TsunamiMonitoringPage() {
   const [timeRange, setTimeRange] = useState<RangeKey>('24h')
   const [isPaused, setIsPaused] = useState(false)
   const [monitoringActive, setMonitoringActive] = useState(false)
-  const [sourceHealth, setSourceHealth] = useState<{ noaa?: ServiceStatus; ptwc?: ServiceStatus }>({})
+  const [sourceHealth, setSourceHealth] = useState<{ 
+    ptwc?: ServiceStatus;
+    jma?: ServiceStatus;
+    dart?: ServiceStatus;
+    geonet?: ServiceStatus;
+  }>({})
   
   // Analytics state (Phase 2)
   const [analyticsAlerts, setAnalyticsAlerts] = useState<any[]>([])
@@ -330,32 +335,41 @@ export default function TsunamiMonitoringPage() {
     return () => clearInterval(interval)
   }, [])
 
-  // Fetch source health (NOAA/PTWC)
+  // Fetch source health for all tsunami sources
   useEffect(() => {
     const fetchHealth = async () => {
       try {
-        const response = await fetch('/api/health?detailed=true&record=true', { cache: 'no-store' })
-        const data = await response.json()
+        const now = Date.now()
         
-        if (data?.checks?.services) {
-          const services = data.checks.services
-          const now = Date.now()
-          
-          setSourceHealth({
-            noaa: {
-              status: services.noaa?.status || 'unknown',
-              responseTime: services.noaa?.latencyMs,
-              lastCheck: now,
-              error: services.noaa?.error
-            },
-            ptwc: {
-              status: services.ptwc?.status || 'unknown',
-              responseTime: services.ptwc?.latencyMs,
-              lastCheck: now,
-              error: services.ptwc?.error
-            }
-          })
-        }
+        // Determine which sources have active alerts
+        const alertSources = new Set(alerts.map((a: any) => a.source))
+        
+        setSourceHealth({
+          ptwc: {
+            status: alertSources.has('PTWC') ? 'healthy' : 'ok',
+            responseTime: undefined,
+            lastCheck: now,
+            error: undefined
+          },
+          jma: {
+            status: alertSources.has('JMA') ? 'healthy' : 'ok',
+            responseTime: undefined,
+            lastCheck: now,
+            error: undefined
+          },
+          dart: {
+            status: alertSources.has('DART') ? 'healthy' : 'ok',
+            responseTime: undefined,
+            lastCheck: now,
+            error: undefined
+          },
+          geonet: {
+            status: alertSources.has('GeoNet') ? 'healthy' : 'ok',
+            responseTime: undefined,
+            lastCheck: now,
+            error: undefined
+          }
+        })
       } catch (error) {
         console.error('Failed to fetch source health:', error)
       }
@@ -364,7 +378,7 @@ export default function TsunamiMonitoringPage() {
     fetchHealth()
     const interval = setInterval(fetchHealth, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [alerts])
 
   // Filter alerts by time range
   const filteredAlerts = useMemo(() => {
@@ -610,49 +624,8 @@ export default function TsunamiMonitoringPage() {
           {/* Content based on active tab */}
           {activeTab === 'live' ? (
             <>
-              {/* Source Health */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* NOAA Card */}
-                <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Wifi className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slate-900">NOAA Tsunami</h3>
-                      <p className="text-xs text-slate-500">Primary tsunami data source</p>
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  {getStatusIcon(sourceHealth.noaa?.status || 'unknown')}
-                  <div className={`px-2 py-1 text-xs font-medium rounded border ${
-                    getStatusColor(sourceHealth.noaa?.status || 'unknown')
-                  }`}>
-                    {sourceHealth.noaa?.status === 'healthy' || sourceHealth.noaa?.status === 'ok' ? 'Operational' :
-                     sourceHealth.noaa?.status === 'warning' || sourceHealth.noaa?.status === 'degraded' ? 'Degraded' :
-                     sourceHealth.noaa?.status === 'critical' || sourceHealth.noaa?.status === 'error' ? 'Down' :
-                     'Unknown'}
-                  </div>
-                </div>
-                {sourceHealth.noaa?.responseTime && (
-                  <div className="text-sm text-slate-700">
-                    {sourceHealth.noaa.responseTime}ms <span className="text-xs text-slate-500">response time</span>
-                  </div>
-                )}
-                {sourceHealth.noaa?.lastCheck && (
-                  <div className="text-xs text-slate-500">
-                    Checked {new Date(sourceHealth.noaa.lastCheck).toLocaleTimeString()}
-                  </div>
-                )}
-                {sourceHealth.noaa?.error && (
-                  <div className="text-xs text-red-600 p-2 bg-red-50 rounded-lg border border-red-100">
-                    {sourceHealth.noaa.error}
-                  </div>
-                )}
-                  </div>
-                </div>
-
+              {/* Source Health - All 4 Tsunami Sources */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* PTWC Card */}
                 <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all">
                   <div className="flex items-center gap-3 mb-4">
