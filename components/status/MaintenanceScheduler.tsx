@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, AlertCircle, Wrench, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, AlertCircle, Wrench, CheckCircle, Plus, Trash2 } from 'lucide-react'
 import { formatDualTime } from '@/lib/time-display'
 
 type MaintenanceWindow = {
