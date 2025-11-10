@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Shield, User, Clock, FileText } from 'lucide-react'
+import { Shield, User, Clock, FileText, Download, Search } from 'lucide-react'
 import { formatDualTime } from '@/lib/time-display'
 
 type AuditAction = 
