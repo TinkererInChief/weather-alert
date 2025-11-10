@@ -1,11 +1,13 @@
 'use client'
 
-import { Shield, ArrowRight, Play, Star, Users, TrendingUp, Globe, Zap, Bell, Activity } from 'lucide-react'
+import { Shield, ArrowRight, Play, Star, Users, TrendingUp, Globe, Zap, Bell, Activity, Maximize2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
+import VideoModal from './VideoModal'
 
 export default function HeroSection() {
   const [isPlaying, setIsPlaying] = useState(true)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   return (
     <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 overflow-hidden">
@@ -140,7 +142,16 @@ export default function HeroSection() {
                 </div>
               </div>
 
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 shadow-inner">
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 shadow-inner group/video">
+                {/* Maximize Button */}
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  className="absolute top-3 left-3 bg-slate-900/90 backdrop-blur-sm rounded-lg p-2.5 text-white hover:bg-slate-800 transition-all opacity-0 group-hover/video:opacity-100 z-20 shadow-lg"
+                  title="Open in theater mode"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+
                 <video
                   className="w-full h-full object-contain"
                   style={{ imageRendering: 'crisp-edges' }}
@@ -250,6 +261,13 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* Video Modal */}
+      <VideoModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        videoSrc="/earthquake-tsunami-alert-demo.mp4"
+      />
     </section>
   )
 }
