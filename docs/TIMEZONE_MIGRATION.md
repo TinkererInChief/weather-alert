@@ -3,7 +3,19 @@
 ## ✅ Phase 1 Complete
 - Created `lib/time-display.ts` - Core utilities
 - Created `components/shared/DualTimeDisplay.tsx` - React components
-- Migrated `TsunamiClient.tsx` as example
+
+## ✅ Phase 2 In Progress - Components Migrated (7/30+)
+
+### Batch 1 (High Priority)
+1. ✅ **TsunamiClient.tsx** - Tsunami alert cards (example)
+2. ✅ **ShareEventButton.tsx** - CRITICAL: Shared content consistent
+3. ✅ **GlobalEventMap.tsx** - Map hover tooltips
+4. ✅ **UnifiedIncidentTimeline.tsx** - Timeline tooltips
+
+### Batch 2 (Dashboard Pages)
+5. ✅ **DashboardClient.tsx** - Critical tsunami banner
+6. ✅ **VesselAlertsClient.tsx** - Vessel alert timestamps
+7. ✅ **EventsByTypeWidget.tsx** - Already fixed
 
 ## Migration Pattern
 
@@ -28,12 +40,25 @@ import { getEventTime } from '@/lib/time-display'
 **Before**: `11/10/2025, 6:23:00 PM` (varies by user)
 **After**: `12:53 PM UTC • 6:23 PM IST (Your Time)` (consistent + labeled)
 
-## Components to Migrate (30+)
-- HIGH: GlobalEventMap, ShareEventButton, EventsByTypeWidget
-- MEDIUM: Dashboard, AlertHistory, VesselDetails
-- LOW: AuditLogs, Analytics
+## Remaining Components (~23)
+
+### High Priority
+- AlertsClient.tsx (multiple timestamps)
+- communications/tabs/* (DeliveryLogsTab, VesselAlertsTab)
+- tsunami-test/page.tsx
+
+### Medium Priority  
+- audit/page.tsx
+- notifications/page.tsx
+- vessel pages with timestamps
+
+### Low Priority
+- Email templates (3 files)
+- Analytics pages
+- Audit logs
 
 ## Next Steps
-1. Migrate high-priority components
-2. Update email templates
-3. Add timezone selector to user settings
+1. Continue migrating remaining dashboard pages
+2. Update email templates to use UTC explicitly
+3. Consider adding timezone selector to user profile
+4. Test all migrations in browser
