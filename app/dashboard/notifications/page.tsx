@@ -7,6 +7,7 @@ import { formatDualTime } from '@/lib/time-display'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
+import AppLayout from '@/components/layout/AppLayout'
 
 type DeliveryLog = {
   id: string
