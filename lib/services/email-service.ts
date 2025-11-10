@@ -1,4 +1,7 @@
 import sgMail from '@sendgrid/mail'
+import nodemailer from 'nodemailer'
+import { getSecret } from '../secrets'
+import { formatDualTime } from '../time-display'
 import { 
   createEarthquakeAlertEmail, 
   createTsunamiAlertEmail,
@@ -210,7 +213,10 @@ export class EmailService {
             ` : ''}
             
             <div class="timestamp">
-                Alert sent: ${new Date().toLocaleString()}
+                Alert sent: ${(() => {
+                  const times = formatDualTime(new Date(), 'system', undefined, { dateStyle: 'short' })
+                  return times.full
+                })()}
             </div>
         </div>
         

@@ -1,4 +1,5 @@
 import { createBaseTemplate } from './base-template'
+import { formatDualTime } from '../time-display'
 
 export type TsunamiAlertData = {
   level: 'WATCH' | 'WARNING' | 'ADVISORY' | 'INFORMATION'
@@ -109,13 +110,10 @@ export function createTsunamiAlertEmail(data: TsunamiAlertData): { html: string;
                                 <tr>
                                     <td style="width: 45%; font-size: 14px; color: #6b7280;">Estimated Arrival</td>
                                     <td style="font-size: 14px; font-weight: 600; color: #1f2937;">
-                                        ${estimatedArrival.toLocaleString('en-US', {
-                                          month: 'short',
-                                          day: 'numeric',
-                                          hour: '2-digit',
-                                          minute: '2-digit',
-                                          timeZoneName: 'short'
-                                        })}
+                                        ${(() => {
+                                          const times = formatDualTime(estimatedArrival, 'event', undefined, { dateStyle: 'short' })
+                                          return `<div>${times.primary}</div><div style="font-size: 12px; color: #6b7280; margin-top: 4px;">${times.secondary}</div>`
+                                        })()}
                                     </td>
                                 </tr>
                             </table>

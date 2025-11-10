@@ -1,4 +1,5 @@
 import { createBaseTemplate } from './base-template'
+import { formatDualTime } from '../time-display'
 
 export type EarthquakeAlertData = {
   magnitude: number
@@ -38,16 +39,10 @@ export function createEarthquakeAlertEmail(data: EarthquakeAlertData): { html: s
                             </span>
                         </td>
                         <td style="text-align: right; vertical-align: middle;">
-                            <span style="font-size: 14px; color: #6b7280;">
-                                ${time.toLocaleString('en-US', { 
-                                  month: 'short', 
-                                  day: 'numeric', 
-                                  year: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                  timeZoneName: 'short'
-                                })}
-                            </span>
+                            ${(() => {
+                              const times = formatDualTime(time, 'event', undefined, { dateStyle: 'short' })
+                              return `<div style="font-size: 14px; font-weight: 600; color: #1f2937;">${times.primary}</div><div style="font-size: 12px; color: #6b7280; margin-top: 2px;">${times.secondary}</div>`
+                            })()}
                         </td>
                     </tr>
                 </table>
