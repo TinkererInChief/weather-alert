@@ -168,7 +168,7 @@ export default function HeroSection() {
                   loop
                   playsInline
                   controls
-                  controlsList="nodownload"
+                  controlsList="nodownload nofullscreen"
                   disablePictureInPicture
                   poster="/video-thumbnail.jpg"
                   preload="auto"
@@ -201,9 +201,11 @@ export default function HeroSection() {
                 )}
 
                 {/* Video Time Badge - Shows current time / total duration */}
-                <div className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-white text-sm font-medium shadow-lg">
-                  <span className="text-red-400">●</span> {formatTime(currentTime)} / {formatTime(duration)}
-                </div>
+                {duration > 0 && (
+                  <div className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-white text-sm font-medium shadow-lg">
+                    <span className="text-red-400">●</span> {formatTime(currentTime)} / {formatTime(duration)}
+                  </div>
+                )}
               </div>
               
               {/* Enhanced Caption with Stats */}
