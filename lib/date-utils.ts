@@ -1,6 +1,8 @@
 // Utilities to handle date formatting consistently across server and client
 // to prevent hydration mismatches
 
+import { formatDualTime } from './time-display'
+
 export const formatDate = (date: Date): string => {
   return date.toLocaleDateString('en-US', { 
     year: 'numeric', 

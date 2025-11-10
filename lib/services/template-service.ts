@@ -1,5 +1,6 @@
 import { prisma } from '../prisma'
 import { EmailService } from './email-service'
+import { formatDualTime } from '../time-display'
 
 interface TemplateRenderRequest {
   type: string // earthquake, tsunami, test
