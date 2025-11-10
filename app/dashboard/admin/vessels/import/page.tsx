@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Upload, Download, Ship, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Upload, Download, Ship, AlertTriangle, CheckCircle, Activity, Database, FileSpreadsheet, AlertCircle } from 'lucide-react'
 import { formatDualTime } from '@/lib/time-display'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
