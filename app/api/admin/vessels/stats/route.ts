@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth'
 import { vesselImportService } from '@/lib/services/vessel-import.service'
 import { hasPermission, Permission } from '@/lib/rbac/roles'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)

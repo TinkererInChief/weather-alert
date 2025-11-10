@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Get vessels for testing - includes ALL vessels in user's fleets
  * regardless of lastSeen timestamp
