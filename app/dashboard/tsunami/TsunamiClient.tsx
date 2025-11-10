@@ -12,16 +12,23 @@ import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
 import EventHoverCard from '@/components/shared/EventHoverCard'
 import { TsunamiEvent } from '@/types/event-hover'
-import { WaveConfirmationBadge, ConfidenceScoreBar, MultiWaveTimeline } from '@/components/tsunami'
+import { 
+  WaveConfirmationBadge, 
+  ConfidenceScoreBar, 
+  MultiWaveTimeline,
+  WaveConfirmationBadgeV2,
+  DartStationGlobe
+} from '@/components/tsunami'
 import { EventTimeDisplay } from '@/components/shared/DualTimeDisplay'
 import { getEventTime } from '@/lib/time-display'
+import { useLiveDartStatus } from '@/hooks/useLiveDartStatus'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 export const revalidate = 0
 
 type RangeKey = '24h' | '7d' | '30d'
-type TabKey = 'live' | 'analytics'
+type TabKey = 'live' | 'network' | 'analytics'
 
 type ServiceStatus = {
   status: string
@@ -33,6 +40,9 @@ type ServiceStatus = {
 export default function TsunamiMonitoringPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<TabKey>('live')
+  
+  // DART Network data
+  const { data: dartData, loading: dartLoading, error: dartError, refresh: refreshDart, isRefreshing: dartRefreshing } = useLiveDartStatus()
   
   // Live feed state
   const [alerts, setAlerts] = useState([])
@@ -247,6 +257,9 @@ export default function TsunamiMonitoringPage() {
         setActiveTab('live')
       } else if ((e.metaKey || e.ctrlKey) && e.key === '2') {
         e.preventDefault()
+        setActiveTab('network')
+      } else if ((e.metaKey || e.ctrlKey) && e.key === '3') {
+        e.preventDefault()
         setActiveTab('analytics')
       }
     }
@@ -304,7 +317,7 @@ export default function TsunamiMonitoringPage() {
   }
 
   useEffect(() => {
-    if (isPaused || activeTab !== 'live') return
+    if (isPaused || (activeTab !== 'live' && activeTab !== 'network')) return
 
     fetchAlerts()
     const interval = setInterval(fetchAlerts, 30000)
@@ -456,6 +469,21 @@ export default function TsunamiMonitoringPage() {
               >
                 Live Feed
                 {activeTab === 'live' && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
+                )}
+              </button>
+              <button
+                onClick={() => setActiveTab('network')}
+                className={`pb-4 px-1 font-medium text-sm transition-colors relative ${
+                  activeTab === 'network'
+                    ? 'text-blue-600'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                role="tab"
+                aria-selected={activeTab === 'network'}
+              >
+                DART Network
+                {activeTab === 'network' && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
                 )}
               </button>
@@ -897,6 +925,158 @@ export default function TsunamiMonitoringPage() {
                 </>
               )}
             </div>
+              </div>
+            </>
+          ) : activeTab === 'network' ? (
+            <>
+              {/* DART Network View */}
+              <div className="space-y-6">
+                {/* Network Status Banner */}
+                {dartLoading && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+                    <RefreshCw className="h-5 w-5 text-blue-600 animate-spin" />
+                    <span className="text-blue-900 font-medium">Fetching real-time DART status from NOAA NDBC...</span>
+                  </div>
+                )}
+                
+                {dartError && (
+                  <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Wifi className="h-5 w-5 text-red-600" />
+                      <div>
+                        <p className="text-red-900 font-medium">Failed to fetch live data</p>
+                        <p className="text-red-700 text-sm">{dartError}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={refreshDart}
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                {/* Network Statistics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-6 border border-blue-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 bg-white rounded-xl shadow-sm">
+                        <Activity className="h-6 w-6 text-blue-600" />
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-medium text-blue-900/70 mb-1">Total Buoys</h3>
+                    <p className="text-3xl font-bold text-blue-900">{dartData.stats.total}</p>
+                    <p className="text-xs text-blue-700 mt-1">DART Network</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 bg-white rounded-xl shadow-sm">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-medium text-green-900/70 mb-1">Online</h3>
+                    <p className="text-3xl font-bold text-green-900">{dartData.stats.online}</p>
+                    <p className="text-xs text-green-700 mt-1">Operational</p>
+                  </div>
+
+                  {dartData.stats.detecting > 0 && (
+                    <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-6 border border-orange-100 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="p-3 bg-white rounded-xl shadow-sm">
+                          <AlertTriangle className="h-6 w-6 text-orange-600" />
+                        </div>
+                      </div>
+                      <h3 className="text-sm font-medium text-orange-900/70 mb-1">Detecting</h3>
+                      <p className="text-3xl font-bold text-orange-900">{dartData.stats.detecting}</p>
+                      <p className="text-xs text-orange-700 mt-1">Active anomalies</p>
+                    </div>
+                  )}
+
+                  <div className="bg-gradient-to-br from-slate-50 to-gray-50 rounded-xl p-6 border border-slate-100 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-3 bg-white rounded-xl shadow-sm">
+                        <XCircle className="h-6 w-6 text-slate-600" />
+                      </div>
+                    </div>
+                    <h3 className="text-sm font-medium text-slate-900/70 mb-1">Offline</h3>
+                    <p className="text-3xl font-bold text-slate-900">{dartData.stats.offline}</p>
+                    <p className="text-xs text-slate-700 mt-1">Not reporting</p>
+                  </div>
+                </div>
+
+                {/* Wave Confirmation Badges Demo */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <Waves className="h-5 w-5 text-blue-600" />
+                    Wave Confirmation System
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-white rounded-xl border border-slate-200 p-6">
+                      <h3 className="text-sm font-medium text-slate-600 mb-3">Compact Variant</h3>
+                      <WaveConfirmationBadgeV2 
+                        confirmation={{
+                          stationId: '21413',
+                          stationName: 'DART 21413 - Off Japan Coast',
+                          height: 2.3,
+                          timestamp: new Date(Date.now() - 15 * 60 * 1000),
+                          region: 'Western Pacific'
+                        }} 
+                        variant="compact" 
+                      />
+                      <p className="text-xs text-slate-500 mt-3">
+                        * Demo with simulated detection event
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 p-6">
+                      <h3 className="text-sm font-medium text-slate-600 mb-3">Full Variant with Animation</h3>
+                      <WaveConfirmationBadgeV2 
+                        confirmation={{
+                          stationId: '21413',
+                          stationName: 'DART 21413 - Off Japan Coast',
+                          height: 2.3,
+                          timestamp: new Date(Date.now() - 15 * 60 * 1000),
+                          region: 'Western Pacific'
+                        }} 
+                        variant="full" 
+                      />
+                      <p className="text-xs text-slate-500 mt-3">
+                        * Demo with simulated detection event
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3D Globe */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-blue-600" />
+                    3D DART Station Globe
+                  </h2>
+                  <p className="text-slate-600">
+                    Interactive 3D visualization of all <strong>{dartData.stats.total} DART buoys</strong> deployed globally. 
+                    <span className="text-green-500 font-medium ml-2">● {dartData.stats.online} Online (Green)</span>
+                    {dartData.stats.detecting > 0 && <span className="text-orange-500 font-medium ml-2">● {dartData.stats.detecting} Detecting (Orange)</span>}
+                    {dartData.stats.offline > 0 && <span className="text-gray-500 font-medium ml-2">● {dartData.stats.offline} Offline (Gray)</span>}
+                  </p>
+                  {dartData.stats.offline > dartData.stats.online && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                      <p className="text-blue-900">
+                        <strong>Note:</strong> High offline rate is expected - not all DART deployments publish real-time data files. 
+                        Many stations are operational but don't have public <code className="bg-blue-100 px-1 rounded">.dart</code> endpoints on NOAA's servers. 
+                        This reflects data availability, not actual network health.
+                      </p>
+                    </div>
+                  )}
+                  <DartStationGlobe 
+                    stations={dartData.stations} 
+                    height={700}
+                    lastUpdated={dartData.lastUpdated}
+                    onRefresh={refreshDart}
+                    isRefreshing={dartRefreshing}
+                  />
+                </div>
               </div>
             </>
           ) : (
