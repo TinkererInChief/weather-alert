@@ -813,7 +813,7 @@ export default function TsunamiMonitoringPage() {
                           <div className="flex items-center space-x-4 text-xs text-slate-500">
                             <span className="flex items-center">
                               <Clock className="h-3 w-3 mr-1" />
-                              {new Date(alert.processedAt || alert.createdAt || alert.timestamp || alert.time).toLocaleString()}
+                              {new Date(alert.time || alert.timestamp || alert.processedAt || alert.createdAt).toLocaleString()}
                             </span>
                             {alert.location && (
                               <span className="flex items-center">

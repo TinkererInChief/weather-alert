@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { TsunamiService } from '@/lib/services/tsunami-service'
+import { reverseGeocodeService } from '@/lib/services/reverse-geocode-service'
 import { prisma } from '@/lib/prisma'
 import { dartEnrichmentService } from '@/lib/services/dart-enrichment.service'
 import { dataAggregator } from '@/lib/data-sources/aggregator'
@@ -71,6 +72,9 @@ export async function GET(request: Request) {
                          description.includes('no tsunami danger') ||
                          description.includes('not expected to generate a tsunami')
         
+        // Extract actual event time from raw data (prefer sent/effective time from source)
+        const eventTime = rawData.sent || rawData.effective || rawData.onset || row.createdAt
+        
         return {
           id: row.id,
           tsunamiId: row.eventId,
@@ -89,10 +93,10 @@ export async function GET(request: Request) {
           latitude: latitude,
           longitude: longitude,
           magnitude: magnitude,
-          processedAt: row.createdAt,
-          createdAt: row.createdAt,
-          timestamp: row.createdAt,
-          time: row.createdAt
+          processedAt: row.createdAt, // When we processed it
+          createdAt: row.createdAt,   // When stored in our DB
+          timestamp: eventTime,        // ACTUAL event time from source
+          time: eventTime              // ACTUAL event time from source
         }
       })
 
@@ -172,15 +176,31 @@ export async function GET(request: Request) {
 
     // Always show all configured sources, not just ones with active alerts
     const allSources = ['PTWC', 'JMA', 'DART', 'GeoNet']
-    
+
+    const clientAlerts = await Promise.all(storedAlerts.map(async (a: any) => {
+      const primaryRegion = Array.isArray(a.affectedRegions) && a.affectedRegions.length > 0 
+        ? a.affectedRegions.find((r: any) => typeof r === 'string' && r.trim())
+        : undefined
+      const baseLoc = a.location || primaryRegion || (typeof a.title === 'string' ? a.title : undefined) || ''
+      const reverseLabel = await reverseGeocodeService.getDisplayLocation(a.latitude, a.longitude)
+      const displayLocation = baseLoc && !/unknown/i.test(baseLoc) ? baseLoc : reverseLabel
+      const location = displayLocation || baseLoc || 'Unknown'
+      return {
+        ...a,
+        location,
+        displayLocation,
+        ocean: extractOcean(location, a.latitude, a.longitude)
+      }
+    }))
+
     return NextResponse.json({
       success: true,
-      message: `Processed ${storedAlerts.length} tsunami alerts with DART enrichment`,
+      message: `Processed ${clientAlerts.length} tsunami alerts with DART enrichment`,
       data: {
-        alertCount: storedAlerts.length,
-        alerts: storedAlerts,
+        alertCount: clientAlerts.length,
+        alerts: clientAlerts,
         sources: allSources,
-        activeSources: Array.from(new Set(storedAlerts.map(a => a.source))),
+        activeSources: Array.from(new Set(clientAlerts.map((a: any) => a.source))),
         dartEnabled: true,
         lastChecked: new Date().toISOString()
       }
@@ -198,10 +218,18 @@ export async function GET(request: Request) {
 }
 
 // Helper function to extract ocean name from location string
-function extractOcean(location: string): string {
+function extractOcean(location: string, latitude?: number, longitude?: number): string {
   const oceans = ['Pacific', 'Atlantic', 'Indian', 'Arctic', 'Southern']
   for (const ocean of oceans) {
-    if (location.includes(ocean)) return `${ocean} Ocean`
+    if (String(location).includes(ocean)) return `${ocean} Ocean`
+  }
+  if (typeof latitude === 'number' && typeof longitude === 'number' && isFinite(latitude) && isFinite(longitude)) {
+    const lon = ((longitude + 540) % 360) - 180
+    if (latitude <= -60) return 'Southern Ocean'
+    if (latitude >= 66) return 'Arctic Ocean'
+    if (lon > -70 && lon < 20) return 'Atlantic Ocean'
+    if (lon >= 110 || lon <= -70) return 'Pacific Ocean'
+    return 'Indian Ocean'
   }
   return 'Unknown'
 }

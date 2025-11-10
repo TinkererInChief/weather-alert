@@ -105,7 +105,7 @@ export default function EventsByTypeWidget({
 
         const lower = (val: unknown) => String(val ?? '').toLowerCase()
         const tsu = (tsunamis || []).filter((a) => {
-          const t = a.processedAt || a.eventTime || a.time
+          const t = a.time || a.eventTime || a.processedAt
           return t ? new Date(t).getTime() >= since : true
         })
         const has = (a: ExternalTsunami, term: string) => {
