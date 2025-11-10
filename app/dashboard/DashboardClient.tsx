@@ -29,6 +29,9 @@ import {
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { useSession } from 'next-auth/react'
+import { Can } from '@/components/auth/Can'
+import { Permission } from '@/lib/rbac/roles'
+import { SystemTimeDisplay } from '@/components/shared/DualTimeDisplay'
 import NotificationPermissionBanner from '@/components/notifications/NotificationPermissionBanner'
 import { useNotifications } from '@/hooks/useNotifications'
 import { useDashboardTour } from '@/hooks/useTour'
@@ -910,28 +913,48 @@ export default function Dashboard() {
       source: (alert.primarySource || (alert.dataSources && alert.dataSources[0]) || '').toLowerCase()
     }))
 
-    const tsunamiEvents = (tsunamiStats?.recentAlerts ?? []).map((alert) => ({
+    const tsunamiEvents = (tsunamiAlerts ?? []).map((alert: any) => ({
       id: `ts-${alert.id}`,
       type: 'tsunami' as const,
-      timestamp: new Date(alert.timestamp),
-      title: `${alert.title}`,
-      subtitle: alert.location,
-      severity: alert.severity,
-      status: String(alert.type || 'UNKNOWN').toUpperCase(),
-      success: alert.severity < 3,
+      timestamp: new Date((alert as any).issuedAt || (alert as any).processedAt || (alert as any).timestamp || Date.now()),
+      title: `Tsunami ${String((alert as any).threat?.level || (alert as any).threatLevel || (alert as any).category || 'INFO').toUpperCase()}${(
+        alert.location && !String(alert.location).toLowerCase().includes('unknown')
+          ? ' — ' + alert.location
+          : ((Array.isArray((alert as any).affectedRegions) && (alert as any).affectedRegions.find((r: any) => r && !String(r).toLowerCase().includes('unknown')))
+              ? ' — ' + (alert as any).affectedRegions.find((r: any) => r && !String(r).toLowerCase().includes('unknown'))
+              : ((alert as any).ocean && !String((alert as any).ocean).toLowerCase().includes('unknown')
+                  ? ' — ' + (alert as any).ocean
+                  : ''))
+      )}`,
+      subtitle: (
+        alert.location && !String(alert.location).toLowerCase().includes('unknown')
+          ? alert.location
+          : ((Array.isArray((alert as any).affectedRegions) && (alert as any).affectedRegions.find((r: any) => r && !String(r).toLowerCase().includes('unknown'))) 
+              ? (alert as any).affectedRegions.find((r: any) => r && !String(r).toLowerCase().includes('unknown'))
+              : (((alert as any).ocean && !String((alert as any).ocean).toLowerCase().includes('unknown')) ? (alert as any).ocean : ''))
+      ) || '',
+      severity: (alert as any).severity,
+      status: String((alert as any).threat?.level || (alert as any).threatLevel || (alert as any).type || 'INFO').toUpperCase(),
+      success: ((alert as any).severity ?? 0) < 3,
       details: undefined,
-      location: alert.location,
+      location: (
+        alert.location && !String(alert.location).toLowerCase().includes('unknown')
+          ? alert.location
+          : ((Array.isArray((alert as any).affectedRegions) && (alert as any).affectedRegions.find((r: any) => r && !String(r).toLowerCase().includes('unknown')))
+              ? (alert as any).affectedRegions.find((r: any) => r && !String(r).toLowerCase().includes('unknown'))
+              : (((alert as any).ocean && !String((alert as any).ocean).toLowerCase().includes('unknown')) ? (alert as any).ocean : ''))
+      ) || undefined,
       latitude: (alert as any).latitude,
       longitude: (alert as any).longitude,
       magnitude: (alert as any).magnitude,
-      threatLevel: (alert as any).threatLevel,
+      threatLevel: String((alert as any).threat?.level || (alert as any).threatLevel || (alert as any).category || 'info'),
       ocean: (alert as any).ocean
     }))
 
     return [...earthquakeEvents, ...tsunamiEvents]
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, TIMELINE_MAX)
-  }, [recentAlerts, tsunamiStats])
+  }, [recentAlerts, tsunamiAlerts])
 
   const monitoringActive = monitoringStatus?.isMonitoring
 
@@ -1227,10 +1250,12 @@ export default function Dashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-3 text-sm md:items-end">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Processed {new Date(criticalTsunamiAlert.processedAt).toLocaleString()}
-                </div>
+                <SystemTimeDisplay 
+                  date={criticalTsunamiAlert.processedAt} 
+                  format="inline" 
+                  showIcon={true}
+                  className="text-sm"
+                />
                 <div className="flex items-center gap-2">
                   <MapPin className="h-4 w-4" />
                   {criticalTsunamiAlert.location}
