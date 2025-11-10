@@ -13,6 +13,8 @@ import { Permission } from '@/lib/rbac/roles'
 import EventHoverCard from '@/components/shared/EventHoverCard'
 import { TsunamiEvent } from '@/types/event-hover'
 import { WaveConfirmationBadge, ConfidenceScoreBar, MultiWaveTimeline } from '@/components/tsunami'
+import { EventTimeDisplay } from '@/components/shared/DualTimeDisplay'
+import { getEventTime } from '@/lib/time-display'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -810,13 +812,15 @@ export default function TsunamiMonitoringPage() {
                             <span className="text-sm text-slate-600">{alert.location || 'Unknown location'}</span>
                           </div>
                           <p className="text-sm text-slate-600 mb-2">{alert.description || alert.instruction || 'No description available'}</p>
-                          <div className="flex items-center space-x-4 text-xs text-slate-500">
-                            <span className="flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {new Date(alert.time || alert.timestamp || alert.processedAt || alert.createdAt).toLocaleString()}
-                            </span>
+                          <div className="flex items-center space-x-4">
+                            <EventTimeDisplay 
+                              date={getEventTime(alert)} 
+                              format="inline"
+                              showIcon={true}
+                              className="text-xs"
+                            />
                             {alert.location && (
-                              <span className="flex items-center">
+                              <span className="flex items-center text-xs text-slate-500">
                                 <MapPin className="h-3 w-3 mr-1" />
                                 {alert.location}
                               </span>
