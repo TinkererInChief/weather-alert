@@ -6,6 +6,7 @@ import {
   Phone, Filter, RefreshCw, ChevronDown, ChevronUp, MapPin, Activity
 } from 'lucide-react'
 import HelpTooltip from '@/components/guidance/HelpTooltip'
+import { SystemTimeDisplay } from '@/components/shared/DualTimeDisplay'
 
 type Severity = 'critical' | 'high' | 'moderate' | 'low'
 type Status = 'pending' | 'sent' | 'acknowledged' | 'failed'
@@ -380,21 +381,12 @@ export default function VesselAlertsTab() {
 
                 {/* Metadata */}
                 <div className="flex items-center gap-6 text-xs text-gray-500">
-                  <span className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Created: {new Date(alert.createdAt).toLocaleString()}
-                  </span>
+                  <SystemTimeDisplay date={alert.createdAt} format="inline" showIcon className="text-xs" />
                   {alert.sentAt && (
-                    <span className="flex items-center">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Sent: {new Date(alert.sentAt).toLocaleString()}
-                    </span>
+                    <SystemTimeDisplay date={alert.sentAt} format="inline" showIcon className="text-xs text-gray-500" />
                   )}
                   {alert.acknowledgedAt && (
-                    <span className="flex items-center text-green-600">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Acknowledged: {new Date(alert.acknowledgedAt).toLocaleString()}
-                    </span>
+                    <SystemTimeDisplay date={alert.acknowledgedAt} format="inline" showIcon className="text-xs text-green-600" />
                   )}
                 </div>
 
@@ -439,7 +431,7 @@ export default function VesselAlertsTab() {
                               )}
                               {log.deliveredAt && (
                                 <div className="mt-1 text-xs text-green-600">
-                                  ✓ Delivered: {new Date(log.deliveredAt).toLocaleString()}
+                                  <SystemTimeDisplay date={log.deliveredAt} format="inline" className="text-xs text-green-600" />
                                 </div>
                               )}
                               {log.attempts > 1 && (

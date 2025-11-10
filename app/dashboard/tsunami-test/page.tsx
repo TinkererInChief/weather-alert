@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
+import { Waves, AlertTriangle, MapPin, Clock } from 'lucide-react'
+import { EventTimeDisplay } from '@/components/shared/DualTimeDisplay'
 import { WaveConfirmationBadge, ConfidenceScoreBar, MultiWaveTimeline } from '@/components/tsunami'
-import { Waves, Clock, MapPin } from 'lucide-react'
 
 export default function TsunamiTestPage() {
   const [alerts, setAlerts] = useState<any[]>([])
@@ -72,10 +73,12 @@ export default function TsunamiTestPage() {
                         <MapPin className="h-4 w-4" />
                         {alert.location}
                       </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {new Date(alert.issuedAt).toLocaleString()}
-                      </span>
+                      <EventTimeDisplay 
+                        date={alert.issuedAt} 
+                        format="inline" 
+                        showIcon 
+                        className="text-sm"
+                      />
                     </div>
                     <p className="text-sm text-slate-700">{alert.description}</p>
                   </div>

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone } from 'lucide-react'
-import AppLayout from '@/components/layout/AppLayout'
+import TimeRangeSwitcher from '@/components/status/TimeRangeSwitcher'
+import { formatDualTime } from '@/lib/time-display'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
@@ -139,12 +140,8 @@ export default function NotificationsPage() {
   
   const formatDate = (date: string | null) => {
     if (!date) return 'N/A'
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    const times = formatDualTime(new Date(date), 'system', undefined, { dateStyle: 'short' })
+    return times.full
   }
   
   return (

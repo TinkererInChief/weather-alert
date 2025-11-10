@@ -22,6 +22,8 @@ import { useEarthquakeTour } from '@/hooks/useTour'
 import { TourId } from '@/lib/guidance/tours'
 import HelpButton from '@/components/guidance/HelpButton'
 import HelpTooltip from '@/components/guidance/HelpTooltip'
+import { EventTimeDisplay } from '@/components/shared/DualTimeDisplay'
+import { formatDualTime } from '@/lib/time-display'
 
 type RangeKey = '24h' | '7d' | '30d'
 type TabKey = 'live' | 'analytics'
@@ -336,13 +338,8 @@ export default function EarthquakeMonitoringPage() {
   }
 
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    const times = formatDualTime(new Date(date), 'event', undefined, { dateStyle: 'short' })
+    return times.full
   }
 
   const getStatusIcon = (status: string) => {

@@ -6,6 +6,7 @@ import AppLayout from '@/components/layout/AppLayout'
 import AuthGuard from '@/components/auth/AuthGuard'
 import { Can } from '@/components/auth/Can'
 import { Permission } from '@/lib/rbac/roles'
+import { formatDualTime } from '@/lib/time-display'
 
 type AuditLog = {
   id: string
@@ -105,13 +106,8 @@ export default function AuditTrailPage() {
   }
   
   const formatDate = (date: string) => {
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    const times = formatDualTime(new Date(date), 'system', undefined, { dateStyle: 'short' })
+    return times.full
   }
   
   return (

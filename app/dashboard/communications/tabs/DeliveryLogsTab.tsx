@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Bell, Search, Filter, TrendingUp, CheckCircle, XCircle, Clock, Send, Mail, Phone, MessageSquare, Megaphone, CheckCircle2, MessageCircle } from 'lucide-react'
 import HelpTooltip from '@/components/guidance/HelpTooltip'
+import { SystemTimeDisplay } from '@/components/shared/DualTimeDisplay'
+import { formatDualTime } from '@/lib/time-display'
 
 type DeliveryLog = {
   id: string
@@ -136,12 +138,8 @@ export default function DeliveryLogsTab() {
   
   const formatDate = (date: string | null) => {
     if (!date) return 'N/A'
-    return new Date(date).toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    const times = formatDualTime(new Date(date), 'system', undefined, { dateStyle: 'short' })
+    return times.full
   }
   
   return (
