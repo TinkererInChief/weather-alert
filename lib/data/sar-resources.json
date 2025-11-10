@@ -3,149 +3,3430 @@
     {
       "id": "uscg-1",
       "name": "US Coast Guard District 1 (Northeast)",
+      "nativeName": "USCG D1",
       "region": "Atlantic - Northeast US",
       "rcc": {
         "name": "First Coast Guard District Command Center",
         "location": "Boston, MA",
-        "coordinates": [42.3601, -71.0589]
+        "coordinates": [
+          42.3601,
+          -71.0589
+        ],
+        "timezone": "America/New_York"
       },
       "contact": {
         "phone": "+1-617-223-8555",
         "vhf": "Channel 16",
-        "email": "D01-SMB-RCC@uscg.mil"
+        "email": "D01-SMB-RCC@uscg.mil",
+        "website": "https://www.uscg.mil/d1",
+        "emergency": "911"
       },
       "coverage": {
-        "latitude": [40.5, 44.5],
-        "longitude": [-74.0, -66.0]
+        "latitude": [
+          40.5,
+          44.5
+        ],
+        "longitude": [
+          -74,
+          -66
+        ],
+        "description": "Northeast US waters from New Jersey to Maine"
       },
-      "capabilities": ["SAR", "pollution response", "law enforcement", "helicopter", "cutters"],
+      "assets": {
+        "helicopters": 14,
+        "patrolBoats": 45,
+        "cutters": 22,
+        "aircraft": 8
+      },
+      "capabilities": [
+        "SAR",
+        "pollution response",
+        "law enforcement",
+        "helicopter",
+        "cutters",
+        "ice operations"
+      ],
+      "operatingHours": "24/7",
       "responseTime": 30
     },
     {
       "id": "uscg-11",
       "name": "US Coast Guard District 11 (California)",
+      "nativeName": "USCG D11",
       "region": "Pacific - California",
       "rcc": {
         "name": "Eleventh Coast Guard District Command Center",
         "location": "Alameda, CA",
-        "coordinates": [37.7749, -122.4194]
+        "coordinates": [
+          37.7749,
+          -122.4194
+        ],
+        "timezone": "America/Los_Angeles"
       },
       "contact": {
         "phone": "+1-510-437-3700",
         "vhf": "Channel 16",
-        "email": "D11-PF-RCC@uscg.mil"
+        "email": "D11-PF-RCC@uscg.mil",
+        "website": "https://www.uscg.mil/d11",
+        "emergency": "911"
       },
       "coverage": {
-        "latitude": [32.5, 42.0],
-        "longitude": [-124.5, -117.0]
+        "latitude": [
+          32.5,
+          42
+        ],
+        "longitude": [
+          -124.5,
+          -117
+        ],
+        "description": "California coast and offshore waters"
       },
-      "capabilities": ["SAR", "helicopter", "fast response boats", "cutters"],
+      "assets": {
+        "helicopters": 18,
+        "patrolBoats": 52,
+        "cutters": 28,
+        "aircraft": 12
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "fast response boats",
+        "cutters",
+        "drug interdiction"
+      ],
+      "operatingHours": "24/7",
       "responseTime": 20
     },
     {
       "id": "uscg-13",
       "name": "US Coast Guard District 13 (Pacific Northwest)",
+      "nativeName": "USCG D13",
       "region": "Pacific - Oregon/Washington",
       "rcc": {
         "name": "Thirteenth Coast Guard District Command Center",
         "location": "Seattle, WA",
-        "coordinates": [47.6062, -122.3321]
+        "coordinates": [
+          47.6062,
+          -122.3321
+        ],
+        "timezone": "America/Los_Angeles"
       },
       "contact": {
         "phone": "+1-206-220-7001",
         "vhf": "Channel 16",
-        "email": "D13-SMB-RCC@uscg.mil"
+        "email": "D13-SMB-RCC@uscg.mil",
+        "website": "https://www.uscg.mil/d13",
+        "emergency": "911"
       },
       "coverage": {
-        "latitude": [42.0, 49.0],
-        "longitude": [-125.0, -122.0]
+        "latitude": [
+          42,
+          49
+        ],
+        "longitude": [
+          -125,
+          -122
+        ],
+        "description": "Pacific Northwest waters including Puget Sound"
       },
-      "capabilities": ["SAR", "helicopter", "ice rescue", "cutters"],
+      "assets": {
+        "helicopters": 12,
+        "patrolBoats": 38,
+        "cutters": 18,
+        "aircraft": 6
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "ice rescue",
+        "cutters",
+        "fishing enforcement"
+      ],
+      "operatingHours": "24/7",
       "responseTime": 25
     },
     {
       "id": "uscg-14",
       "name": "US Coast Guard District 14 (Hawaii/Pacific Islands)",
+      "nativeName": "USCG D14",
       "region": "Pacific - Hawaii",
       "rcc": {
         "name": "Fourteenth Coast Guard District Command Center",
         "location": "Honolulu, HI",
-        "coordinates": [21.3099, -157.8581]
+        "coordinates": [
+          21.3099,
+          -157.8581
+        ],
+        "timezone": "Pacific/Honolulu"
       },
       "contact": {
         "phone": "+1-808-535-3333",
         "vhf": "Channel 16",
-        "email": "D14-SMB-RCC@uscg.mil"
+        "email": "D14-SMB-RCC@uscg.mil",
+        "website": "https://www.uscg.mil/d14",
+        "emergency": "911"
       },
       "coverage": {
-        "latitude": [15.0, 30.0],
-        "longitude": [-180.0, -150.0]
+        "latitude": [
+          15,
+          30
+        ],
+        "longitude": [
+          -180,
+          -150
+        ],
+        "description": "Hawaiian Islands and Central Pacific"
       },
-      "capabilities": ["SAR", "long-range helicopter", "HC-130 aircraft", "cutters"],
+      "assets": {
+        "helicopters": 8,
+        "patrolBoats": 15,
+        "cutters": 12,
+        "aircraft": 10
+      },
+      "capabilities": [
+        "SAR",
+        "long-range helicopter",
+        "HC-130 aircraft",
+        "cutters",
+        "international coordination"
+      ],
+      "operatingHours": "24/7",
       "responseTime": 45
     },
     {
       "id": "jcg-main",
       "name": "Japan Coast Guard",
+      "nativeName": "海上保安庁 (Kaijō Hoanchō)",
       "region": "Pacific - Japan",
       "rcc": {
         "name": "Japan Coast Guard Operations Center",
         "location": "Tokyo, Japan",
-        "coordinates": [35.6762, 139.6503]
+        "coordinates": [
+          35.6762,
+          139.6503
+        ],
+        "timezone": "Asia/Tokyo"
       },
       "contact": {
         "phone": "+81-3-3591-6361",
         "vhf": "Channel 16",
-        "emergency": "118"
+        "emergency": "118",
+        "website": "https://www.kaiho.mlit.go.jp",
+        "languages": [
+          "Japanese",
+          "English"
+        ]
       },
       "coverage": {
-        "latitude": [24.0, 46.0],
-        "longitude": [123.0, 146.0]
+        "latitude": [
+          24,
+          46
+        ],
+        "longitude": [
+          123,
+          146
+        ],
+        "description": "Japanese territorial waters, EEZ, and search area"
       },
-      "capabilities": ["SAR", "helicopter", "patrol vessels", "specialized rescue"],
-      "responseTime": 20
+      "assets": {
+        "helicopters": 47,
+        "patrolVessels": 453,
+        "aircraft": 25,
+        "specialized": [
+          "dive teams",
+          "oil spill response",
+          "disaster response"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "patrol vessels",
+        "specialized rescue",
+        "tsunami response",
+        "earthquake response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20,
+      "regionalOffices": [
+        {
+          "name": "3rd Regional Coast Guard HQ",
+          "location": "Yokohama",
+          "coordinates": [
+            35.4437,
+            139.638
+          ],
+          "phone": "+81-45-211-1118",
+          "coverage": "Tokyo Bay, Sagami Bay"
+        }
+      ]
+    },
+    {
+      "id": "kcg-main",
+      "name": "Korea Coast Guard",
+      "nativeName": "해양경찰청 (Haeyang Gyeongchalcheong)",
+      "region": "Pacific - South Korea",
+      "rcc": {
+        "name": "Korea Coast Guard Rescue Coordination Center",
+        "location": "Incheon, South Korea",
+        "coordinates": [
+          37.4563,
+          126.7052
+        ],
+        "timezone": "Asia/Seoul"
+      },
+      "contact": {
+        "phone": "+82-32-835-5122",
+        "vhf": "Channel 16",
+        "emergency": "122",
+        "website": "https://www.kcg.go.kr",
+        "languages": [
+          "Korean",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          33,
+          38.5
+        ],
+        "longitude": [
+          124.5,
+          131
+        ],
+        "description": "Korean Peninsula waters including Yellow Sea and East Sea"
+      },
+      "assets": {
+        "helicopters": 32,
+        "patrolVessels": 287,
+        "aircraft": 18,
+        "specialized": [
+          "dive teams",
+          "rapid response"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "patrol vessels",
+        "disaster response",
+        "maritime security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "ccg-main",
+      "name": "China Coast Guard",
+      "nativeName": "中国海警局",
+      "region": "Pacific - China",
+      "rcc": {
+        "name": "China Maritime Search and Rescue Center",
+        "location": "Beijing, China",
+        "coordinates": [
+          39.9042,
+          116.4074
+        ],
+        "timezone": "Asia/Shanghai"
+      },
+      "contact": {
+        "phone": "+86-10-6529-2218",
+        "vhf": "Channel 16",
+        "emergency": "12395",
+        "website": "http://www.cnmrcc.gov.cn",
+        "languages": [
+          "Chinese",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          18,
+          41
+        ],
+        "longitude": [
+          105,
+          135
+        ],
+        "description": "East China Sea, South China Sea, Yellow Sea"
+      },
+      "assets": {
+        "helicopters": 85,
+        "patrolVessels": 520,
+        "aircraft": 42,
+        "specialized": [
+          "offshore rescue",
+          "oil spill response"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "large patrol vessels",
+        "long-range rescue",
+        "disaster coordination"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
     },
     {
       "id": "amsa-main",
       "name": "Australian Maritime Safety Authority",
+      "nativeName": "AMSA",
       "region": "Pacific/Indian - Australia",
       "rcc": {
         "name": "AMSA RCC Australia",
         "location": "Canberra, ACT",
-        "coordinates": [-35.2809, 149.1300]
+        "coordinates": [
+          -35.2809,
+          149.13
+        ],
+        "timezone": "Australia/Sydney"
       },
       "contact": {
         "phone": "+61-2-6230-6811",
         "vhf": "Channel 16",
-        "email": "rccaus@amsa.gov.au"
+        "email": "rccaus@amsa.gov.au",
+        "emergency": "000",
+        "website": "https://www.amsa.gov.au",
+        "languages": [
+          "English"
+        ]
       },
       "coverage": {
-        "latitude": [-45.0, -10.0],
-        "longitude": [110.0, 160.0]
+        "latitude": [
+          -45,
+          -10
+        ],
+        "longitude": [
+          110,
+          160
+        ],
+        "description": "Australian Search and Rescue Region (AusSAR) - one of world's largest"
       },
-      "capabilities": ["SAR", "long-range coordination", "helicopter", "fixed-wing"],
+      "assets": {
+        "helicopters": 24,
+        "patrolVessels": 38,
+        "aircraft": 16,
+        "specialized": [
+          "long-range coordination",
+          "satellite tracking"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "long-range coordination",
+        "helicopter",
+        "fixed-wing",
+        "AIS monitoring",
+        "satellite rescue"
+      ],
+      "operatingHours": "24/7",
       "responseTime": 60
     },
     {
       "id": "pcg-main",
       "name": "Philippine Coast Guard",
+      "nativeName": "PCG",
       "region": "Pacific - Philippines",
       "rcc": {
         "name": "PCG National Headquarters",
         "location": "Manila, Philippines",
-        "coordinates": [14.5995, 120.9842]
+        "coordinates": [
+          14.5995,
+          120.9842
+        ],
+        "timezone": "Asia/Manila"
       },
       "contact": {
         "phone": "+63-2-8527-8481",
         "vhf": "Channel 16",
-        "emergency": "+63-2-8527-3877"
+        "emergency": "+63-2-8527-3877",
+        "website": "https://coastguard.gov.ph",
+        "languages": [
+          "Filipino",
+          "English"
+        ]
       },
       "coverage": {
-        "latitude": [4.5, 21.0],
-        "longitude": [116.0, 127.0]
+        "latitude": [
+          4.5,
+          21
+        ],
+        "longitude": [
+          116,
+          127
+        ],
+        "description": "Philippine archipelago and surrounding waters"
       },
-      "capabilities": ["SAR", "disaster response", "patrol vessels"],
+      "assets": {
+        "helicopters": 12,
+        "patrolVessels": 96,
+        "aircraft": 6,
+        "specialized": [
+          "disaster response",
+          "typhoon rescue"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "disaster response",
+        "patrol vessels",
+        "typhoon operations",
+        "humanitarian assistance"
+      ],
+      "operatingHours": "24/7",
       "responseTime": 30
+    },
+    {
+      "id": "basarnas-main",
+      "name": "Indonesian National SAR Agency",
+      "nativeName": "BASARNAS (Badan SAR Nasional)",
+      "region": "Pacific/Indian - Indonesia",
+      "rcc": {
+        "name": "BASARNAS National HQ",
+        "location": "Jakarta, Indonesia",
+        "coordinates": [
+          -6.2088,
+          106.8456
+        ],
+        "timezone": "Asia/Jakarta"
+      },
+      "contact": {
+        "phone": "+62-21-659-60115",
+        "vhf": "Channel 16",
+        "emergency": "115",
+        "website": "https://basarnas.go.id",
+        "languages": [
+          "Indonesian",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -11,
+          6
+        ],
+        "longitude": [
+          95,
+          141
+        ],
+        "description": "Indonesian archipelago - 17,000+ islands"
+      },
+      "assets": {
+        "helicopters": 18,
+        "patrolVessels": 45,
+        "aircraft": 12,
+        "specialized": [
+          "island rescue",
+          "volcano evacuation",
+          "tsunami response"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "disaster response",
+        "helicopter",
+        "multi-island coordination",
+        "tsunami operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 35
+    },
+    {
+      "id": "icg-main",
+      "name": "Indian Coast Guard",
+      "nativeName": "ICG (भारतीय तटरक्षक बल)",
+      "region": "Indian Ocean - India",
+      "rcc": {
+        "name": "Indian Coast Guard MRCC",
+        "location": "Mumbai, India",
+        "coordinates": [
+          19.076,
+          72.8777
+        ],
+        "timezone": "Asia/Kolkata"
+      },
+      "contact": {
+        "phone": "+91-22-2431-6558",
+        "vhf": "Channel 16",
+        "emergency": "1554",
+        "website": "https://indiancoastguard.gov.in",
+        "languages": [
+          "Hindi",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          6,
+          28
+        ],
+        "longitude": [
+          68,
+          97
+        ],
+        "description": "Indian Ocean, Bay of Bengal, Arabian Sea, 7,500+ km coastline"
+      },
+      "assets": {
+        "helicopters": 42,
+        "patrolVessels": 156,
+        "aircraft": 62,
+        "specialized": [
+          "offshore patrol",
+          "oil spill response",
+          "pollution control"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "long-range patrol",
+        "disaster response",
+        "pollution response",
+        "anti-piracy"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 40
+    },
+    {
+      "id": "nzrcc-main",
+      "name": "New Zealand Rescue Coordination Centre",
+      "nativeName": "RCCNZ",
+      "region": "Pacific - New Zealand",
+      "rcc": {
+        "name": "RCCNZ",
+        "location": "Wellington, New Zealand",
+        "coordinates": [
+          -41.2865,
+          174.7762
+        ],
+        "timezone": "Pacific/Auckland"
+      },
+      "contact": {
+        "phone": "+64-4-577-8030",
+        "vhf": "Channel 16",
+        "emergency": "111",
+        "website": "https://www.maritimenz.govt.nz/rccnz",
+        "languages": [
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -60,
+          -25
+        ],
+        "longitude": [
+          160,
+          -175
+        ],
+        "description": "New Zealand SAR Region including Antarctica approaches"
+      },
+      "assets": {
+        "helicopters": 15,
+        "patrolVessels": 22,
+        "aircraft": 8,
+        "specialized": [
+          "southern ocean operations",
+          "Antarctic support"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "long-range coordination",
+        "helicopter",
+        "fixed-wing",
+        "Antarctic rescue"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 50
+    },
+    {
+      "id": "ccg-pac-main",
+      "name": "Canadian Coast Guard Pacific",
+      "nativeName": "CCG Pacific",
+      "region": "Pacific - Canada",
+      "rcc": {
+        "name": "JRCC Victoria",
+        "location": "Victoria, BC",
+        "coordinates": [
+          48.4284,
+          -123.3656
+        ],
+        "timezone": "America/Vancouver"
+      },
+      "contact": {
+        "phone": "+1-250-413-8933",
+        "vhf": "Channel 16",
+        "emergency": "911",
+        "website": "https://www.ccg-gcc.gc.ca",
+        "languages": [
+          "English",
+          "French"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          48,
+          60
+        ],
+        "longitude": [
+          -141,
+          -122
+        ],
+        "description": "Pacific coast of Canada and Arctic approaches"
+      },
+      "assets": {
+        "helicopters": 10,
+        "patrolVessels": 28,
+        "cutters": 12,
+        "aircraft": 6,
+        "icebreakers": 4
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "icebreaking",
+        "Arctic operations",
+        "environmental response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 35
+    },
+    {
+      "id": "armada-chile",
+      "name": "Chilean Navy Maritime SAR",
+      "nativeName": "Armada de Chile MRCC",
+      "region": "Pacific - South America",
+      "rcc": {
+        "name": "MRCC Valparaíso",
+        "location": "Valparaíso, Chile",
+        "coordinates": [
+          -33.0472,
+          -71.6127
+        ],
+        "timezone": "America/Santiago"
+      },
+      "contact": {
+        "phone": "+56-32-220-8888",
+        "vhf": "Channel 16",
+        "emergency": "+56-32-228-1479",
+        "website": "https://www.directemar.cl",
+        "languages": [
+          "Spanish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -56,
+          -17.5
+        ],
+        "longitude": [
+          -110,
+          -66
+        ],
+        "description": "Chilean coast and Antarctic waters"
+      },
+      "assets": {
+        "helicopters": 14,
+        "patrolVessels": 32,
+        "aircraft": 8,
+        "specialized": [
+          "Antarctic operations",
+          "Pacific Islands"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "long-range patrol",
+        "Antarctic rescue",
+        "island operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 45
+    },
+    {
+      "id": "sgmpa-main",
+      "name": "Singapore Port Operations Control Centre",
+      "nativeName": "MPA Singapore",
+      "region": "Pacific - Singapore",
+      "rcc": {
+        "name": "Port Operations Control Centre",
+        "location": "Singapore",
+        "coordinates": [
+          1.2644,
+          103.822
+        ],
+        "timezone": "Asia/Singapore"
+      },
+      "contact": {
+        "phone": "+65-6325-2488",
+        "vhf": "Channel 16",
+        "emergency": "+65-6226-5539",
+        "website": "https://www.mpa.gov.sg",
+        "languages": [
+          "English",
+          "Mandarin",
+          "Malay"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          1,
+          1.5
+        ],
+        "longitude": [
+          103.6,
+          104.1
+        ],
+        "description": "Singapore Strait and port waters - world's busiest port"
+      },
+      "assets": {
+        "helicopters": 6,
+        "patrolCraft": 45,
+        "tugs": 38,
+        "specialized": [
+          "oil spill",
+          "port security",
+          "VTS"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "port coordination",
+        "vessel traffic management",
+        "oil spill response",
+        "security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "uk-coastguard",
+      "name": "UK Maritime & Coastguard Agency",
+      "nativeName": "HM Coastguard",
+      "region": "Atlantic - United Kingdom",
+      "rcc": {
+        "name": "National Maritime Operations Centre",
+        "location": "Fareham, UK",
+        "coordinates": [
+          50.8516,
+          -1.1857
+        ],
+        "timezone": "Europe/London"
+      },
+      "contact": {
+        "phone": "+44-2392-552100",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.gov.uk/government/organisations/maritime-and-coastguard-agency",
+        "languages": [
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          49.5,
+          61
+        ],
+        "longitude": [
+          -11,
+          2
+        ],
+        "description": "UK territorial waters and 30 million km² search area"
+      },
+      "assets": {
+        "helicopters": 10,
+        "patrolBoats": 45,
+        "lifeboats": 238,
+        "coastguardStations": 163
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "lifeboat coordination",
+        "RNLI partnership",
+        "cliff rescue",
+        "maritime security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "french-navy-sar",
+      "name": "French Navy Search and Rescue",
+      "nativeName": "Marine Nationale SAR / CROSS",
+      "region": "Atlantic/Mediterranean - France",
+      "rcc": {
+        "name": "CROSS Gris-Nez",
+        "location": "Brest, France",
+        "coordinates": [
+          48.3905,
+          -4.4861
+        ],
+        "timezone": "Europe/Paris"
+      },
+      "contact": {
+        "phone": "+33-2-98-89-31-31",
+        "vhf": "Channel 16",
+        "emergency": "196",
+        "website": "https://www.defense.gouv.fr/marine",
+        "languages": [
+          "French",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          41,
+          51
+        ],
+        "longitude": [
+          -5.5,
+          9.5
+        ],
+        "description": "French Atlantic, English Channel, Mediterranean, and overseas territories"
+      },
+      "assets": {
+        "helicopters": 22,
+        "patrolVessels": 87,
+        "aircraft": 18,
+        "crossCenters": 7
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "long-range coordination",
+        "submarine rescue",
+        "overseas operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "spanish-salvamento",
+      "name": "Spanish Maritime Safety and Rescue",
+      "nativeName": "Salvamento Marítimo",
+      "region": "Atlantic/Mediterranean - Spain",
+      "rcc": {
+        "name": "SASEMAR Centro Nacional",
+        "location": "Madrid, Spain",
+        "coordinates": [
+          40.4168,
+          -3.7038
+        ],
+        "timezone": "Europe/Madrid"
+      },
+      "contact": {
+        "phone": "+34-900-202-202",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.salvamentomaritimo.es",
+        "languages": [
+          "Spanish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          36,
+          44
+        ],
+        "longitude": [
+          -9.5,
+          4.5
+        ],
+        "description": "Spanish coasts, Balearic and Canary Islands, Gibraltar Strait"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 58,
+        "salvageVessels": 12,
+        "rccs": 21
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "salvage",
+        "oil spill",
+        "Gibraltar Strait monitoring"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "italian-coastguard",
+      "name": "Italian Coast Guard",
+      "nativeName": "Guardia Costiera",
+      "region": "Mediterranean - Italy",
+      "rcc": {
+        "name": "IMRCC Rome",
+        "location": "Rome, Italy",
+        "coordinates": [
+          41.9028,
+          12.4964
+        ],
+        "timezone": "Europe/Rome"
+      },
+      "contact": {
+        "phone": "+39-06-5922-8100",
+        "vhf": "Channel 16",
+        "emergency": "1530",
+        "website": "https://www.guardiacostiera.gov.it",
+        "languages": [
+          "Italian",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          36,
+          47
+        ],
+        "longitude": [
+          6,
+          19
+        ],
+        "description": "Italian seas, Mediterranean central coordination"
+      },
+      "assets": {
+        "helicopters": 18,
+        "patrolVessels": 294,
+        "aircraft": 12,
+        "harbormasters": 54
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "migrant rescue",
+        "pollution response",
+        "fisheries",
+        "port state control"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "greek-coastguard",
+      "name": "Hellenic Coast Guard",
+      "nativeName": "Λιμενικό Σώμα",
+      "region": "Mediterranean - Greece",
+      "rcc": {
+        "name": "JRCC Piraeus",
+        "location": "Piraeus, Greece",
+        "coordinates": [
+          37.9478,
+          23.6486
+        ],
+        "timezone": "Europe/Athens"
+      },
+      "contact": {
+        "phone": "+30-210-411-1311",
+        "vhf": "Channel 16",
+        "emergency": "108",
+        "website": "https://www.hcg.gr",
+        "languages": [
+          "Greek",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          34.5,
+          41.5
+        ],
+        "longitude": [
+          19,
+          29
+        ],
+        "description": "Greek seas, Aegean, Ionian, extensive island coverage"
+      },
+      "assets": {
+        "helicopters": 14,
+        "patrolVessels": 245,
+        "aircraft": 8,
+        "portAuthorities": 58
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "migrant rescue",
+        "Aegean operations",
+        "island SAR"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "turkish-coastguard",
+      "name": "Turkish Coast Guard Command",
+      "nativeName": "Sahil Güvenlik Komutanlığı",
+      "region": "Mediterranean/Black Sea - Turkey",
+      "rcc": {
+        "name": "Turkish Coast Guard HQ",
+        "location": "Ankara, Turkey",
+        "coordinates": [
+          39.9334,
+          32.8597
+        ],
+        "timezone": "Europe/Istanbul"
+      },
+      "contact": {
+        "phone": "+90-312-417-3226",
+        "vhf": "Channel 16",
+        "emergency": "158",
+        "website": "https://www.sg.gov.tr",
+        "languages": [
+          "Turkish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          36,
+          42
+        ],
+        "longitude": [
+          26,
+          45
+        ],
+        "description": "Turkish coasts, Bosphorus, Dardanelles, Black Sea, Aegean, Mediterranean"
+      },
+      "assets": {
+        "helicopters": 16,
+        "patrolBoats": 158,
+        "aircraft": 10,
+        "specialized": [
+          "Bosphorus control",
+          "migrant interdiction"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "strait monitoring",
+        "migrant rescue",
+        "customs enforcement"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "norwegian-coastguard",
+      "name": "Norwegian Coast Guard",
+      "nativeName": "Kystvakten",
+      "region": "Arctic/Atlantic - Norway",
+      "rcc": {
+        "name": "Joint Rescue Coordination Centre North Norway",
+        "location": "Bodø, Norway",
+        "coordinates": [
+          67.2805,
+          14.405
+        ],
+        "timezone": "Europe/Oslo"
+      },
+      "contact": {
+        "phone": "+47-75-54-61-00",
+        "vhf": "Channel 16",
+        "emergency": "120",
+        "website": "https://www.kystvakten.no",
+        "languages": [
+          "Norwegian",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          58,
+          81
+        ],
+        "longitude": [
+          -5,
+          32
+        ],
+        "description": "Norwegian coast, Arctic waters, Svalbard, extensive EEZ"
+      },
+      "assets": {
+        "helicopters": 12,
+        "coastGuardVessels": 15,
+        "aircraft": 6,
+        "specialized": [
+          "Arctic operations",
+          "icebreaking"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "Arctic rescue",
+        "fisheries",
+        "oil spill",
+        "sovereignty patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "netherlands-coastguard",
+      "name": "Netherlands Coast Guard",
+      "nativeName": "Kustwacht",
+      "region": "North Sea - Netherlands",
+      "rcc": {
+        "name": "Netherlands Coast Guard Centre",
+        "location": "Den Helder, Netherlands",
+        "coordinates": [
+          52.9546,
+          4.7803
+        ],
+        "timezone": "Europe/Amsterdam"
+      },
+      "contact": {
+        "phone": "+31-223-542-300",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.kustwacht.nl",
+        "languages": [
+          "Dutch",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          51,
+          56
+        ],
+        "longitude": [
+          2.5,
+          7.5
+        ],
+        "description": "Dutch North Sea, Wadden Sea, major shipping lanes"
+      },
+      "assets": {
+        "helicopters": 3,
+        "patrolVessels": 8,
+        "aircraft": 2,
+        "specialized": [
+          "VTS",
+          "pollution monitoring"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "North Sea coordination",
+        "oil spill",
+        "VTS oversight"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "german-dgzrs",
+      "name": "German Maritime Search and Rescue Service",
+      "nativeName": "DGzRS (Deutsche Gesellschaft zur Rettung Schiffbrüchiger)",
+      "region": "North/Baltic Sea - Germany",
+      "rcc": {
+        "name": "MRCC Bremen",
+        "location": "Bremen, Germany",
+        "coordinates": [
+          53.0793,
+          8.8017
+        ],
+        "timezone": "Europe/Berlin"
+      },
+      "contact": {
+        "phone": "+49-421-536870",
+        "vhf": "Channel 16",
+        "emergency": "124124",
+        "website": "https://www.seenotretter.de",
+        "languages": [
+          "German",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          53.5,
+          55.5
+        ],
+        "longitude": [
+          6,
+          15
+        ],
+        "description": "German North Sea and Baltic Sea coasts"
+      },
+      "assets": {
+        "helicopters": 0,
+        "rescueBoats": 60,
+        "stations": 54,
+        "volunteers": 1000
+      },
+      "capabilities": [
+        "SAR",
+        "high-speed rescue boats",
+        "volunteer force",
+        "all-weather operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "portuguese-navy",
+      "name": "Portuguese Navy Maritime Rescue",
+      "nativeName": "Marinha Portuguesa MRCC",
+      "region": "Atlantic - Portugal",
+      "rcc": {
+        "name": "MRCC Lisboa",
+        "location": "Lisbon, Portugal",
+        "coordinates": [
+          38.7223,
+          -9.1393
+        ],
+        "timezone": "Europe/Lisbon"
+      },
+      "contact": {
+        "phone": "+351-21-440-3919",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.marinha.pt",
+        "languages": [
+          "Portuguese",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          30,
+          42
+        ],
+        "longitude": [
+          -31,
+          -6
+        ],
+        "description": "Portuguese coast, Azores, Madeira, large Atlantic SAR region"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 24,
+        "aircraft": 6,
+        "specialized": [
+          "Atlantic operations",
+          "island support"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "long-range Atlantic",
+        "island rescue",
+        "fishing patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
+    },
+    {
+      "id": "uk-coastguard",
+      "name": "UK Maritime & Coastguard Agency",
+      "nativeName": "HM Coastguard",
+      "region": "Atlantic - United Kingdom",
+      "rcc": {
+        "name": "National Maritime Operations Centre",
+        "location": "Fareham, UK",
+        "coordinates": [
+          50.8516,
+          -1.1857
+        ],
+        "timezone": "Europe/London"
+      },
+      "contact": {
+        "phone": "+44-2392-552100",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.gov.uk/government/organisations/maritime-and-coastguard-agency",
+        "languages": [
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          49.5,
+          61
+        ],
+        "longitude": [
+          -11,
+          2
+        ],
+        "description": "UK territorial waters and 30 million km² search area"
+      },
+      "assets": {
+        "helicopters": 10,
+        "patrolBoats": 45,
+        "lifeboats": 238,
+        "coastguardStations": 163
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "lifeboat coordination",
+        "RNLI partnership",
+        "cliff rescue",
+        "maritime security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "french-navy-sar",
+      "name": "French Navy Search and Rescue",
+      "nativeName": "Marine Nationale SAR / CROSS",
+      "region": "Atlantic/Mediterranean - France",
+      "rcc": {
+        "name": "CROSS Gris-Nez",
+        "location": "Brest, France",
+        "coordinates": [
+          48.3905,
+          -4.4861
+        ],
+        "timezone": "Europe/Paris"
+      },
+      "contact": {
+        "phone": "+33-2-98-89-31-31",
+        "vhf": "Channel 16",
+        "emergency": "196",
+        "website": "https://www.defense.gouv.fr/marine",
+        "languages": [
+          "French",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          41,
+          51
+        ],
+        "longitude": [
+          -5.5,
+          9.5
+        ],
+        "description": "French Atlantic, English Channel, Mediterranean, overseas territories"
+      },
+      "assets": {
+        "helicopters": 22,
+        "patrolVessels": 87,
+        "aircraft": 18,
+        "crossCenters": 7
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "long-range coordination",
+        "submarine rescue",
+        "overseas operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "spanish-salvamento",
+      "name": "Spanish Maritime Safety and Rescue",
+      "nativeName": "Salvamento Marítimo",
+      "region": "Atlantic/Mediterranean - Spain",
+      "rcc": {
+        "name": "SASEMAR Centro Nacional",
+        "location": "Madrid, Spain",
+        "coordinates": [
+          40.4168,
+          -3.7038
+        ],
+        "timezone": "Europe/Madrid"
+      },
+      "contact": {
+        "phone": "+34-900-202-202",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.salvamentomaritimo.es",
+        "languages": [
+          "Spanish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          36,
+          44
+        ],
+        "longitude": [
+          -9.5,
+          4.5
+        ],
+        "description": "Spanish coasts, Balearic and Canary Islands, Gibraltar Strait"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 58,
+        "salvageVessels": 12,
+        "rccs": 21
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "salvage",
+        "oil spill",
+        "Gibraltar Strait monitoring"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "italian-coastguard",
+      "name": "Italian Coast Guard",
+      "nativeName": "Guardia Costiera",
+      "region": "Mediterranean - Italy",
+      "rcc": {
+        "name": "IMRCC Rome",
+        "location": "Rome, Italy",
+        "coordinates": [
+          41.9028,
+          12.4964
+        ],
+        "timezone": "Europe/Rome"
+      },
+      "contact": {
+        "phone": "+39-06-5922-8100",
+        "vhf": "Channel 16",
+        "emergency": "1530",
+        "website": "https://www.guardiacostiera.gov.it",
+        "languages": [
+          "Italian",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          36,
+          47
+        ],
+        "longitude": [
+          6,
+          19
+        ],
+        "description": "Italian seas, Mediterranean central coordination"
+      },
+      "assets": {
+        "helicopters": 18,
+        "patrolVessels": 294,
+        "aircraft": 12,
+        "harbormasters": 54
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "migrant rescue",
+        "pollution response",
+        "fisheries",
+        "port state control"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "greek-coastguard",
+      "name": "Hellenic Coast Guard",
+      "nativeName": "Λιμενικό Σώμα",
+      "region": "Mediterranean - Greece",
+      "rcc": {
+        "name": "JRCC Piraeus",
+        "location": "Piraeus, Greece",
+        "coordinates": [
+          37.9478,
+          23.6486
+        ],
+        "timezone": "Europe/Athens"
+      },
+      "contact": {
+        "phone": "+30-210-411-1311",
+        "vhf": "Channel 16",
+        "emergency": "108",
+        "website": "https://www.hcg.gr",
+        "languages": [
+          "Greek",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          34.5,
+          41.5
+        ],
+        "longitude": [
+          19,
+          29
+        ],
+        "description": "Greek seas, Aegean, Ionian, extensive island coverage"
+      },
+      "assets": {
+        "helicopters": 14,
+        "patrolVessels": 245,
+        "aircraft": 8,
+        "portAuthorities": 58
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "migrant rescue",
+        "Aegean operations",
+        "island SAR"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "turkish-coastguard",
+      "name": "Turkish Coast Guard Command",
+      "nativeName": "Sahil Güvenlik Komutanlığı",
+      "region": "Mediterranean/Black Sea - Turkey",
+      "rcc": {
+        "name": "Turkish Coast Guard HQ",
+        "location": "Ankara, Turkey",
+        "coordinates": [
+          39.9334,
+          32.8597
+        ],
+        "timezone": "Europe/Istanbul"
+      },
+      "contact": {
+        "phone": "+90-312-417-3226",
+        "vhf": "Channel 16",
+        "emergency": "158",
+        "website": "https://www.sg.gov.tr",
+        "languages": [
+          "Turkish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          36,
+          42
+        ],
+        "longitude": [
+          26,
+          45
+        ],
+        "description": "Turkish coasts, Bosphorus, Dardanelles, Black Sea, Aegean, Mediterranean"
+      },
+      "assets": {
+        "helicopters": 16,
+        "patrolBoats": 158,
+        "aircraft": 10,
+        "specialized": [
+          "Bosphorus control",
+          "migrant interdiction"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "strait monitoring",
+        "migrant rescue",
+        "customs enforcement"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "norwegian-coastguard",
+      "name": "Norwegian Coast Guard",
+      "nativeName": "Kystvakten",
+      "region": "Arctic/Atlantic - Norway",
+      "rcc": {
+        "name": "Joint Rescue Coordination Centre North Norway",
+        "location": "Bodø, Norway",
+        "coordinates": [
+          67.2805,
+          14.405
+        ],
+        "timezone": "Europe/Oslo"
+      },
+      "contact": {
+        "phone": "+47-75-54-61-00",
+        "vhf": "Channel 16",
+        "emergency": "120",
+        "website": "https://www.kystvakten.no",
+        "languages": [
+          "Norwegian",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          58,
+          81
+        ],
+        "longitude": [
+          -5,
+          32
+        ],
+        "description": "Norwegian coast, Arctic waters, Svalbard, extensive EEZ"
+      },
+      "assets": {
+        "helicopters": 12,
+        "coastGuardVessels": 15,
+        "aircraft": 6,
+        "specialized": [
+          "Arctic operations",
+          "icebreaking"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "Arctic rescue",
+        "fisheries",
+        "oil spill",
+        "sovereignty patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "netherlands-coastguard",
+      "name": "Netherlands Coast Guard",
+      "nativeName": "Kustwacht",
+      "region": "North Sea - Netherlands",
+      "rcc": {
+        "name": "Netherlands Coast Guard Centre",
+        "location": "Den Helder, Netherlands",
+        "coordinates": [
+          52.9546,
+          4.7803
+        ],
+        "timezone": "Europe/Amsterdam"
+      },
+      "contact": {
+        "phone": "+31-223-542-300",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.kustwacht.nl",
+        "languages": [
+          "Dutch",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          51,
+          56
+        ],
+        "longitude": [
+          2.5,
+          7.5
+        ],
+        "description": "Dutch North Sea, Wadden Sea, major shipping lanes"
+      },
+      "assets": {
+        "helicopters": 3,
+        "patrolVessels": 8,
+        "aircraft": 2,
+        "specialized": [
+          "VTS",
+          "pollution monitoring"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "North Sea coordination",
+        "oil spill",
+        "VTS oversight"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "german-dgzrs",
+      "name": "German Maritime Search and Rescue Service",
+      "nativeName": "DGzRS (Deutsche Gesellschaft zur Rettung Schiffbrüchiger)",
+      "region": "North/Baltic Sea - Germany",
+      "rcc": {
+        "name": "MRCC Bremen",
+        "location": "Bremen, Germany",
+        "coordinates": [
+          53.0793,
+          8.8017
+        ],
+        "timezone": "Europe/Berlin"
+      },
+      "contact": {
+        "phone": "+49-421-536870",
+        "vhf": "Channel 16",
+        "emergency": "124124",
+        "website": "https://www.seenotretter.de",
+        "languages": [
+          "German",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          53.5,
+          55.5
+        ],
+        "longitude": [
+          6,
+          15
+        ],
+        "description": "German North Sea and Baltic Sea coasts"
+      },
+      "assets": {
+        "helicopters": 0,
+        "rescueBoats": 60,
+        "stations": 54,
+        "volunteers": 1000
+      },
+      "capabilities": [
+        "SAR",
+        "high-speed rescue boats",
+        "volunteer force",
+        "all-weather operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "portuguese-navy",
+      "name": "Portuguese Navy Maritime Rescue",
+      "nativeName": "Marinha Portuguesa MRCC",
+      "region": "Atlantic - Portugal",
+      "rcc": {
+        "name": "MRCC Lisboa",
+        "location": "Lisbon, Portugal",
+        "coordinates": [
+          38.7223,
+          -9.1393
+        ],
+        "timezone": "Europe/Lisbon"
+      },
+      "contact": {
+        "phone": "+351-21-440-3919",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.marinha.pt",
+        "languages": [
+          "Portuguese",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          30,
+          42
+        ],
+        "longitude": [
+          -31,
+          -6
+        ],
+        "description": "Portuguese coast, Azores, Madeira, large Atlantic SAR region"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 24,
+        "aircraft": 6,
+        "specialized": [
+          "Atlantic operations",
+          "island support"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "long-range Atlantic",
+        "island rescue",
+        "fishing patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
+    },
+    {
+      "id": "taiwan-coastguard",
+      "name": "Taiwan Coast Guard Administration",
+      "nativeName": "海洋委員會海巡署",
+      "region": "Pacific - Taiwan",
+      "rcc": {
+        "name": "Taiwan Coast Guard HQ",
+        "location": "Taipei, Taiwan",
+        "coordinates": [
+          25.033,
+          121.5654
+        ],
+        "timezone": "Asia/Taipei"
+      },
+      "contact": {
+        "phone": "+886-2-2239-9201",
+        "vhf": "Channel 16",
+        "emergency": "118",
+        "website": "https://www.cga.gov.tw",
+        "languages": [
+          "Mandarin",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          21.5,
+          26
+        ],
+        "longitude": [
+          118,
+          122.5
+        ],
+        "description": "Taiwan Strait, critical shipping lane"
+      },
+      "assets": {
+        "helicopters": 12,
+        "patrolVessels": 148,
+        "aircraft": 8
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "Taiwan Strait patrol",
+        "fisheries",
+        "maritime security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "thailand-marine-police",
+      "name": "Royal Thai Marine Police",
+      "nativeName": "ตำรวจน้ำ",
+      "region": "Pacific - Thailand",
+      "rcc": {
+        "name": "Marine Police Division HQ",
+        "location": "Bangkok, Thailand",
+        "coordinates": [
+          13.7563,
+          100.5018
+        ],
+        "timezone": "Asia/Bangkok"
+      },
+      "contact": {
+        "phone": "+66-2-237-1199",
+        "vhf": "Channel 16",
+        "emergency": "191",
+        "website": "https://www.royalthaipolice.go.th",
+        "languages": [
+          "Thai",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          5.5,
+          20.5
+        ],
+        "longitude": [
+          97,
+          106
+        ],
+        "description": "Gulf of Thailand, Andaman Sea"
+      },
+      "assets": {
+        "helicopters": 4,
+        "patrolBoats": 86,
+        "stations": 42
+      },
+      "capabilities": [
+        "SAR",
+        "maritime law enforcement",
+        "tourist rescue",
+        "fisheries patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
+    },
+    {
+      "id": "vietnam-coastguard",
+      "name": "Vietnam Coast Guard",
+      "nativeName": "Cảnh sát biển Việt Nam",
+      "region": "Pacific - Vietnam",
+      "rcc": {
+        "name": "Vietnam Coast Guard Command",
+        "location": "Hanoi, Vietnam",
+        "coordinates": [
+          21.0285,
+          105.8542
+        ],
+        "timezone": "Asia/Ho_Chi_Minh"
+      },
+      "contact": {
+        "phone": "+84-24-3733-4338",
+        "vhf": "Channel 16",
+        "emergency": "113",
+        "website": "https://www.csb.gov.vn",
+        "languages": [
+          "Vietnamese",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          8,
+          23.5
+        ],
+        "longitude": [
+          102,
+          114
+        ],
+        "description": "South China Sea, Gulf of Tonkin"
+      },
+      "assets": {
+        "helicopters": 6,
+        "patrolVessels": 92,
+        "aircraft": 4
+      },
+      "capabilities": [
+        "SAR",
+        "fisheries enforcement",
+        "sovereignty patrol",
+        "disaster response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "malaysia-mmea",
+      "name": "Malaysian Maritime Enforcement Agency",
+      "nativeName": "Agensi Penguatkuasaan Maritim Malaysia",
+      "region": "Pacific - Malaysia",
+      "rcc": {
+        "name": "MMEA Operations Centre",
+        "location": "Putrajaya, Malaysia",
+        "coordinates": [
+          2.9264,
+          101.6964
+        ],
+        "timezone": "Asia/Kuala_Lumpur"
+      },
+      "contact": {
+        "phone": "+60-3-8000-8000",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.mmea.gov.my",
+        "languages": [
+          "Malay",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          0.5,
+          7.5
+        ],
+        "longitude": [
+          99,
+          119.5
+        ],
+        "description": "Straits of Malacca, South China Sea"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 156,
+        "aircraft": 6,
+        "stations": 28
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "Malacca Strait patrol",
+        "anti-piracy",
+        "maritime security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 22
+    },
+    {
+      "id": "bangladesh-coastguard",
+      "name": "Bangladesh Coast Guard",
+      "nativeName": "বাংলাদেশ কোস্ট গার্ড",
+      "region": "Indian Ocean - Bangladesh",
+      "rcc": {
+        "name": "Coast Guard HQ",
+        "location": "Dhaka, Bangladesh",
+        "coordinates": [
+          23.8103,
+          90.4125
+        ],
+        "timezone": "Asia/Dhaka"
+      },
+      "contact": {
+        "phone": "+880-2-9123456",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.coastguard.gov.bd",
+        "languages": [
+          "Bengali",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          20.5,
+          26.5
+        ],
+        "longitude": [
+          88,
+          93
+        ],
+        "description": "Bay of Bengal, river mouths"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolVessels": 46,
+        "stations": 12
+      },
+      "capabilities": [
+        "SAR",
+        "disaster response",
+        "fisheries patrol",
+        "anti-smuggling"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 35
+    },
+    {
+      "id": "srilanka-navy",
+      "name": "Sri Lanka Navy Search and Rescue",
+      "nativeName": "ශ්‍රී ලංකා නාවික හමුදාව",
+      "region": "Indian Ocean - Sri Lanka",
+      "rcc": {
+        "name": "Naval HQ Colombo",
+        "location": "Colombo, Sri Lanka",
+        "coordinates": [
+          6.9271,
+          79.8612
+        ],
+        "timezone": "Asia/Colombo"
+      },
+      "contact": {
+        "phone": "+94-11-244-0369",
+        "vhf": "Channel 16",
+        "emergency": "119",
+        "website": "https://www.navy.lk",
+        "languages": [
+          "Sinhala",
+          "Tamil",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          5.5,
+          10
+        ],
+        "longitude": [
+          79,
+          82
+        ],
+        "description": "Sri Lankan waters, Indian Ocean"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 72,
+        "fastAttackCraft": 28
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "disaster relief",
+        "fisheries patrol",
+        "anti-smuggling"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 28
+    },
+    {
+      "id": "pakistan-maritime",
+      "name": "Pakistan Maritime Security Agency",
+      "nativeName": "پاکستان میری ٹائم سیکیورٹی ایجنسی",
+      "region": "Indian Ocean - Pakistan",
+      "rcc": {
+        "name": "PMSA Operations Centre",
+        "location": "Karachi, Pakistan",
+        "coordinates": [
+          24.8607,
+          67.0011
+        ],
+        "timezone": "Asia/Karachi"
+      },
+      "contact": {
+        "phone": "+92-21-9921-3601",
+        "vhf": "Channel 16",
+        "emergency": "1122",
+        "website": "https://www.pmsa.gov.pk",
+        "languages": [
+          "Urdu",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          23,
+          28
+        ],
+        "longitude": [
+          61,
+          68.5
+        ],
+        "description": "Arabian Sea, Pakistan EEZ"
+      },
+      "assets": {
+        "helicopters": 6,
+        "patrolVessels": 32,
+        "aircraft": 3
+      },
+      "capabilities": [
+        "SAR",
+        "maritime security",
+        "fisheries patrol",
+        "anti-smuggling"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 32
+    },
+    {
+      "id": "hongkong-marine",
+      "name": "Hong Kong Marine Police",
+      "nativeName": "香港水警",
+      "region": "Pacific - Hong Kong",
+      "rcc": {
+        "name": "Marine Police HQ",
+        "location": "Hong Kong",
+        "coordinates": [
+          22.3193,
+          114.1694
+        ],
+        "timezone": "Asia/Hong_Kong"
+      },
+      "contact": {
+        "phone": "+852-2866-3333",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.police.gov.hk",
+        "languages": [
+          "Cantonese",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          22,
+          22.6
+        ],
+        "longitude": [
+          113.8,
+          114.5
+        ],
+        "description": "Hong Kong waters, Pearl River Delta"
+      },
+      "assets": {
+        "helicopters": 0,
+        "patrolBoats": 142,
+        "stations": 9
+      },
+      "capabilities": [
+        "SAR",
+        "harbor patrol",
+        "anti-smuggling",
+        "security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "uae-coastguard",
+      "name": "UAE Coast Guard",
+      "nativeName": "خفر السواحل الإماراتي",
+      "region": "Persian Gulf - UAE",
+      "rcc": {
+        "name": "UAE Coast Guard Operations",
+        "location": "Abu Dhabi, UAE",
+        "coordinates": [
+          24.4539,
+          54.3773
+        ],
+        "timezone": "Asia/Dubai"
+      },
+      "contact": {
+        "phone": "+971-2-446-2222",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.uaecg.gov.ae",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          22.5,
+          26
+        ],
+        "longitude": [
+          51,
+          56.5
+        ],
+        "description": "UAE waters, Persian Gulf, Strait of Hormuz approaches"
+      },
+      "assets": {
+        "helicopters": 8,
+        "patrolVessels": 68,
+        "aircraft": 4
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "port security",
+        "anti-smuggling",
+        "oil spill"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "saudi-borderguard",
+      "name": "Saudi Border Guard Marine Division",
+      "nativeName": "حرس الحدود السعودي",
+      "region": "Red Sea/Persian Gulf - Saudi Arabia",
+      "rcc": {
+        "name": "Border Guard HQ",
+        "location": "Riyadh, Saudi Arabia",
+        "coordinates": [
+          24.7136,
+          46.6753
+        ],
+        "timezone": "Asia/Riyadh"
+      },
+      "contact": {
+        "phone": "+966-11-404-3333",
+        "vhf": "Channel 16",
+        "emergency": "911",
+        "website": "https://www.bg.gov.sa",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          16,
+          30
+        ],
+        "longitude": [
+          34,
+          55
+        ],
+        "description": "Red Sea, Persian Gulf, extensive coastline"
+      },
+      "assets": {
+        "helicopters": 16,
+        "patrolVessels": 185,
+        "aircraft": 12,
+        "stations": 42
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "border security",
+        "anti-smuggling",
+        "pilgrimage support"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
+    },
+    {
+      "id": "oman-coastguard",
+      "name": "Royal Oman Police Coast Guard",
+      "nativeName": "خفر السواحل العماني",
+      "region": "Arabian Sea/Persian Gulf - Oman",
+      "rcc": {
+        "name": "Coast Guard Operations Centre",
+        "location": "Muscat, Oman",
+        "coordinates": [
+          23.588,
+          58.3829
+        ],
+        "timezone": "Asia/Muscat"
+      },
+      "contact": {
+        "phone": "+968-24-560-099",
+        "vhf": "Channel 16",
+        "emergency": "9999",
+        "website": "https://www.rop.gov.om",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          16,
+          26.5
+        ],
+        "longitude": [
+          52,
+          60
+        ],
+        "description": "Strait of Hormuz, Arabian Sea, strategic position"
+      },
+      "assets": {
+        "helicopters": 6,
+        "patrolVessels": 54,
+        "aircraft": 4
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "strait monitoring",
+        "anti-piracy",
+        "fisheries"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 22
+    },
+    {
+      "id": "qatar-coastguard",
+      "name": "Qatar Coast Guard",
+      "nativeName": "خفر السواحل القطري",
+      "region": "Persian Gulf - Qatar",
+      "rcc": {
+        "name": "Coast Guard Command",
+        "location": "Doha, Qatar",
+        "coordinates": [
+          25.2854,
+          51.531
+        ],
+        "timezone": "Asia/Qatar"
+      },
+      "contact": {
+        "phone": "+974-4488-8888",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.moi.gov.qa",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          24.5,
+          26.5
+        ],
+        "longitude": [
+          50.5,
+          52
+        ],
+        "description": "Qatar waters, Persian Gulf"
+      },
+      "assets": {
+        "helicopters": 4,
+        "patrolVessels": 38,
+        "aircraft": 2
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "port security",
+        "LNG facility protection"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "brazil-navy-sar",
+      "name": "Brazilian Navy SAR - SALVAMAR",
+      "nativeName": "SALVAMAR Brasil",
+      "region": "Atlantic - Brazil",
+      "rcc": {
+        "name": "SALVAMAR Brasil",
+        "location": "Brasília, Brazil",
+        "coordinates": [
+          -15.7939,
+          -47.8828
+        ],
+        "timezone": "America/Sao_Paulo"
+      },
+      "contact": {
+        "phone": "+55-21-2104-5454",
+        "vhf": "Channel 16",
+        "emergency": "185",
+        "website": "https://www.marinha.mil.br",
+        "languages": [
+          "Portuguese",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -34,
+          5
+        ],
+        "longitude": [
+          -54,
+          -32
+        ],
+        "description": "Brazilian coast, extensive Atlantic SAR region"
+      },
+      "assets": {
+        "helicopters": 24,
+        "patrolVessels": 156,
+        "aircraft": 18,
+        "stations": 28
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "Amazon operations",
+        "offshore oil support",
+        "Antarctica"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "mexican-navy-sar",
+      "name": "Mexican Navy SAR - SEMAR",
+      "nativeName": "SEMAR México",
+      "region": "Pacific/Gulf - Mexico",
+      "rcc": {
+        "name": "SEMAR Operations Centre",
+        "location": "Mexico City, Mexico",
+        "coordinates": [
+          19.4326,
+          -99.1332
+        ],
+        "timezone": "America/Mexico_City"
+      },
+      "contact": {
+        "phone": "+52-55-5624-6500",
+        "vhf": "Channel 16",
+        "emergency": "911",
+        "website": "https://www.gob.mx/semar",
+        "languages": [
+          "Spanish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          14.5,
+          32.7
+        ],
+        "longitude": [
+          -118,
+          -86
+        ],
+        "description": "Pacific coast, Gulf of Mexico, Caribbean"
+      },
+      "assets": {
+        "helicopters": 32,
+        "patrolVessels": 228,
+        "aircraft": 24,
+        "stations": 36
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "drug interdiction",
+        "migrant rescue",
+        "hurricane response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
+    },
+    {
+      "id": "argentine-prefecture",
+      "name": "Argentine Naval Prefecture",
+      "nativeName": "Prefectura Naval Argentina",
+      "region": "Atlantic - Argentina",
+      "rcc": {
+        "name": "MRCC Buenos Aires",
+        "location": "Buenos Aires, Argentina",
+        "coordinates": [
+          -34.6037,
+          -58.3816
+        ],
+        "timezone": "America/Argentina/Buenos_Aires"
+      },
+      "contact": {
+        "phone": "+54-11-4346-3333",
+        "vhf": "Channel 16",
+        "emergency": "106",
+        "website": "https://www.argentina.gob.ar/prefecturanaval",
+        "languages": [
+          "Spanish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -55,
+          -21
+        ],
+        "longitude": [
+          -73,
+          -53
+        ],
+        "description": "Argentine coast, Patagonia, South Atlantic"
+      },
+      "assets": {
+        "helicopters": 12,
+        "patrolVessels": 86,
+        "aircraft": 8,
+        "stations": 24
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "Antarctic support",
+        "fisheries patrol",
+        "river operations"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 35
+    },
+    {
+      "id": "iran-coastguard",
+      "name": "Iranian Coast Guard",
+      "nativeName": "گارد ساحلی ایران",
+      "region": "Persian Gulf/Gulf of Oman - Iran",
+      "rcc": {
+        "name": "IRGC Navy Command",
+        "location": "Bandar Abbas, Iran",
+        "coordinates": [
+          27.1865,
+          56.2808
+        ],
+        "timezone": "Asia/Tehran"
+      },
+      "contact": {
+        "phone": "+98-76-3333-3333",
+        "vhf": "Channel 16",
+        "emergency": "110",
+        "languages": [
+          "Persian",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          25,
+          40
+        ],
+        "longitude": [
+          48,
+          63
+        ],
+        "description": "Persian Gulf, Strait of Hormuz, Caspian Sea"
+      },
+      "assets": {
+        "helicopters": 18,
+        "patrolVessels": 284,
+        "fastBoats": 156
+      },
+      "capabilities": [
+        "SAR",
+        "strait monitoring",
+        "fisheries",
+        "oil platform support"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "iraq-coastguard",
+      "name": "Iraqi Coast Guard",
+      "nativeName": "خفر السواحل العراقي",
+      "region": "Persian Gulf - Iraq",
+      "rcc": {
+        "name": "Coast Guard Command",
+        "location": "Basra, Iraq",
+        "coordinates": [
+          30.5084,
+          47.7838
+        ],
+        "timezone": "Asia/Baghdad"
+      },
+      "contact": {
+        "phone": "+964-40-123-4567",
+        "vhf": "Channel 16",
+        "emergency": "115",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          29,
+          31
+        ],
+        "longitude": [
+          47.5,
+          49
+        ],
+        "description": "Shatt al-Arab, northern Persian Gulf"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolBoats": 24,
+        "stations": 4
+      },
+      "capabilities": [
+        "SAR",
+        "port security",
+        "oil platform protection"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "kuwait-coastguard",
+      "name": "Kuwait Coast Guard",
+      "nativeName": "خفر السواحل الكويتي",
+      "region": "Persian Gulf - Kuwait",
+      "rcc": {
+        "name": "Coast Guard Operations",
+        "location": "Kuwait City, Kuwait",
+        "coordinates": [
+          29.3759,
+          47.9774
+        ],
+        "timezone": "Asia/Kuwait"
+      },
+      "contact": {
+        "phone": "+965-2224-3333",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.moi.gov.kw",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          28.5,
+          30.1
+        ],
+        "longitude": [
+          46.5,
+          49
+        ],
+        "description": "Kuwait Bay, northern Persian Gulf"
+      },
+      "assets": {
+        "helicopters": 6,
+        "patrolVessels": 42,
+        "aircraft": 2
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "oil spill",
+        "port security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "bahrain-coastguard",
+      "name": "Bahrain Coast Guard",
+      "nativeName": "خفر السواحل البحريني",
+      "region": "Persian Gulf - Bahrain",
+      "rcc": {
+        "name": "Coast Guard Command",
+        "location": "Manama, Bahrain",
+        "coordinates": [
+          26.2285,
+          50.586
+        ],
+        "timezone": "Asia/Bahrain"
+      },
+      "contact": {
+        "phone": "+973-1772-2222",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.interior.gov.bh",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          25.5,
+          26.5
+        ],
+        "longitude": [
+          50,
+          51
+        ],
+        "description": "Bahrain waters, central Persian Gulf"
+      },
+      "assets": {
+        "helicopters": 4,
+        "patrolVessels": 28,
+        "fastBoats": 16
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "coalition support",
+        "anti-smuggling"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 15
+    },
+    {
+      "id": "yemen-coastguard",
+      "name": "Yemen Coast Guard",
+      "nativeName": "خفر السواحل اليمني",
+      "region": "Red Sea/Gulf of Aden - Yemen",
+      "rcc": {
+        "name": "Coast Guard Operations",
+        "location": "Aden, Yemen",
+        "coordinates": [
+          12.7797,
+          45.0369
+        ],
+        "timezone": "Asia/Aden"
+      },
+      "contact": {
+        "phone": "+967-2-374-444",
+        "vhf": "Channel 16",
+        "emergency": "194",
+        "languages": [
+          "Arabic"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          12,
+          19
+        ],
+        "longitude": [
+          42,
+          54
+        ],
+        "description": "Red Sea, Gulf of Aden, Bab el-Mandeb"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolBoats": 18,
+        "stations": 6
+      },
+      "capabilities": [
+        "SAR",
+        "anti-piracy patrol",
+        "fisheries"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 45
+    },
+    {
+      "id": "jordan-coastguard",
+      "name": "Jordanian Coast Guard",
+      "nativeName": "خفر السواحل الأردني",
+      "region": "Red Sea - Jordan",
+      "rcc": {
+        "name": "Aqaba Coast Guard Station",
+        "location": "Aqaba, Jordan",
+        "coordinates": [
+          29.5267,
+          35.0066
+        ],
+        "timezone": "Asia/Amman"
+      },
+      "contact": {
+        "phone": "+962-3-201-4444",
+        "vhf": "Channel 16",
+        "emergency": "911",
+        "languages": [
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          29.4,
+          29.6
+        ],
+        "longitude": [
+          34.9,
+          35.1
+        ],
+        "description": "Gulf of Aqaba, limited Red Sea access"
+      },
+      "assets": {
+        "helicopters": 1,
+        "patrolBoats": 8,
+        "stations": 2
+      },
+      "capabilities": [
+        "SAR",
+        "port security",
+        "tourist area patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 20
+    },
+    {
+      "id": "lebanese-navy",
+      "name": "Lebanese Navy SAR",
+      "nativeName": "البحرية اللبنانية",
+      "region": "Mediterranean - Lebanon",
+      "rcc": {
+        "name": "Naval Base Beirut",
+        "location": "Beirut, Lebanon",
+        "coordinates": [
+          33.8886,
+          35.4955
+        ],
+        "timezone": "Asia/Beirut"
+      },
+      "contact": {
+        "phone": "+961-1-445-888",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "languages": [
+          "Arabic",
+          "French",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          33,
+          34.7
+        ],
+        "longitude": [
+          35.1,
+          36.6
+        ],
+        "description": "Lebanese waters, Eastern Mediterranean"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolBoats": 24,
+        "stations": 5
+      },
+      "capabilities": [
+        "SAR",
+        "port security",
+        "fisheries patrol"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
+    },
+    {
+      "id": "israeli-navy-sar",
+      "name": "Israeli Navy Search and Rescue",
+      "nativeName": "חיל הים הישראלי",
+      "region": "Mediterranean - Israel",
+      "rcc": {
+        "name": "Naval Base Haifa",
+        "location": "Haifa, Israel",
+        "coordinates": [
+          32.8191,
+          34.9983
+        ],
+        "timezone": "Asia/Jerusalem"
+      },
+      "contact": {
+        "phone": "+972-4-856-7777",
+        "vhf": "Channel 16",
+        "emergency": "100",
+        "website": "https://www.idf.il",
+        "languages": [
+          "Hebrew",
+          "English",
+          "Arabic"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          29.5,
+          33.3
+        ],
+        "longitude": [
+          34.2,
+          35.2
+        ],
+        "description": "Israeli waters, Eastern Mediterranean, Red Sea (Eilat)"
+      },
+      "assets": {
+        "helicopters": 12,
+        "patrolVessels": 64,
+        "submarines": 5
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "submarine rescue",
+        "offshore gas platform security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "cyprus-coastguard",
+      "name": "Cyprus Port and Marine Police",
+      "nativeName": "Λιμενική και Ναυτική Αστυνομία Κύπρου",
+      "region": "Mediterranean - Cyprus",
+      "rcc": {
+        "name": "JRCC Larnaca",
+        "location": "Larnaca, Cyprus",
+        "coordinates": [
+          34.9174,
+          33.6239
+        ],
+        "timezone": "Asia/Nicosia"
+      },
+      "contact": {
+        "phone": "+357-24-630-630",
+        "vhf": "Channel 16",
+        "emergency": "112",
+        "website": "https://www.police.gov.cy",
+        "languages": [
+          "Greek",
+          "Turkish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          34.5,
+          35.7
+        ],
+        "longitude": [
+          32.2,
+          34.6
+        ],
+        "description": "Cyprus waters, Eastern Mediterranean strategic position"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolBoats": 18,
+        "stations": 4
+      },
+      "capabilities": [
+        "SAR",
+        "port control",
+        "maritime security",
+        "refugee rescue"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 22
+    },
+    {
+      "id": "djibouti-navy",
+      "name": "Djibouti Navy and Coast Guard",
+      "nativeName": "Marine Djiboutienne",
+      "region": "Red Sea/Gulf of Aden - Djibouti",
+      "rcc": {
+        "name": "Naval Operations Centre",
+        "location": "Djibouti City, Djibouti",
+        "coordinates": [
+          11.5721,
+          43.1456
+        ],
+        "timezone": "Africa/Djibouti"
+      },
+      "contact": {
+        "phone": "+253-21-352-031",
+        "vhf": "Channel 16",
+        "emergency": "17",
+        "languages": [
+          "French",
+          "Arabic",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          10.9,
+          12.7
+        ],
+        "longitude": [
+          41.7,
+          43.5
+        ],
+        "description": "Bab el-Mandeb Strait, strategic Gulf of Aden position"
+      },
+      "assets": {
+        "helicopters": 1,
+        "patrolBoats": 12,
+        "stations": 3
+      },
+      "capabilities": [
+        "SAR",
+        "anti-piracy",
+        "strait monitoring",
+        "international coalition support"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "maldives-coastguard",
+      "name": "Maldives National Defence Force Coast Guard",
+      "nativeName": "ދިވެހިރާއްޖޭގެ ކޯސްޓުގާޑް",
+      "region": "Indian Ocean - Maldives",
+      "rcc": {
+        "name": "Coast Guard Command",
+        "location": "Malé, Maldives",
+        "coordinates": [
+          4.1755,
+          73.5093
+        ],
+        "timezone": "Indian/Maldives"
+      },
+      "contact": {
+        "phone": "+960-332-1007",
+        "vhf": "Channel 16",
+        "emergency": "119",
+        "website": "https://www.mndf.gov.mv",
+        "languages": [
+          "Dhivehi",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -0.7,
+          7.1
+        ],
+        "longitude": [
+          72.6,
+          73.8
+        ],
+        "description": "Maldives archipelago, 26 atolls, tourist rescue operations"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolBoats": 32,
+        "stations": 8,
+        "specialized": [
+          "atoll patrol",
+          "resort rescue"
+        ]
+      },
+      "capabilities": [
+        "SAR",
+        "tourist rescue",
+        "maritime security",
+        "disaster response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 35
+    },
+    {
+      "id": "seychelles-coastguard",
+      "name": "Seychelles Coast Guard",
+      "nativeName": "Lagard Lakot Sesel",
+      "region": "Indian Ocean - Seychelles",
+      "rcc": {
+        "name": "Coast Guard Operations",
+        "location": "Victoria, Mahé",
+        "coordinates": [
+          -4.6191,
+          55.4513
+        ],
+        "timezone": "Indian/Mahe"
+      },
+      "contact": {
+        "phone": "+248-4-224-666",
+        "vhf": "Channel 16",
+        "emergency": "999",
+        "website": "https://www.scg.sc",
+        "languages": [
+          "English",
+          "French",
+          "Seychellois Creole"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -10,
+          -3.7
+        ],
+        "longitude": [
+          46.2,
+          56.3
+        ],
+        "description": "Seychelles EEZ (1.4M km²), Indian Ocean island protection"
+      },
+      "assets": {
+        "helicopters": 1,
+        "patrolVessels": 8,
+        "aircraft": 2,
+        "stations": 3
+      },
+      "capabilities": [
+        "SAR",
+        "anti-piracy",
+        "fisheries patrol",
+        "EEZ monitoring"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 40
+    },
+    {
+      "id": "madagascar-navy",
+      "name": "Madagascar Navy - Maritime Rescue",
+      "nativeName": "Tafika an-dranomasina Malagasy",
+      "region": "Indian Ocean - Madagascar",
+      "rcc": {
+        "name": "Naval Command",
+        "location": "Antananarivo, Madagascar",
+        "coordinates": [
+          -18.8792,
+          47.5079
+        ],
+        "timezone": "Indian/Antananarivo"
+      },
+      "contact": {
+        "phone": "+261-20-222-1234",
+        "vhf": "Channel 16",
+        "emergency": "117",
+        "languages": [
+          "Malagasy",
+          "French"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          -25.6,
+          -11.9
+        ],
+        "longitude": [
+          43.2,
+          50.5
+        ],
+        "description": "Madagascar waters, Mozambique Channel, 4th largest island"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolBoats": 14,
+        "stations": 5
+      },
+      "capabilities": [
+        "SAR",
+        "fisheries patrol",
+        "anti-smuggling",
+        "cyclone response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 45
+    },
+    {
+      "id": "uscg-puerto-rico",
+      "name": "US Coast Guard Sector San Juan",
+      "region": "Caribbean - Puerto Rico",
+      "rcc": {
+        "name": "Sector San Juan Command Center",
+        "location": "San Juan, Puerto Rico",
+        "coordinates": [
+          18.4655,
+          -66.1057
+        ],
+        "timezone": "America/Puerto_Rico"
+      },
+      "contact": {
+        "phone": "+1-787-289-2041",
+        "vhf": "Channel 16",
+        "emergency": "911",
+        "website": "https://www.uscg.mil/d7/sectsanjuan",
+        "languages": [
+          "English",
+          "Spanish"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          17,
+          19
+        ],
+        "longitude": [
+          -68,
+          -65
+        ],
+        "description": "Puerto Rico, US Virgin Islands, Eastern Caribbean"
+      },
+      "assets": {
+        "helicopters": 4,
+        "cutters": 8,
+        "patrolBoats": 12,
+        "stations": 6
+      },
+      "capabilities": [
+        "SAR",
+        "helicopter",
+        "drug interdiction",
+        "hurricane response",
+        "migrant rescue"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 18
+    },
+    {
+      "id": "cuba-border-guard",
+      "name": "Cuban Border Guard - Tropas Guardafronteras",
+      "nativeName": "Tropas Guardafronteras de Cuba",
+      "region": "Caribbean - Cuba",
+      "rcc": {
+        "name": "Border Guard Command",
+        "location": "Havana, Cuba",
+        "coordinates": [
+          23.1136,
+          -82.3666
+        ],
+        "timezone": "America/Havana"
+      },
+      "contact": {
+        "phone": "+53-7-866-8527",
+        "vhf": "Channel 16",
+        "emergency": "106",
+        "languages": [
+          "Spanish"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          19.8,
+          23.3
+        ],
+        "longitude": [
+          -85,
+          -74
+        ],
+        "description": "Cuban waters, Straits of Florida, Caribbean Sea"
+      },
+      "assets": {
+        "helicopters": 6,
+        "patrolBoats": 72,
+        "stations": 24
+      },
+      "capabilities": [
+        "SAR",
+        "border patrol",
+        "fisheries",
+        "security"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 30
+    },
+    {
+      "id": "jamaica-coastguard",
+      "name": "Jamaica Defence Force Coast Guard",
+      "region": "Caribbean - Jamaica",
+      "rcc": {
+        "name": "Coast Guard Command",
+        "location": "Kingston, Jamaica",
+        "coordinates": [
+          17.9714,
+          -76.7931
+        ],
+        "timezone": "America/Jamaica"
+      },
+      "contact": {
+        "phone": "+1-876-967-8503",
+        "vhf": "Channel 16",
+        "emergency": "119",
+        "website": "https://www.jdfmil.org",
+        "languages": [
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          17,
+          18.6
+        ],
+        "longitude": [
+          -78.5,
+          -76
+        ],
+        "description": "Jamaican waters, Caribbean Sea"
+      },
+      "assets": {
+        "helicopters": 2,
+        "patrolVessels": 14,
+        "stations": 4
+      },
+      "capabilities": [
+        "SAR",
+        "anti-smuggling",
+        "fisheries patrol",
+        "disaster response"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 28
+    },
+    {
+      "id": "dominican-navy",
+      "name": "Dominican Republic Navy",
+      "nativeName": "Marina de Guerra Dominicana",
+      "region": "Caribbean - Dominican Republic",
+      "rcc": {
+        "name": "Naval Operations Centre",
+        "location": "Santo Domingo, Dominican Republic",
+        "coordinates": [
+          18.4861,
+          -69.9312
+        ],
+        "timezone": "America/Santo_Domingo"
+      },
+      "contact": {
+        "phone": "+1-809-533-3218",
+        "vhf": "Channel 16",
+        "emergency": "911",
+        "website": "https://www.marina.mil.do",
+        "languages": [
+          "Spanish",
+          "English"
+        ]
+      },
+      "coverage": {
+        "latitude": [
+          17.5,
+          20
+        ],
+        "longitude": [
+          -72,
+          -68.3
+        ],
+        "description": "Dominican waters, Mona Passage, Caribbean Sea"
+      },
+      "assets": {
+        "helicopters": 4,
+        "patrolVessels": 28,
+        "stations": 8
+      },
+      "capabilities": [
+        "SAR",
+        "anti-smuggling",
+        "disaster response",
+        "migrant interdiction"
+      ],
+      "operatingHours": "24/7",
+      "responseTime": 25
     }
   ],
   "salvageTugs": [
@@ -153,58 +3434,321 @@
       "id": "resolve-pac",
       "name": "Resolve Marine - Pacific Division",
       "location": "San Diego, CA",
-      "coordinates": [32.7157, -117.1611],
+      "coordinates": [
+        32.7157,
+        -117.1611
+      ],
       "contact": {
         "phone": "+1-954-764-8700",
-        "emergency": "+1-954-764-SALVAGE"
+        "emergency": "+1-954-764-SALVAGE",
+        "website": "https://resolvemarine.com"
       },
       "fleet": [
         {
           "vesselName": "Resolve Pioneer",
           "bollardPull": 205,
-          "type": "Ocean Salvage Tug"
+          "type": "Ocean Salvage Tug",
+          "capabilities": [
+            "heavy lift",
+            "firefighting",
+            "oil recovery"
+          ]
         }
       ],
       "region": "Pacific - West Coast US",
-      "responseTime": 120
+      "responseTime": 120,
+      "specializations": [
+        "shipwreck removal",
+        "emergency towing",
+        "oil spill response"
+      ]
     },
     {
       "id": "foss-maritime",
       "name": "Foss Maritime",
       "location": "Seattle, WA",
-      "coordinates": [47.6062, -122.3321],
+      "coordinates": [
+        47.6062,
+        -122.3321
+      ],
       "contact": {
         "phone": "+1-206-281-3800",
-        "emergency": "+1-206-281-3800"
+        "emergency": "+1-206-281-3800",
+        "website": "https://www.foss.com"
       },
       "fleet": [
         {
           "vesselName": "Various Harbor Tugs",
           "bollardPull": 80,
-          "type": "Harbor Tug"
+          "type": "Harbor Tug",
+          "capabilities": [
+            "ship assist",
+            "emergency towing"
+          ]
         }
       ],
       "region": "Pacific Northwest",
-      "responseTime": 60
+      "responseTime": 60,
+      "specializations": [
+        "harbor operations",
+        "emergency response",
+        "escort services"
+      ]
     },
     {
       "id": "nippon-salvage",
       "name": "Nippon Salvage Co.",
       "location": "Tokyo, Japan",
-      "coordinates": [35.6762, 139.6503],
+      "coordinates": [
+        35.6762,
+        139.6503
+      ],
       "contact": {
         "phone": "+81-3-3562-1821",
-        "emergency": "+81-3-3562-1821"
+        "emergency": "+81-3-3562-1821",
+        "website": "https://www.nipponsalvage.co.jp"
       },
       "fleet": [
         {
           "vesselName": "Koyo Maru",
           "bollardPull": 180,
-          "type": "Ocean Salvage Tug"
+          "type": "Ocean Salvage Tug",
+          "capabilities": [
+            "salvage",
+            "firefighting",
+            "towing"
+          ]
         }
       ],
       "region": "Pacific - Japan",
-      "responseTime": 90
+      "responseTime": 90,
+      "specializations": [
+        "marine salvage",
+        "wreck removal",
+        "pollution response"
+      ]
+    },
+    {
+      "id": "smit-singapore",
+      "name": "SMIT Salvage Singapore",
+      "location": "Singapore",
+      "coordinates": [
+        1.2644,
+        103.822
+      ],
+      "contact": {
+        "phone": "+65-6542-9377",
+        "emergency": "+65-6542-9377",
+        "website": "https://www.boskalis.com/smit"
+      },
+      "fleet": [
+        {
+          "vesselName": "SMIT Borneo",
+          "bollardPull": 205,
+          "type": "Ocean Salvage Tug",
+          "capabilities": [
+            "heavy salvage",
+            "offshore support",
+            "oil response"
+          ]
+        }
+      ],
+      "region": "Southeast Asia",
+      "responseTime": 90,
+      "specializations": [
+        "marine salvage",
+        "emergency response",
+        "wreck removal"
+      ]
+    },
+    {
+      "id": "pacific-salvor",
+      "name": "Pacific Salvor",
+      "location": "Manila, Philippines",
+      "coordinates": [
+        14.5995,
+        120.9842
+      ],
+      "contact": {
+        "phone": "+63-2-8831-6789",
+        "emergency": "+63-917-123-4567"
+      },
+      "fleet": [
+        {
+          "vesselName": "Pacific Guardian",
+          "bollardPull": 120,
+          "type": "Salvage Tug",
+          "capabilities": [
+            "salvage",
+            "towing",
+            "firefighting"
+          ]
+        }
+      ],
+      "region": "Philippines",
+      "responseTime": 100,
+      "specializations": [
+        "ship salvage",
+        "cargo recovery",
+        "emergency towing"
+      ]
+    },
+    {
+      "id": "ardent-aus",
+      "name": "Ardent Oceania",
+      "location": "Sydney, Australia",
+      "coordinates": [
+        -33.8688,
+        151.2093
+      ],
+      "contact": {
+        "phone": "+61-2-9555-3888",
+        "emergency": "+61-2-9555-3888",
+        "website": "https://www.ardentoceania.com.au"
+      },
+      "fleet": [
+        {
+          "vesselName": "Pacific Responder",
+          "bollardPull": 195,
+          "type": "Ocean Salvage Tug",
+          "capabilities": [
+            "salvage",
+            "offshore support",
+            "oil spill"
+          ]
+        }
+      ],
+      "region": "Australia/Pacific",
+      "responseTime": 110,
+      "specializations": [
+        "marine salvage",
+        "emergency response",
+        "environmental protection"
+      ]
+    },
+    {
+      "id": "svitzer",
+      "name": "Svitzer",
+      "location": "Copenhagen",
+      "coordinates": [
+        55.6761,
+        12.5683
+      ],
+      "contact": {
+        "phone": "+45-3363-2000",
+        "emergency": "+45-3363-2001",
+        "website": "https://www.svitzer.com"
+      },
+      "fleet": [
+        {
+          "vesselName": "Svitzer Fleet",
+          "bollardPull": 180,
+          "type": "Tugs",
+          "capabilities": [
+            "towing",
+            "salvage"
+          ]
+        }
+      ],
+      "region": "Global",
+      "responseTime": 90,
+      "specializations": [
+        "emergency response",
+        "salvage"
+      ]
+    },
+    {
+      "id": "tsavliris",
+      "name": "Tsavliris Salvage",
+      "location": "Piraeus",
+      "coordinates": [
+        37.9478,
+        23.648
+      ],
+      "contact": {
+        "phone": "+30-210-429-4780",
+        "emergency": "+30-210-429-4780",
+        "website": "https://www.tsavliris.com"
+      },
+      "fleet": [
+        {
+          "vesselName": "Christos XXIII",
+          "bollardPull": 205,
+          "type": "Salvage Tug",
+          "capabilities": [
+            "salvage",
+            "wreck removal"
+          ]
+        }
+      ],
+      "region": "Mediterranean",
+      "responseTime": 80,
+      "specializations": [
+        "wreck removal",
+        "salvage"
+      ]
+    },
+    {
+      "id": "multraship",
+      "name": "Multraship Salvage",
+      "location": "Netherlands",
+      "coordinates": [
+        51.3358,
+        3.827
+      ],
+      "contact": {
+        "phone": "+31-115-647-400",
+        "website": "https://www.multraship.com"
+      },
+      "fleet": [
+        {
+          "vesselName": "Multratug",
+          "bollardPull": 195,
+          "type": "Salvage",
+          "capabilities": [
+            "North Sea"
+          ]
+        }
+      ],
+      "region": "North Sea",
+      "responseTime": 60,
+      "specializations": [
+        "salvage",
+        "offshore"
+      ]
+    },
+    {
+      "id": "octopus-maritime",
+      "name": "Octopus Maritime - Gulf Operations",
+      "location": "Dubai, UAE",
+      "coordinates": [
+        25.2048,
+        55.2708
+      ],
+      "contact": {
+        "phone": "+971-4-299-5800",
+        "emergency": "+971-50-123-4567",
+        "website": "https://www.octopusmaritime.com"
+      },
+      "fleet": [
+        {
+          "vesselName": "Gulf Responder",
+          "bollardPull": 165,
+          "type": "Salvage Tug",
+          "capabilities": [
+            "emergency towing",
+            "salvage",
+            "offshore support"
+          ]
+        }
+      ],
+      "region": "Persian Gulf",
+      "responseTime": 65,
+      "specializations": [
+        "Gulf salvage",
+        "offshore support",
+        "emergency response"
+      ]
     }
   ],
   "emergencyShelters": [
@@ -212,66 +3756,885 @@
       "id": "shelter-sf",
       "name": "San Francisco Emergency Maritime Shelter",
       "location": "San Francisco, CA",
-      "coordinates": [37.7749, -122.4194],
+      "coordinates": [
+        37.7749,
+        -122.4194
+      ],
       "capacity": 200,
-      "facilities": ["medical", "communications", "supplies"],
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "food",
+        "showers"
+      ],
       "contact": {
-        "phone": "+1-415-557-4813"
-      }
+        "phone": "+1-415-557-4813",
+        "emergency": "911"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "wheelchair accessible"
     },
     {
       "id": "shelter-honolulu",
       "name": "Honolulu Harbor Emergency Center",
       "location": "Honolulu, HI",
-      "coordinates": [21.3099, -157.8581],
+      "coordinates": [
+        21.3099,
+        -157.8581
+      ],
       "capacity": 500,
-      "facilities": ["medical", "communications", "supplies", "helipad"],
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "helipad",
+        "food",
+        "showers",
+        "temporary housing"
+      ],
       "contact": {
-        "phone": "+1-808-587-2160"
-      }
+        "phone": "+1-808-587-2160",
+        "emergency": "911"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "fully accessible",
+      "tsunamiReady": true
     },
     {
       "id": "shelter-tokyo",
       "name": "Tokyo Bay Emergency Response Center",
       "location": "Tokyo, Japan",
-      "coordinates": [35.6328, 139.8811],
+      "coordinates": [
+        35.6328,
+        139.8811
+      ],
       "capacity": 1000,
-      "facilities": ["medical", "communications", "supplies", "helipad", "boats"],
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "helipad",
+        "boats",
+        "food",
+        "showers",
+        "temporary housing",
+        "trauma counseling"
+      ],
       "contact": {
-        "phone": "+81-3-5253-8111"
-      }
+        "phone": "+81-3-5253-8111",
+        "emergency": "118"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "fully accessible",
+      "tsunamiReady": true,
+      "earthquakeResilient": true
+    },
+    {
+      "id": "shelter-manila",
+      "name": "Port of Manila Emergency Center",
+      "location": "Manila, Philippines",
+      "coordinates": [
+        14.584,
+        120.9779
+      ],
+      "capacity": 800,
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "food",
+        "showers",
+        "temporary housing"
+      ],
+      "contact": {
+        "phone": "+63-2-8527-4291",
+        "emergency": "+63-2-8527-3877"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "wheelchair accessible",
+      "typhoonReady": true
+    },
+    {
+      "id": "shelter-singapore",
+      "name": "Singapore Maritime Crisis Centre",
+      "location": "Singapore",
+      "coordinates": [
+        1.2701,
+        103.8474
+      ],
+      "capacity": 600,
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "helipad",
+        "food",
+        "showers",
+        "decontamination"
+      ],
+      "contact": {
+        "phone": "+65-6325-2493",
+        "emergency": "+65-6226-5539"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "fully accessible"
+    },
+    {
+      "id": "shelter-sydney",
+      "name": "Sydney Harbor Emergency Coordination Center",
+      "location": "Sydney, Australia",
+      "coordinates": [
+        -33.8568,
+        151.2153
+      ],
+      "capacity": 400,
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "helipad",
+        "food",
+        "showers",
+        "temporary housing"
+      ],
+      "contact": {
+        "phone": "+61-2-9296-5000",
+        "emergency": "000"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "fully accessible",
+      "bushfireReady": true
+    },
+    {
+      "id": "shelter-incheon",
+      "name": "Incheon Port Emergency Shelter",
+      "location": "Incheon, South Korea",
+      "coordinates": [
+        37.4532,
+        126.7311
+      ],
+      "capacity": 750,
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "helipad",
+        "food",
+        "showers",
+        "temporary housing"
+      ],
+      "contact": {
+        "phone": "+82-32-880-4114",
+        "emergency": "122"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "wheelchair accessible",
+      "tsunamiReady": true
+    },
+    {
+      "id": "shelter-mumbai",
+      "name": "Mumbai Port Emergency Response Center",
+      "location": "Mumbai, India",
+      "coordinates": [
+        18.9558,
+        72.8347
+      ],
+      "capacity": 650,
+      "facilities": [
+        "medical",
+        "communications",
+        "supplies",
+        "food",
+        "showers",
+        "temporary housing"
+      ],
+      "contact": {
+        "phone": "+91-22-2261-8275",
+        "emergency": "1554"
+      },
+      "operatingHours": "24/7",
+      "accessibility": "partially accessible",
+      "cycloneReady": true
     }
   ],
-  "internationalContacts": [
+  "tsunamiWarningCenters": [
     {
+      "id": "ptwc",
       "organization": "PTWC - Pacific Tsunami Warning Center",
       "location": "Honolulu, HI",
-      "coordinates": [21.3156, -157.9993],
+      "coordinates": [
+        21.3156,
+        -157.9993
+      ],
       "contact": {
         "phone": "+1-808-725-6000",
-        "email": "ptwc@noaa.gov"
+        "email": "ptwc@noaa.gov",
+        "website": "https://www.tsunami.gov"
       },
-      "service": "Tsunami monitoring and warnings for Pacific Ocean"
+      "coverage": "Pacific Ocean basin",
+      "service": "Tsunami monitoring and warnings for Pacific Ocean",
+      "operatingHours": "24/7"
     },
     {
+      "id": "ntwc",
+      "organization": "NTWC - National Tsunami Warning Center",
+      "location": "Palmer, Alaska",
+      "coordinates": [
+        61.5994,
+        -149.1003
+      ],
+      "contact": {
+        "phone": "+1-907-745-4212",
+        "email": "ntwc@noaa.gov",
+        "website": "https://ntwc.arh.noaa.gov"
+      },
+      "coverage": "US West Coast, Alaska, British Columbia",
+      "service": "Tsunami warnings for North American Pacific coast",
+      "operatingHours": "24/7"
+    },
+    {
+      "id": "jma-tsunami",
+      "organization": "JMA Tsunami Warning Center",
+      "nativeName": "気象庁津波警報",
+      "location": "Tokyo, Japan",
+      "coordinates": [
+        35.6892,
+        139.6917
+      ],
+      "contact": {
+        "phone": "+81-3-6758-3900",
+        "website": "https://www.jma.go.jp/bosai/tsunami",
+        "emergency": "118"
+      },
+      "coverage": "Japan and Northwest Pacific",
+      "service": "Tsunami warnings and monitoring for Japan",
+      "operatingHours": "24/7",
+      "languages": [
+        "Japanese",
+        "English"
+      ]
+    },
+    {
+      "id": "incois",
+      "organization": "Indian Tsunami Early Warning Centre",
+      "location": "Hyderabad, India",
+      "coordinates": [
+        17.4126,
+        78.3387
+      ],
+      "contact": {
+        "phone": "+91-40-2389-5006",
+        "email": "incois@incois.gov.in",
+        "website": "https://www.incois.gov.in"
+      },
+      "coverage": "Indian Ocean",
+      "service": "Tsunami early warning for Indian Ocean region",
+      "operatingHours": "24/7"
+    },
+    {
+      "id": "bmkg-tsunami",
+      "organization": "BMKG Indonesia Tsunami Warning",
+      "location": "Jakarta, Indonesia",
+      "coordinates": [
+        -6.1754,
+        106.8272
+      ],
+      "contact": {
+        "phone": "+62-21-4246-321",
+        "website": "https://www.bmkg.go.id",
+        "emergency": "115"
+      },
+      "coverage": "Indonesia archipelago",
+      "service": "Tsunami warnings for Indonesia",
+      "operatingHours": "24/7",
+      "languages": [
+        "Indonesian",
+        "English"
+      ]
+    },
+    {
+      "id": "neamtws",
+      "organization": "NEAMTWS",
+      "location": "Athens",
+      "coordinates": [
+        37.9838,
+        23.7275
+      ],
+      "contact": {
+        "phone": "+30-210-349-4000",
+        "website": "http://www.koeri.boun.edu.tr/tsunami"
+      },
+      "coverage": "NE Atlantic/Mediterranean",
+      "service": "Tsunami warnings",
+      "operatingHours": "24/7"
+    },
+    {
+      "id": "caribe-ews",
+      "organization": "CARIBE EWS",
+      "location": "Puerto Rico",
+      "coordinates": [
+        18.395,
+        -66.1143
+      ],
+      "contact": {
+        "phone": "+1-787-833-8433",
+        "website": "http://www.caribewave.pr.gov"
+      },
+      "coverage": "Caribbean",
+      "service": "Tsunami warnings",
+      "operatingHours": "24/7"
+    }
+  ],
+  "portAuthorities": [
+    {
+      "id": "port-tokyo",
+      "name": "Port of Tokyo Authority",
+      "location": "Tokyo, Japan",
+      "coordinates": [
+        35.6328,
+        139.8811
+      ],
+      "contact": {
+        "phone": "+81-3-5479-3000",
+        "vhf": "Channel 12",
+        "email": "info@kouwan.metro.tokyo.jp",
+        "website": "https://www.kouwan.metro.tokyo.jp"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "vessel traffic",
+        "emergency coordination"
+      ]
+    },
+    {
+      "id": "port-singapore",
+      "name": "Maritime and Port Authority of Singapore",
+      "location": "Singapore",
+      "coordinates": [
+        1.2644,
+        103.822
+      ],
+      "contact": {
+        "phone": "+65-6325-2488",
+        "vhf": "Channel 12",
+        "email": "mpa@mpa.gov.sg",
+        "website": "https://www.mpa.gov.sg",
+        "emergency": "+65-6226-5539"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "port control",
+        "VTS",
+        "emergency response",
+        "oil spill"
+      ]
+    },
+    {
+      "id": "port-shanghai",
+      "name": "Shanghai Maritime Safety Administration",
+      "location": "Shanghai, China",
+      "coordinates": [
+        31.2304,
+        121.4737
+      ],
+      "contact": {
+        "phone": "+86-21-6537-6543",
+        "vhf": "Channel 14",
+        "website": "https://sh.msa.gov.cn",
+        "emergency": "12395"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor control",
+        "vessel traffic",
+        "safety inspection"
+      ]
+    },
+    {
+      "id": "port-losangeles",
+      "name": "Port of Los Angeles",
+      "location": "Los Angeles, CA",
+      "coordinates": [
+        33.74,
+        -118.27
+      ],
+      "contact": {
+        "phone": "+1-310-SEA-PORT",
+        "vhf": "Channel 12/14",
+        "email": "info@portoflosangeles.org",
+        "website": "https://www.portoflosangeles.org",
+        "emergency": "911"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor patrol",
+        "VTS",
+        "emergency response"
+      ]
+    },
+    {
+      "id": "port-manila",
+      "name": "Philippine Ports Authority - Manila",
+      "location": "Manila, Philippines",
+      "coordinates": [
+        14.584,
+        120.9779
+      ],
+      "contact": {
+        "phone": "+63-2-8527-4291",
+        "vhf": "Channel 16",
+        "website": "https://www.ppa.com.ph",
+        "emergency": "+63-2-8527-3877"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "port operations",
+        "harbor master",
+        "emergency coordination"
+      ]
+    },
+    {
+      "id": "port-sydney",
+      "name": "Port Authority of New South Wales",
+      "location": "Sydney, Australia",
+      "coordinates": [
+        -33.8568,
+        151.2153
+      ],
+      "contact": {
+        "phone": "+61-2-9296-4999",
+        "vhf": "Channel 13",
+        "email": "info@portauthoritynsw.com.au",
+        "website": "https://www.portauthoritynsw.com.au",
+        "emergency": "000"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "VTS",
+        "pilot services",
+        "emergency response"
+      ]
+    },
+    {
+      "id": "port-rotterdam",
+      "name": "Port of Rotterdam",
+      "location": "Rotterdam, Netherlands",
+      "coordinates": [
+        51.9244,
+        4.4777
+      ],
+      "contact": {
+        "phone": "+31-10-252-1111",
+        "vhf": "Channel 11",
+        "website": "https://www.portofrotterdam.com",
+        "emergency": "112"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "VTS",
+        "emergency"
+      ]
+    },
+    {
+      "id": "port-hamburg",
+      "name": "Hamburg Port Authority",
+      "location": "Hamburg, Germany",
+      "coordinates": [
+        53.5438,
+        9.9768
+      ],
+      "contact": {
+        "phone": "+49-40-42847-0",
+        "vhf": "Channel 12",
+        "website": "https://www.hamburg-port-authority.de",
+        "emergency": "112"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "VTS"
+      ]
+    },
+    {
+      "id": "port-antwerp",
+      "name": "Antwerp Port Authority",
+      "location": "Antwerp, Belgium",
+      "coordinates": [
+        51.2893,
+        4.3108
+      ],
+      "contact": {
+        "phone": "+32-3-205-2011",
+        "vhf": "Channel 12",
+        "website": "https://www.portofantwerp.com",
+        "emergency": "112"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "VTS"
+      ]
+    },
+    {
+      "id": "port-panama",
+      "name": "Panama Maritime Authority",
+      "location": "Panama City",
+      "coordinates": [
+        9.082,
+        -79.417
+      ],
+      "contact": {
+        "phone": "+507-501-5000",
+        "vhf": "Channel 12",
+        "website": "https://www.amp.gob.pa",
+        "emergency": "911"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "Panama Canal",
+        "VTS"
+      ]
+    },
+    {
+      "id": "port-suez",
+      "name": "Suez Canal Authority",
+      "location": "Ismailia, Egypt",
+      "coordinates": [
+        30.5965,
+        32.2715
+      ],
+      "contact": {
+        "phone": "+20-64-332-2450",
+        "vhf": "Channel 16",
+        "website": "https://www.suezcanal.gov.eg",
+        "emergency": "122"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "canal transit",
+        "emergency"
+      ]
+    },
+    {
+      "id": "port-jebel-ali",
+      "name": "Jebel Ali Port",
+      "location": "Dubai",
+      "coordinates": [
+        24.9931,
+        55.0276
+      ],
+      "contact": {
+        "phone": "+971-4-881-5000",
+        "vhf": "Channel 14",
+        "emergency": "+971-4-881-5555"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "container",
+        "VTS"
+      ]
+    },
+    {
+      "id": "port-haifa",
+      "name": "Port of Haifa",
+      "location": "Haifa, Israel",
+      "coordinates": [
+        32.8192,
+        34.9985
+      ],
+      "contact": {
+        "phone": "+972-4-852-1111",
+        "vhf": "Channel 12",
+        "emergency": "100"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "VTS"
+      ]
+    },
+    {
+      "id": "port-jeddah",
+      "name": "Jeddah Islamic Port Authority",
+      "location": "Jeddah, Saudi Arabia",
+      "coordinates": [
+        21.4858,
+        39.1925
+      ],
+      "contact": {
+        "phone": "+966-12-647-4444",
+        "vhf": "Channel 12",
+        "website": "https://www.ports.gov.sa",
+        "emergency": "911"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "harbor master",
+        "VTS",
+        "pilgrimage support",
+        "Red Sea hub"
+      ]
+    },
+    {
+      "id": "port-dubai-main",
+      "name": "Port Rashid Authority",
+      "location": "Dubai, UAE",
+      "coordinates": [
+        25.2697,
+        55.2796
+      ],
+      "contact": {
+        "phone": "+971-4-345-1111",
+        "vhf": "Channel 12",
+        "website": "https://www.dpa.ae",
+        "emergency": "999"
+      },
+      "operatingHours": "24/7",
+      "services": [
+        "cruise terminal",
+        "harbor master",
+        "emergency response"
+      ]
+    }
+  ],
+  "maritimeWeatherServices": [
+    {
+      "id": "jma-marine",
+      "organization": "JMA Marine Weather Service",
+      "nativeName": "気象庁海洋気象情報",
+      "location": "Tokyo, Japan",
+      "coordinates": [
+        35.6892,
+        139.6917
+      ],
+      "contact": {
+        "phone": "+81-3-6758-3900",
+        "website": "https://www.jma.go.jp/bosai",
+        "email": "maritime@jma.go.jp"
+      },
+      "coverage": "Northwest Pacific, Japan waters",
+      "services": [
+        "marine forecasts",
+        "typhoon warnings",
+        "wave forecasts",
+        "tsunami warnings"
+      ]
+    },
+    {
+      "id": "noaa-opc",
+      "organization": "NOAA Ocean Prediction Center",
+      "location": "College Park, MD",
+      "coordinates": [
+        38.9897,
+        -76.9378
+      ],
+      "contact": {
+        "phone": "+1-301-683-1520",
+        "website": "https://ocean.weather.gov",
+        "email": "opc.sr@noaa.gov"
+      },
+      "coverage": "North Atlantic and North Pacific",
+      "services": [
+        "high seas forecasts",
+        "wave analysis",
+        "ice analysis",
+        "storm warnings"
+      ]
+    },
+    {
+      "id": "cma-maritime",
+      "organization": "China Meteorological Administration - Maritime",
+      "location": "Beijing, China",
+      "coordinates": [
+        39.9042,
+        116.4074
+      ],
+      "contact": {
+        "phone": "+86-10-6840-6114",
+        "website": "http://www.cma.gov.cn",
+        "email": "webmaster@cma.gov.cn"
+      },
+      "coverage": "China Seas, Western Pacific",
+      "services": [
+        "marine forecasts",
+        "typhoon warnings",
+        "sea state forecasts"
+      ]
+    },
+    {
+      "id": "bom-marine",
+      "organization": "Bureau of Meteorology Marine Services",
+      "location": "Melbourne, Australia",
+      "coordinates": [
+        -37.8136,
+        144.9631
+      ],
+      "contact": {
+        "phone": "+61-3-9669-4000",
+        "website": "http://www.bom.gov.au/marine",
+        "email": "marine@bom.gov.au"
+      },
+      "coverage": "Australian waters, Southern Ocean",
+      "services": [
+        "marine forecasts",
+        "cyclone warnings",
+        "wave forecasts",
+        "ice charts"
+      ]
+    },
+    {
+      "id": "pagasa-marine",
+      "organization": "PAGASA Marine Weather Services",
+      "location": "Quezon City, Philippines",
+      "coordinates": [
+        14.6507,
+        121.0494
+      ],
+      "contact": {
+        "phone": "+63-2-8927-1335",
+        "website": "https://www.pagasa.dost.gov.ph",
+        "email": "info@pagasa.dost.gov.ph"
+      },
+      "coverage": "Philippine waters",
+      "services": [
+        "marine forecasts",
+        "typhoon warnings",
+        "wave forecasts",
+        "tropical cyclone advisories"
+      ]
+    },
+    {
+      "id": "metoffice-marine",
+      "organization": "Met Office Marine",
+      "location": "Exeter, UK",
+      "coordinates": [
+        50.7184,
+        -3.5339
+      ],
+      "contact": {
+        "phone": "+44-370-900-0100",
+        "website": "https://www.metoffice.gov.uk/weather/specialist-forecasts/coast-and-sea"
+      },
+      "coverage": "UK waters, Atlantic",
+      "services": [
+        "marine forecasts",
+        "storm warnings"
+      ]
+    },
+    {
+      "id": "meteofrance-marine",
+      "organization": "Météo-France Marine",
+      "location": "Toulouse",
+      "coordinates": [
+        43.6047,
+        1.4442
+      ],
+      "contact": {
+        "phone": "+33-5-67-69-70-00",
+        "website": "https://www.meteofrance.com"
+      },
+      "coverage": "French waters",
+      "services": [
+        "marine forecasts",
+        "storm warnings"
+      ]
+    }
+  ],
+  "internationalOrganizations": [
+    {
+      "id": "imo",
       "organization": "IMO - International Maritime Organization",
       "location": "London, UK",
-      "coordinates": [51.5074, -0.1278],
+      "coordinates": [
+        51.5074,
+        -0.1278
+      ],
       "contact": {
         "phone": "+44-20-7735-7611",
-        "email": "info@imo.org"
+        "email": "info@imo.org",
+        "website": "https://www.imo.org"
       },
-      "service": "Global maritime coordination"
+      "service": "Global maritime safety and security standards",
+      "operatingHours": "Business hours"
     },
     {
+      "id": "wmo",
       "organization": "WMO - World Meteorological Organization",
       "location": "Geneva, Switzerland",
-      "coordinates": [46.2044, 6.1432],
+      "coordinates": [
+        46.2044,
+        6.1432
+      ],
       "contact": {
         "phone": "+41-22-730-8111",
-        "email": "wmo@wmo.int"
+        "email": "wmo@wmo.int",
+        "website": "https://www.wmo.int"
       },
-      "service": "Weather and sea state forecasting coordination"
+      "service": "Weather and sea state forecasting coordination",
+      "operatingHours": "Business hours"
+    },
+    {
+      "id": "iho",
+      "organization": "IHO - International Hydrographic Organization",
+      "location": "Monaco",
+      "coordinates": [
+        43.7384,
+        7.4246
+      ],
+      "contact": {
+        "phone": "+377-93-10-81-00",
+        "email": "info@iho.int",
+        "website": "https://www.iho.int"
+      },
+      "service": "Nautical charting and hydrographic standards",
+      "operatingHours": "Business hours"
+    }
+  ],
+  "lifeboatStations": [
+    {
+      "id": "rnli",
+      "name": "RNLI",
+      "location": "Poole, UK",
+      "coordinates": [
+        50.7128,
+        -1.9877
+      ],
+      "contact": {
+        "phone": "+44-1202-663-000",
+        "emergency": "999",
+        "website": "https://rnli.org"
+      },
+      "stations": 238,
+      "volunteers": 4600,
+      "region": "UK/Ireland",
+      "capabilities": [
+        "lifeboats",
+        "rescue"
+      ]
+    },
+    {
+      "id": "knrm",
+      "name": "KNRM",
+      "location": "Netherlands",
+      "coordinates": [
+        52.4586,
+        4.625
+      ],
+      "contact": {
+        "phone": "+31-255-548-400",
+        "emergency": "112",
+        "website": "https://knrm.nl"
+      },
+      "stations": 45,
+      "volunteers": 1250,
+      "region": "Netherlands",
+      "capabilities": [
+        "North Sea rescue"
+      ]
     }
   ]
 }
