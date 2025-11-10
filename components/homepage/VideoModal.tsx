@@ -1,7 +1,7 @@
 'use client'
 
 import { X } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 type VideoModalProps = {
   isOpen: boolean
@@ -10,6 +10,15 @@ type VideoModalProps = {
 }
 
 export default function VideoModal({ isOpen, onClose, videoSrc }: VideoModalProps) {
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -48,9 +57,16 @@ export default function VideoModal({ isOpen, onClose, videoSrc }: VideoModalProp
               playsInline
               controls
               controlsList="nodownload"
+              onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+              onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
             >
               <source src={videoSrc} type="video/mp4" />
             </video>
+
+            {/* Time Badge */}
+            <div className="absolute top-4 right-4 bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-white text-sm font-medium shadow-lg">
+              <span className="text-red-400">●</span> {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
           </div>
         </div>
       </div>

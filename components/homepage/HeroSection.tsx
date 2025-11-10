@@ -8,6 +8,14 @@ import VideoModal from './VideoModal'
 export default function HeroSection() {
   const [isPlaying, setIsPlaying] = useState(true)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   return (
     <section className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-blue-900 overflow-hidden">
@@ -166,6 +174,8 @@ export default function HeroSection() {
                   preload="auto"
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
+                  onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                  onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                 >
                   <source src="/earthquake-tsunami-alert-demo.mp4" type="video/mp4" />
                   <div className="absolute inset-0 flex items-center justify-center text-white text-center p-8">
@@ -190,9 +200,9 @@ export default function HeroSection() {
                   </div>
                 )}
 
-                {/* Video Duration Badge */}
+                {/* Video Time Badge - Shows current time / total duration */}
                 <div className="absolute top-3 right-3 bg-slate-900/90 backdrop-blur-sm rounded-lg px-3 py-1.5 text-white text-sm font-medium shadow-lg">
-                  <span className="text-red-400">●</span> 0:52
+                  <span className="text-red-400">●</span> {formatTime(currentTime)} / {formatTime(duration)}
                 </div>
               </div>
               
