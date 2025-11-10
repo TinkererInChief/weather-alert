@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Activity, AlertTriangle, Waves, Clock } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Activity, AlertTriangle, Waves, Bell, TrendingUp, CheckCircle, Clock } from 'lucide-react'
 import WidgetCard from './WidgetCard'
 import EventHoverCard from '@/components/shared/EventHoverCard'
 import { EarthquakeEvent, TsunamiEvent } from '@/types/event-hover'
+import { formatDualTimeCompact } from '@/lib/time-display'
 
 type TimeRange = '24h' | '7d' | '30d'
 type EventType = 'all' | 'earthquake' | 'tsunami'
@@ -70,6 +71,24 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
         </div>
       )
     }
+  }
+
+  const formatRelativeTime = (date: Date) => {
+    const diff = Date.now() - date.getTime()
+    if (diff < 60_000) return 'just now'
+    const minutes = Math.floor(diff / 60_000)
+    if (minutes < 60) return `${minutes}m ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  }
+
+  const cleanLabel = (s?: string) => {
+    if (!s) return ''
+    let t = s.replace(/\s+—\s*Unknown$/i, '').replace(/\bUnknown\b/i, '').trim()
+    if (t.endsWith('—')) t = t.slice(0, -1).trim()
+    return t
   }
 
   const timeRangeLabel = {
@@ -183,19 +202,30 @@ export default function UnifiedIncidentTimeline({ events, height = '500px' }: Un
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{event.title}</p>
-                        <p className="text-xs text-slate-500 truncate">{event.subtitle}</p>
+                        <p className="text-sm font-semibold text-slate-900 truncate">{cleanLabel(event.title)}</p>
+                        {cleanLabel(event.subtitle) && (
+                          <p className="text-xs text-slate-500 truncate">{cleanLabel(event.subtitle)}</p>
+                        )}
                       </div>
                       <span className={`rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${
-                        event.success 
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
-                          : 'bg-rose-50 text-rose-600 border border-rose-100'
+                        event.type === 'tsunami'
+                          ? (
+                              String(event.status).toUpperCase() === 'WARNING' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
+                              String(event.status).toUpperCase() === 'WATCH' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
+                              String(event.status).toUpperCase() === 'ADVISORY' ? 'bg-amber-50 text-amber-600 border border-amber-100' :
+                              'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                            )
+                          : (
+                              event.success 
+                                ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                                : 'bg-rose-50 text-rose-600 border border-rose-100'
+                            )
                       }`}>
                         {event.status}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {event.timestamp.toLocaleString()}
+                    <p className="text-xs text-slate-400 mt-1" title={formatDualTimeCompact(event.timestamp, 'event')}>
+                      {formatRelativeTime(event.timestamp)}
                     </p>
                     {event.details && (
                       <p className="mt-1 text-xs text-rose-600 truncate">{event.details}</p>

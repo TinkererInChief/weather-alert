@@ -6,6 +6,7 @@ import { MapPin, Layers, Maximize2, Minimize2 } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { getMagnitudeColor, getTsunamiColor, getEventOpacity as getOpacity, getEventSize as getSize } from '@/lib/utils/event-colors'
+import { formatDualTimeCompact } from '@/lib/time-display'
 
 type EventMarker = {
   id: string
@@ -597,9 +598,9 @@ export default function GlobalEventMap({ events, contacts = [], height = '500px'
                   <span className="font-semibold text-white">Level {hoveredEvent.severity}</span>
                 </p>
               )}
-              <p className="flex justify-between">
+              <p className="flex flex-col gap-0.5">
                 <span className="font-medium">Time:</span>
-                <span className="text-white">{new Date(hoveredEvent.timestamp).toLocaleString()}</span>
+                <span className="text-xs text-white/90">{formatDualTimeCompact(new Date(hoveredEvent.timestamp), 'event')}</span>
               </p>
               {hoveredEvent.contactsAffected !== undefined && (
                 <p className="flex justify-between">

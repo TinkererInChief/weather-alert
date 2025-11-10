@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Share2, Mail, MessageSquare, Copy, Check } from 'lucide-react'
 import { EarthquakeEvent, TsunamiEvent } from '@/types/event-hover'
+import { formatDualTime, getEventTime } from '@/lib/time-display'
 
 const WhatsAppIcon = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -25,9 +26,14 @@ export default function ShareEventButton({ event }: ShareEventButtonProps) {
       ? `Earthquake Alert: M${event.magnitude} in ${event.location}`
       : `Tsunami Alert: ${event.threatLevel} for ${event.location}`
 
+    // Format time consistently for sharing - always include both UTC and local
+    const eventDate = getEventTime(event)
+    const timeDisplay = formatDualTime(eventDate, 'event')
+    const timeString = `${timeDisplay.primary} (${timeDisplay.secondary})`
+
     const text = isEarthquake(event)
-      ? `A magnitude ${event.magnitude} earthquake occurred at a depth of ${event.depth}km in ${event.location} on ${new Date(event.time).toLocaleString()}.`
-      : `A tsunami ${event.threatLevel} alert has been issued for ${event.ocean} affecting ${event.location} on ${new Date(event.time).toLocaleString()}.`
+      ? `A magnitude ${event.magnitude} earthquake occurred at a depth of ${event.depth}km in ${event.location} on ${timeString}.`
+      : `A tsunami ${event.threatLevel} alert has been issued for ${event.ocean} affecting ${event.location} on ${timeString}.`
 
     const url = typeof window !== 'undefined' ? window.location.href : ''
 
