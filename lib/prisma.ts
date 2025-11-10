@@ -60,22 +60,36 @@ function createPrismaClient(): PrismaClient | null {
   }
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient()
+const _prisma = globalForPrisma.prisma ?? createPrismaClient()
 
-if (prisma) {
-  globalForPrisma.prisma = prisma
+if (_prisma) {
+  globalForPrisma.prisma = _prisma
 }
+
+/**
+ * Prisma client instance
+ * 
+ * At build time (Netlify): May be null
+ * At runtime (all platforms): Always available
+ * 
+ * For API routes: Safe to use directly (they only run at runtime)
+ * For pages/components: Use getPrisma() for type safety
+ * 
+ * Type is asserted as non-null to avoid TypeScript errors in API routes
+ * which are guaranteed to only execute at runtime when DB is available.
+ */
+export const prisma = _prisma as PrismaClient
 
 /**
  * Get Prisma client with runtime safety check
  * Throws error if prisma is not available (should never happen at runtime)
- * Use this in API routes and server components
+ * Use this in pages and server components for explicit null safety
  */
 export function getPrisma(): PrismaClient {
-  if (!prisma) {
+  if (!_prisma) {
     throw new Error('Prisma client not initialized. DATABASE_URL may be missing or invalid.')
   }
-  return prisma
+  return _prisma
 }
 
 /**
@@ -83,17 +97,17 @@ export function getPrisma(): PrismaClient {
  * Useful for conditional logic
  */
 export function hasPrisma(): boolean {
-  return prisma !== null
+  return _prisma !== null
 }
 
 export async function checkDatabaseConnection(): Promise<boolean> {
-  if (!prisma) {
+  if (!_prisma) {
     console.warn('⚠️ Prisma client not available (build time or no DATABASE_URL)')
     return false
   }
   
   try {
-    await prisma.$queryRaw`SELECT 1`
+    await _prisma.$queryRaw`SELECT 1`
     return true
   } catch (error) {
     console.error('Database connection check failed:', error)
