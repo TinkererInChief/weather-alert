@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { initializeApp, isInitialized } from '@/lib/init'
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET /api/init
  * Initialize the application (settings system, observers, etc.)
