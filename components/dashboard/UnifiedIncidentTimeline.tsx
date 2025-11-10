@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Activity, AlertTriangle, Waves, Bell, TrendingUp, CheckCircle, Clock } from 'lucide-react'
 import WidgetCard from './WidgetCard'
 import EventHoverCard from '@/components/shared/EventHoverCard'
