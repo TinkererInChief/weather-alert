@@ -66,6 +66,26 @@ if (prisma) {
   globalForPrisma.prisma = prisma
 }
 
+/**
+ * Get Prisma client with runtime safety check
+ * Throws error if prisma is not available (should never happen at runtime)
+ * Use this in API routes and server components
+ */
+export function getPrisma(): PrismaClient {
+  if (!prisma) {
+    throw new Error('Prisma client not initialized. DATABASE_URL may be missing or invalid.')
+  }
+  return prisma
+}
+
+/**
+ * Check if Prisma client is available
+ * Useful for conditional logic
+ */
+export function hasPrisma(): boolean {
+  return prisma !== null
+}
+
 export async function checkDatabaseConnection(): Promise<boolean> {
   if (!prisma) {
     console.warn('⚠️ Prisma client not available (build time or no DATABASE_URL)')

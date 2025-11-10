@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { prisma } from '@/lib/prisma'
+import { getPrisma } from '@/lib/prisma'
 import { isRedirectError } from 'next/dist/client/components/redirect'
 
 export default async function AcknowledgeAlertPage({
@@ -9,6 +9,8 @@ export default async function AcknowledgeAlertPage({
 }) {
   const { alertId } = params
 
+  const prisma = getPrisma()
+  
   try {
     // Find the alert
     const alert = await prisma.vesselAlert.findUnique({
