@@ -1,6 +1,7 @@
 "use client"
 
-import { memo, useMemo } from "react"
+import { CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react'
+import { formatDualTime } from '@/lib/time-display'
 import { aggregateServicesTimeline } from "@/lib/status/aggregate"
 
 // Aggregated status timeline that combines multiple services

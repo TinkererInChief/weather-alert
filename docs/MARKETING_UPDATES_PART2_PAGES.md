@@ -20,7 +20,7 @@ CTA: "Request Demo" | "Learn More"
 ```tsx
 Headline: "AI-Powered Emergency Intelligence for Maritime & Enterprise Safety"
 
-Subhead: "Advanced tsunami simulation, real-time vessel tracking, and intelligent alerts powered by AI and global seismic networks. Protect your workforce with precision targeting and sub-30 second notifications."
+Subhead: "Advanced tsunami warnings, real-time vessel tracking, and intelligent alerts powered by AI and global seismic networks. Protect your workforce with precision targeting and sub-30 second notifications."
 
 Badge Strip:
 [✓ Multi-Source Intelligence]  [✓ AI Scenario Generation]

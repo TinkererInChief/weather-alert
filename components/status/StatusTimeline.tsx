@@ -1,5 +1,7 @@
 "use client"
 
+import { AlertTriangle, CheckCircle, Clock, XCircle, Info } from 'lucide-react'
+import { formatDualTime } from '@/lib/time-display'
 import { memo, useMemo } from "react"
 
 // Premium status timeline with enhanced visuals

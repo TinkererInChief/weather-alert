@@ -6,6 +6,7 @@ import WidgetCard from '@/components/dashboard/WidgetCard'
 import { Database, Ship, MapPin, Bell, Activity } from 'lucide-react'
 import { ResponsiveContainer, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts'
 import { usePersistedState } from '@/lib/hooks/usePersistedState'
+import { formatDualTime } from '@/lib/time-display'
 
 type TableStats = {
   table: string

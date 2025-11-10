@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Search, Ship, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react'
+import { Search, Ship, MapPin, Activity } from 'lucide-react'
+import { formatDualTime } from '@/lib/time-display'
 import {
   Dialog,
   DialogContent,

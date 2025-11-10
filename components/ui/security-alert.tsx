@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { AlertTriangle, Shield, X, CheckCircle, Info, AlertCircle } from 'lucide-react'
+import { formatDualTime } from '@/lib/time-display'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 

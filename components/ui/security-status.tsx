@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect } from 'react'
-import { Shield, AlertTriangle, CheckCircle, Clock, Globe, Fingerprint, Bot, Activity } from 'lucide-react'
+import { Shield, Lock, Key, Eye, AlertTriangle, CheckCircle, Clock, Globe, Fingerprint, Bot, Activity } from 'lucide-react'
+import { formatDualTime } from '@/lib/time-display'
 
 export interface SecurityMetrics {
   overallStatus: 'secure' | 'warning' | 'critical'

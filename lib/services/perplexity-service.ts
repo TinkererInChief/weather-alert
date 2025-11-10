@@ -3,6 +3,8 @@
  * Provides real-time analysis of earthquake/tsunami impact on maritime operations
  */
 
+import { findSARResources } from '@/lib/services/sar-service'
+
 export type MaritimeIntelligence = {
   summary: string
   portStatus: Array<{
@@ -436,39 +438,39 @@ If you can't find current information, state "No current reports found" and prov
       }
     }
 
-    // Enhanced fallback with region-specific contacts
-    if (contacts.length === 0) {
-      const nearbyPorts = this.findNearbyPorts(eventData.latitude, eventData.longitude, 500)
-      
-      if (nearbyPorts.length > 0) {
-        const nearestPort = nearbyPorts[0]
-        const topPorts = nearbyPorts.slice(0, 2)
-        
-        // Primary maritime emergency contact
-        contacts.push({
-          agency: `${nearestPort.country} Coast Guard`,
-          phone: 'VHF Channel 16 (156.8 MHz)',
-          vhf: 'Channel 16'
-        })
-        
-        // Add port authorities for nearest ports
-        topPorts.forEach(port => {
-          contacts.push({
-            agency: `${port.name}`,
-            phone: `VHF Channel 12/14 (Port Operations)`,
-            vhf: 'Ch 12/14'
-          })
-        })
-      } else {
-        contacts.push({
-          agency: 'International Maritime Emergency',
-          phone: 'VHF Channel 16 (156.8 MHz)',
-          vhf: 'Channel 16'
-        })
+    const sarResources = findSARResources(eventData.latitude, eventData.longitude, 1000)
+    const sarContacts = sarResources.recommendedContacts.slice(0, 3).map(resource => ({
+      agency: resource.name,
+      phone: resource.contact.phone || resource.contact.emergency || 'VHF Channel 16',
+      vhf: resource.contact.vhf || (resource.type === 'coast_guard' ? 'Channel 16' : undefined)
+    }))
+
+    contacts.push(...sarContacts)
+
+    const isPacific = eventData.longitude >= 110 || eventData.longitude <= -70
+    if ((eventData.tsunamiWarning || eventData.type === 'tsunami') && isPacific) {
+      contacts.push({
+        agency: 'PTWC Tsunami Warning Center',
+        phone: '+1-808-725-6000',
+        vhf: undefined
+      })
+    }
+
+    const uniqueContacts: MaritimeIntelligence['emergencyContacts'] = []
+    const seen = new Set<string>()
+    for (const contact of contacts) {
+      const key = contact.agency.toLowerCase()
+      if (!seen.has(key)) {
+        seen.add(key)
+        uniqueContacts.push(contact)
       }
     }
 
-    return contacts
+    return uniqueContacts.length > 0 ? uniqueContacts : [{
+      agency: 'International Maritime Emergency',
+      phone: 'VHF Channel 16 (156.8 MHz)',
+      vhf: 'Channel 16'
+    }]
   }
 
   private extractHistoricalContext(text: string): string | null {

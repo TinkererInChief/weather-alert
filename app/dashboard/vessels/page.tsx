@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import AppLayout from '@/components/layout/AppLayout'
 import { Ship, AlertTriangle, MapPin, Activity, Search } from 'lucide-react'
 import WidgetCard from '@/components/dashboard/WidgetCard'
+import VesselFilters from '@/components/vessels/VesselFilters'
+import { formatDualTime } from '@/lib/time-display'
 import dynamic from 'next/dynamic'
 
 const VesselMap = dynamic(() => import('@/components/vessels/VesselMap'), { ssr: false })

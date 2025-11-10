@@ -104,23 +104,31 @@ async function getTsunamiStats() {
         const description = rawData.description || ''
         
         // Parse earthquake details from description
-        const magMatch = description.match(/Magnitude:\s*([\d.]+)/)
+        const magMatch = description.match(/Magnitude\s*:?[\s]*([\d.]+)/i)
         const latLonMatch = description.match(/Lat\/Lon:\s*([\d.-]+)\s*\/\s*([\d.-]+)/)
         const regionMatch = description.match(/Affected Region:\s*([^N]+?)(?:\s*Note:|$)/)
         
         const magnitude = magMatch ? parseFloat(magMatch[1]) : undefined
         const latitude = latLonMatch ? parseFloat(latLonMatch[1]) : undefined
         const longitude = latLonMatch ? parseFloat(latLonMatch[2]) : undefined
-        const location = regionMatch ? regionMatch[1].trim() : (rawData.location || 'Unknown')
+        const location = regionMatch ? regionMatch[1].trim() : (rawData.location || (alert as any).location || 'Unknown')
         
-        // Extract ocean from location
+        // Extract ocean from location or infer from lat/lon
         const oceans = ['Pacific', 'Atlantic', 'Indian', 'Arctic', 'Southern']
         let ocean = 'Unknown'
         for (const o of oceans) {
-          if (location.includes(o)) {
+          if (String(location).includes(o)) {
             ocean = `${o} Ocean`
             break
           }
+        }
+        if (ocean === 'Unknown' && typeof latitude === 'number' && typeof longitude === 'number' && isFinite(latitude) && isFinite(longitude)) {
+          const lon = ((longitude + 540) % 360) - 180 // normalize
+          if (latitude <= -60) ocean = 'Southern Ocean'
+          else if (latitude >= 66) ocean = 'Arctic Ocean'
+          else if (lon >= 20 && lon <= 147) ocean = 'Indian Ocean'
+          else if (lon > -70 && lon < 20) ocean = 'Atlantic Ocean'
+          else ocean = 'Pacific Ocean'
         }
         
         // Determine threat level

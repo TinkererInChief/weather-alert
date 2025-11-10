@@ -1,7 +1,10 @@
 'use client'
 
+import { useSession } from 'next-auth/react'
+import { Save, Mail, Phone, Bell, Globe, Shield, User } from 'lucide-react'
+import { formatDualTime } from '@/lib/time-display'
 import { useState, useEffect } from 'react'
-import { Settings, Save, Bell, Shield, Globe, Phone, Mail, MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react'
+import { MessageSquare, MessageCircle, AlertTriangle } from 'lucide-react'
 import AppLayout from '@/components/layout/AppLayout'
 
 interface SystemSettings {
