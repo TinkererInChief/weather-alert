@@ -24,7 +24,7 @@ That's it! No code, no API keys, no dependencies needed.
 
 ## When Would You Use These Functions?
 
-The `send-contact-email.ts` function is only needed if you want:
+The `send-contact-email.ts.example` function is only needed if you want:
 - Custom email templates (beyond Netlify's default)
 - Additional processing of form data
 - Integration with third-party services (SendGrid, etc.)
@@ -42,9 +42,14 @@ pnpm add @netlify/functions
 pnpm add @sendgrid/mail  # if using SendGrid
 ```
 
-### 2. Move functions to active directory
+### 2. Rename and move function to active directory
 ```bash
-mv netlify-functions-optional/functions netlify/functions
+# Rename the example file
+mv netlify-functions-optional/functions/send-contact-email.ts.example netlify-functions-optional/functions/send-contact-email.ts
+
+# Move to active directory
+mkdir -p netlify/functions
+mv netlify-functions-optional/functions/* netlify/functions/
 ```
 
 ### 3. Set environment variables
