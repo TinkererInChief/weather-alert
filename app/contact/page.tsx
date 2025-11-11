@@ -19,15 +19,26 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
     
+    const form = e.currentTarget
+    
     try {
-      // Netlify Forms will handle this automatically
-      // The form data will be sent to Netlify and can trigger email notifications
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      setSubmitted(true)
+      // Submit to Netlify Forms
+      const formData = new FormData(form)
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData as any).toString()
+      })
+      
+      if (response.ok) {
+        setSubmitted(true)
+      } else {
+        throw new Error('Form submission failed')
+      }
     } catch (error) {
       console.error('Form submission error:', error)
       alert('There was an error sending your message. Please try again.')
@@ -45,6 +56,18 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Hidden form for Netlify to detect at build time */}
+      <form name="contact" data-netlify="true" data-netlify-honeypot="bot-field" hidden>
+        <input type="hidden" name="form-name" value="contact" />
+        <input type="text" name="bot-field" />
+        <input type="text" name="name" />
+        <input type="email" name="email" />
+        <input type="text" name="company" />
+        <input type="tel" name="phone" />
+        <input type="text" name="subject" />
+        <textarea name="message"></textarea>
+      </form>
+
       <WorkInProgressBanner />
       <PublicPageHeader 
         title="Contact Us"
