@@ -6,6 +6,8 @@ import { useState } from 'react'
 import PublicPageHeader from '@/components/public/PublicPageHeader'
 import PublicPageContent, { ContentSection, SectionTitle, Card, GradientCard } from '@/components/public/PublicPageContent'
 
+export const dynamic = 'force-static'
+
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -22,16 +24,21 @@ export default function ContactPage() {
     e.preventDefault()
     setIsSubmitting(true)
     
+    const form = e.currentTarget
+    
     try {
-      // For now, simulate successful submission
-      // In production, you can implement form handling via:
-      // 1. Next.js API routes
-      // 2. Third-party service like Formspree
-      // 3. Server Actions
-      console.log('Contact form submitted:', formData)
+      const body = new URLSearchParams(new FormData(form) as any).toString()
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body
+      })
       
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      setSubmitted(true)
+      if (response.ok) {
+        setSubmitted(true)
+      } else {
+        throw new Error('Form submission failed')
+      }
     } catch (error) {
       console.error('Form submission error:', error)
       alert('There was an error sending your message. Please try again.')
@@ -136,9 +143,13 @@ export default function ContactPage() {
               <>
                 <h2 className="text-2xl font-semibold text-slate-900 mb-6">Send us a Message</h2>
                 <form 
+                  name="contact"
+                  method="POST"
+                  data-netlify="true"
                   onSubmit={handleSubmit} 
                   className="space-y-6"
                 >
+                  <input type="hidden" name="form-name" value="contact" />
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">
