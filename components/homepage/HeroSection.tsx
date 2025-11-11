@@ -177,7 +177,7 @@ export default function HeroSection() {
                   onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                   onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                 >
-                  <source src="/earthquake-tsunami-alert-demo.mp4" type="video/mp4" />
+                  <source src="/tsunami-alerts.com.mp4" type="video/mp4" />
                   <div className="absolute inset-0 flex items-center justify-center text-white text-center p-8">
                     <p>Your browser does not support video playback.</p>
                   </div>
@@ -278,7 +278,7 @@ export default function HeroSection() {
       <VideoModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        videoSrc="/earthquake-tsunami-alert-demo.mp4"
+        videoSrc="/tsunami-alerts.com.mp4"
       />
     </section>
   )
