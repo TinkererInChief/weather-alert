@@ -22,23 +22,16 @@ export default function ContactPage() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    const form = e.currentTarget
-    
     try {
-      // Submit to Netlify Forms
-      const formData = new FormData(form)
+      // For now, simulate successful submission
+      // In production, you can implement form handling via:
+      // 1. Next.js API routes
+      // 2. Third-party service like Formspree
+      // 3. Server Actions
+      console.log('Contact form submitted:', formData)
       
-      const response = await fetch('/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams(formData as any).toString()
-      })
-      
-      if (response.ok) {
-        setSubmitted(true)
-      } else {
-        throw new Error('Form submission failed')
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setSubmitted(true)
     } catch (error) {
       console.error('Form submission error:', error)
       alert('There was an error sending your message. Please try again.')
@@ -56,21 +49,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Hidden form for Netlify to detect at build time */}
-      <form name="contact" data-netlify="true" hidden>
-        <input type="text" name="name" />
-        <input type="email" name="email" />
-        <input type="text" name="company" />
-        <input type="tel" name="phone" />
-        <select name="subject">
-          <option value="General Inquiry">General Inquiry</option>
-          <option value="Product Demo">Product Demo</option>
-          <option value="Technical Support">Technical Support</option>
-          <option value="Partnership">Partnership</option>
-        </select>
-        <textarea name="message"></textarea>
-      </form>
-
       <PublicPageHeader 
         title="Contact Us"
         subtitle="Get in touch with our team for demos, support, or enterprise solutions. We're here to help protect your organization."
@@ -158,13 +136,9 @@ export default function ContactPage() {
               <>
                 <h2 className="text-2xl font-semibold text-slate-900 mb-6">Send us a Message</h2>
                 <form 
-                  name="contact"
-                  method="POST"
-                  data-netlify="true"
                   onSubmit={handleSubmit} 
                   className="space-y-6"
                 >
-                  <input type="hidden" name="form-name" value="contact" />
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">

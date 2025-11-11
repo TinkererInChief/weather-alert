@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Contact Form - Netlify Detection</title>
+</head>
+<body>
+  <!-- Static form for Netlify build detection -->
+  <form name="contact" data-netlify="true" method="POST" action="/contact">
+    <input type="hidden" name="form-name" value="contact" />
+    <input type="text" name="name" placeholder="Full Name" required />
+    <input type="email" name="email" placeholder="Email Address" required />
+    <input type="text" name="company" placeholder="Company" />
+    <input type="tel" name="phone" placeholder="Phone Number" />
+    <select name="subject" required>
+      <option value="">Select Subject</option>
+      <option value="General Inquiry">General Inquiry</option>
+      <option value="Product Demo">Product Demo</option>
+      <option value="Technical Support">Technical Support</option>
+      <option value="Partnership">Partnership</option>
+    </select>
+    <textarea name="message" placeholder="Your message" required></textarea>
+    <button type="submit">Send Message</button>
+  </form>
+</body>
+</html>
