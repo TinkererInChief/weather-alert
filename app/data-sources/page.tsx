@@ -81,6 +81,33 @@ export default function DataSourcesPage() {
       ],
       attribution: 'Earthquake information from the Japan Meteorological Agency (JMA).',
       note: 'Commercial use is permitted by JMA Website Terms with source citation and proper editing notices. Restrictions under the Meteorological Service Act (e.g., forecasting licenses and warning issuance) may apply in Japan; this service is not an official warning and is not endorsed by JMA.'
+    },
+    {
+      provider: 'GeoNet (GNS Science, New Zealand)',
+      type: 'Open data; attribution required',
+      license: 'CC BY 3.0 NZ',
+      icon: Globe,
+      termsUrl: 'https://www.geonet.org.nz/about/licensing',
+      docsUrl: 'https://api.geonet.org.nz/',
+      endpoints: [
+        { label: 'Quake API', url: 'https://api.geonet.org.nz/quake' },
+        { label: 'CAP Alerts', url: 'https://api.geonet.org.nz/cap/1.2/' }
+      ],
+      attribution: 'Data from GeoNet, GNS Science, New Zealand. Licensed under CC BY 3.0 NZ.',
+      note: 'Commercial use permitted with attribution. Covers New Zealand, Southwest Pacific, and Kermadec Islands region.'
+    },
+    {
+      provider: 'DART Buoy Network (NOAA)',
+      type: 'Public-domain U.S. Government work',
+      license: 'NOAA Data Disclaimer',
+      icon: Satellite,
+      termsUrl: 'https://www.ndbc.noaa.gov/disclaimer.shtml',
+      docsUrl: 'https://www.ndbc.noaa.gov/dart.shtml',
+      endpoints: [
+        { label: 'DART Data', url: 'https://www.ndbc.noaa.gov/dart.shtml' }
+      ],
+      attribution: 'Deep-ocean Assessment and Reporting of Tsunamis (DART) data from NOAA. Optional attribution.',
+      note: '13 monitored buoys globally (Pacific, Atlantic, Indian Ocean). Direct physical tsunami wave measurement via bottom pressure sensors. Thresholds: >50cm (Major), >20cm (Significant), >10cm (Moderate), >5cm (Minor).'
     }
   ]
 
@@ -89,7 +116,7 @@ export default function DataSourcesPage() {
       <WorkInProgressBanner />
       <PublicPageHeader 
         title="Data Sources & Attribution"
-        subtitle="Our emergency alert system relies on trusted government data sources. Below is our compliance summary for each provider."
+        subtitle="Our emergency alert system aggregates data from 7 trusted government sources worldwide. Below is our complete compliance summary for each provider."
       />
       
       <PublicPageContent maxWidth="6xl">
@@ -121,6 +148,93 @@ export default function DataSourcesPage() {
               </div>
             </div>
           </GradientCard>
+        </ContentSection>
+
+        <ContentSection>
+          <SectionTitle>Our Data Sources</SectionTitle>
+          <div className="max-w-5xl mx-auto mb-16">
+            <div className="grid md:grid-cols-2 gap-8">
+              <Card className="p-8">
+                <h3 className="text-2xl font-semibold text-slate-900 mb-6">🌍 Earthquake Data (5 sources)</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">USGS</p>
+                      <p className="text-sm text-slate-600">Global coverage, best for Americas</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">EMSC</p>
+                      <p className="text-sm text-slate-600">Europe, Mediterranean, Middle East, North Africa</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">IRIS</p>
+                      <p className="text-sm text-slate-600">Research-grade global seismic data</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">JMA</p>
+                      <p className="text-sm text-slate-600">Japan, Western Pacific region</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">GeoNet</p>
+                      <p className="text-sm text-slate-600">New Zealand, Southwest Pacific, Kermadec Islands</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-8">
+                <h3 className="text-2xl font-semibold text-slate-900 mb-6">🌊 Tsunami Data (4 sources)</h3>
+                <div className="space-y-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">PTWC (NOAA)</p>
+                      <p className="text-sm text-slate-600">Pacific Tsunami Warning Center</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">JMA</p>
+                      <p className="text-sm text-slate-600">Japan tsunami warnings & advisories</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">GeoNet</p>
+                      <p className="text-sm text-slate-600">New Zealand CAP alerts</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-cyan-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div>
+                      <p className="font-semibold text-slate-900">DART Buoy Network</p>
+                      <p className="text-sm text-slate-600">13 deep-ocean stations (Pacific, Atlantic, Indian Ocean)</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 pt-6 border-t border-slate-200">
+                  <p className="text-sm text-slate-600 font-light">
+                    <strong>Note:</strong> JMA and GeoNet provide both earthquake and tsunami data.
+                  </p>
+                </div>
+              </Card>
+            </div>
+          </div>
         </ContentSection>
 
         <ContentSection>

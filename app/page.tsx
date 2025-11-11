@@ -3,6 +3,7 @@
 import HeroSection from '@/components/homepage/HeroSection'
 import BenefitsSection from '@/components/homepage/BenefitsSection'
 import FeaturesSection from '@/components/homepage/FeaturesSection'
+import TsunamiSimulationSection from '@/components/homepage/TsunamiSimulationSection'
 import TimelineAnimation from '@/components/homepage/TimelineAnimation'
 import DetailedFeaturesSection from '@/components/homepage/DetailedFeaturesSection'
 import UseCasesSection from '@/components/homepage/UseCasesSection'
@@ -21,6 +22,7 @@ export default function HomePage() {
       <HeroSection />
       <BenefitsSection />
       <FeaturesSection />
+      <TsunamiSimulationSection />
       <TimelineAnimation />
       <DetailedFeaturesSection />
       <UseCasesSection />

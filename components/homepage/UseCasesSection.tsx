@@ -1,45 +1,45 @@
-import { Ship, Factory, Users2 } from 'lucide-react'
+import { Ship, Factory, Flame } from 'lucide-react'
 import Link from 'next/link'
 
 const useCases = [
   {
     icon: Ship,
     title: 'Shipping & Maritime Operations',
-    scenario: 'Coordinate alerts for distributed crews across vessels and shore offices',
-    description: 'When a tsunami warning was issued, OceanFleet automatically alerted all active vessels, docked ships, and shore-based operations teams. The system used satellite messaging offshore and SMS/voice on land, delivering role-based instructions to captains, officers, and port coordinators to secure operations within minutes.',
-    metrics: [
-      { label: 'Response Time', value: '90 seconds' },
-      { label: 'Vessels Reached', value: '12/12' },
-      { label: 'Channels Used', value: 'SMS + Satcom + Voice' }
+    scenario: 'Our primary focus and proven use case',
+    description: 'Monitor earthquake and tsunami threats for vessels in coastal and earthquake-prone areas. Physics-based simulation calculates wave height and arrival time for each vessel, with severity-based escalation and multi-channel notifications to crews and shore operations.',
+    capabilities: [
+      { label: 'Threat Assessment', value: 'Automated wave height, distance & ETA calculations' },
+      { label: 'Alert Distribution', value: 'Multi-channel notifications (SMS, Email, WhatsApp, Voice)' },
+      { label: 'Escalation Policies', value: 'Severity-based automated response protocols' }
     ],
     bgColor: 'from-sky-50 to-blue-50',
     iconColor: 'from-sky-500 to-blue-600'
   },
   {
-    icon: Factory,
-    title: 'Manufacturing Plants',
-    scenario: 'Alert shift workers and coordinate emergency response',
-    description: 'During a tsunami warning, ManufacturingCo automatically notified all three shifts, including off-duty emergency response team members. The system coordinated evacuation routes and equipment shutdown procedures.',
-    metrics: [
-      { label: 'Shifts Notified', value: '3 shifts' },
-      { label: 'Response Teams', value: '12 activated' },
-      { label: 'Equipment Secured', value: '100%' }
+    icon: Flame,
+    title: 'Oil & Gas Operations',
+    scenario: 'Highly adaptable for offshore operations',
+    description: 'Easily adapted for offshore rigs, platforms, and OSVs. Monitor seismic and tsunami threats to offshore assets, coordinate evacuation procedures, and manage emergency response across distributed operations.',
+    capabilities: [
+      { label: 'Offshore Protection', value: 'Rigs, platforms, OSVs & support vessels' },
+      { label: 'Threat Monitoring', value: 'Real-time earthquake & tsunami detection' },
+      { label: 'Emergency Response', value: 'Coordinated multi-asset alerts & procedures' }
     ],
-    bgColor: 'from-orange-50 to-red-50',
-    iconColor: 'from-orange-500 to-red-500'
+    bgColor: 'from-amber-50 to-orange-50',
+    iconColor: 'from-amber-500 to-orange-500'
   },
   {
-    icon: Users2,
-    title: 'Remote Teams',
-    scenario: 'Keep distributed workforce informed during regional events',
-    description: 'With employees across 5 cities, GlobalServices used location-based alerts to notify only affected team members about a regional earthquake, while keeping management informed of all personnel safety status.',
-    metrics: [
-      { label: 'Cities Monitored', value: '5 locations' },
-      { label: 'Targeted Alerts', value: '89 employees' },
-      { label: 'Safety Confirmed', value: '< 5 minutes' }
+    icon: Factory,
+    title: 'Manufacturing & Industrial',
+    scenario: 'Coastal and earthquake-prone facilities',
+    description: 'Adaptable for coastal or earthquake-prone manufacturing facilities. Coordinate workforce alerts, emergency response teams, and equipment protocols during seismic events.',
+    capabilities: [
+      { label: 'Target Facilities', value: 'Coastal/earthquake-prone plants' },
+      { label: 'Workforce Coordination', value: 'Multi-shift emergency alerts' },
+      { label: 'Custom Integration', value: 'Facility-specific escalation policies' }
     ],
-    bgColor: 'from-green-50 to-emerald-50',
-    iconColor: 'from-green-500 to-emerald-500'
+    bgColor: 'from-red-50 to-rose-50',
+    iconColor: 'from-red-500 to-rose-500'
   }
 ]
 
@@ -49,10 +49,10 @@ export default function UseCasesSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
-            Protecting Teams Across Industries
+            Built for Maritime, Adaptable for More
           </h2>
           <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-            See how organizations like yours can use our emergency alert system to keep their workforce safe and informed during critical situations.
+            Purpose-built for earthquake and tsunami alerts in maritime operations. Adaptable for oil & gas and coastal industries with custom development.
           </p>
         </div>
 
@@ -77,12 +77,12 @@ export default function UseCasesSection() {
                 </div>
 
                 <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/50">
-                  <h4 className="text-lg font-semibold text-slate-900 mb-4">Key Results</h4>
+                  <h4 className="text-lg font-semibold text-slate-900 mb-4">Platform Capabilities</h4>
                   <div className="space-y-4">
-                    {useCase.metrics.map((metric, metricIndex) => (
-                      <div key={metricIndex} className="flex justify-between items-center">
-                        <span className="text-slate-600">{metric.label}</span>
-                        <span className="font-bold text-slate-900">{metric.value}</span>
+                    {useCase.capabilities.map((capability, capIndex) => (
+                      <div key={capIndex} className="flex justify-between items-start gap-3">
+                        <span className="text-slate-600 text-sm">{capability.label}</span>
+                        <span className="font-semibold text-slate-900 text-sm text-right">{capability.value}</span>
                       </div>
                     ))}
                   </div>
@@ -96,17 +96,17 @@ export default function UseCasesSection() {
         <div className="mt-16 text-center">
           <div className="bg-white rounded-2xl p-8 shadow-lg border border-slate-200 max-w-2xl mx-auto">
             <h3 className="text-2xl font-bold text-slate-900 mb-4">
-              Ready to Protect Your Team & Assets?
+              Protect Your Maritime, Oil & Gas, or Coastal Operations
             </h3>
             <p className="text-slate-600 mb-6">
-              Join hundreds of organizations protecting their workforce, maritime vessels, offshore rigs, and critical infrastructure during emergencies.
+              Production-ready for maritime earthquake and tsunami alerts. Interested in adapting it for offshore operations or coastal facilities? Let's discuss your needs.
             </p>
             <Link
               href="/contact"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200"
-              aria-label="Schedule a demo via contact page"
+              aria-label="Contact us to discuss your needs"
             >
-              Schedule a Demo
+              Discuss Your Needs
             </Link>
           </div>
         </div>

@@ -11,6 +11,10 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# Form handling configuration
+# Email notifications are configured in Netlify dashboard: Settings > Forms > Form notifications
+# Set CONTACT_EMAIL environment variable in Netlify dashboard to xyz@gmail.com
+
 # Security headers
 [[headers]]
   for = "/*"

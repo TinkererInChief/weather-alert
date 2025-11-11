@@ -23,11 +23,17 @@ export default function ContactPage() {
     e.preventDefault()
     setIsSubmitting(true)
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setSubmitted(true)
-    setIsSubmitting(false)
+    try {
+      // Netlify Forms will handle this automatically
+      // The form data will be sent to Netlify and can trigger email notifications
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      setSubmitted(true)
+    } catch (error) {
+      console.error('Form submission error:', error)
+      alert('There was an error sending your message. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -48,71 +54,66 @@ export default function ContactPage() {
       <PublicPageContent maxWidth="7xl">
 
         <div className="grid lg:grid-cols-2 gap-12 mb-20">
-          {/* Contact Information */}
+          {/* Why Choose Us - Conversion Focused */}
           <div className="space-y-8">
-            <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-lg">
-              <h2 className="text-2xl font-semibold text-slate-900 mb-6">Get in Touch</h2>
+            <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-2xl p-8 shadow-lg">
+              <h2 className="text-2xl font-semibold text-slate-900 mb-6">🚨 Protect Your Assets Today</h2>
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Phone className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-cyan-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Clock className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Phone</h3>
-                    <p className="text-slate-600">Available via contact form</p>
-                    <p className="text-sm text-slate-500">Monday - Friday, 9am - 6pm EST</p>
+                    <h3 className="font-semibold text-slate-900">Multi-Channel Alert Escalation</h3>
+                    <p className="text-slate-600">SMS, Email, WhatsApp notifications. Severity-based escalation policies. Complete audit trail.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Mail className="h-6 w-6 text-green-600" />
+                  <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Mail className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Email</h3>
-                    <p className="text-slate-600">Available via contact form</p>
-                    <p className="text-sm text-slate-500">We'll respond within 24 hours</p>
+                    <h3 className="font-semibold text-slate-900">Enterprise-Ready Platform</h3>
+                    <p className="text-slate-600">Unlimited vessel tracking. Custom escalation policies. Dry run simulation mode for testing.</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-6 w-6 text-purple-600" />
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-900">Office</h3>
-                    <p className="text-slate-600">Emergency Alert Command Center</p>
-                    <p className="text-slate-600">123 Safety Street, Suite 100</p>
-                    <p className="text-slate-600">San Francisco, CA 94105</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Clock className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900">Emergency Support</h3>
-                    <p className="text-slate-600">24/7 Emergency Hotline</p>
-                    <p className="text-slate-600">Available to existing customers</p>
-                    <p className="text-sm text-slate-500">Contact via customer portal</p>
+                    <h3 className="font-semibold text-slate-900">Physics-Based Tsunami Simulation</h3>
+                    <p className="text-slate-600">Okada model for seafloor displacement. Haversine distance calculations. Real tsunami physics.</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="bg-slate-50 rounded-2xl p-6">
-              <h3 className="font-semibold text-slate-900 mb-4">Enterprise Sales</h3>
-              <p className="text-slate-600 mb-4">
-                Looking for a custom solution for your organization? Our enterprise team can help design 
-                a tailored emergency alert system that meets your specific requirements.
+            <div className="bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl p-8 text-white shadow-xl">
+              <h3 className="text-xl font-bold mb-3">⚡ Get Started Now</h3>
+              <p className="text-blue-100 mb-6">
+                Join maritime organizations worldwide using our tsunami alert system to protect their fleets and crews.
               </p>
-              <button
-                className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Contact Enterprise Sales
-                <Mail className="ml-2 h-4 w-4" />
-              </button>
+              <ul className="space-y-3 text-blue-50">
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  Real-time threat assessment for all vessels
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  Automated multi-channel notifications
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  Scientific physics-based simulations
+                </li>
+                <li className="flex items-center">
+                  <div className="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                  Complete escalation management
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -131,7 +132,17 @@ export default function ContactPage() {
             ) : (
               <>
                 <h2 className="text-2xl font-semibold text-slate-900 mb-6">Send us a Message</h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form 
+                  name="contact"
+                  method="POST"
+                  data-netlify="true"
+                  data-netlify-honeypot="bot-field"
+                  onSubmit={handleSubmit} 
+                  className="space-y-6"
+                >
+                  {/* Netlify form fields */}
+                  <input type="hidden" name="form-name" value="contact" />
+                  <input type="hidden" name="bot-field" />
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">

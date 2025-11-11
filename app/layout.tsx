@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     url: '/',
     siteName: 'Emergency Alert Command Center',
     images: [
-      { url: '/opengraph-image', width: 1200, height: 630, alt: 'Emergency Alert Command Center' },
+      { url: '/og-image.png', width: 1200, height: 630, alt: 'Tsunami Alert System - Emergency Alert Command Center' },
     ],
     type: 'website',
     locale: 'en_US',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Emergency Alert Command Center',
     description: 'Real-time earthquake and tsunami monitoring with multi-channel emergency notifications',
-    images: ['/twitter-image'],
+    images: ['/og-image.png'],
   },
   icons: {
     icon: [

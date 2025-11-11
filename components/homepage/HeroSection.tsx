@@ -1,6 +1,6 @@
 'use client'
 
-import { Shield, ArrowRight, Play, Star, Users, TrendingUp, Globe, Zap, Bell, Activity, Maximize2 } from 'lucide-react'
+import { Shield, ArrowRight, Play, Star, Users, TrendingUp, Globe, Zap, Bell, Activity, Maximize2, PlayCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 import VideoModal from './VideoModal'
@@ -78,7 +78,17 @@ export default function HeroSection() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-red-500">AI-Powered</span> Emergency Intelligence for Maritime & Enterprise Safety
               </h1>
               <p className="text-lg text-slate-300 leading-relaxed">
-                Advanced <span className="text-cyan-300 font-semibold">tsunami simulation</span>, real-time <span className="text-blue-300 font-semibold">vessel tracking</span>, and intelligent alerts powered by <span className="text-purple-300 font-semibold">AI and global seismic networks</span>. Protect your assets and workforce with precision targeting and quick notifications.
+                Advanced <a 
+                  href="#tsunami-simulation" 
+                  onClick={(e) => {
+                    e.preventDefault()
+                    document.getElementById('tsunami-simulation')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                  }}
+                  className="text-cyan-300 font-semibold hover:text-cyan-200 underline decoration-cyan-400/30 hover:decoration-cyan-400 underline-offset-2 transition-all inline-flex items-center gap-1 group cursor-pointer"
+                >
+                  tsunami simulation
+                  <PlayCircle className="h-4 w-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                </a>, real-time <span className="text-blue-300 font-semibold">vessel tracking</span>, and intelligent alerts powered by <span className="text-purple-300 font-semibold">AI and global seismic networks</span>. Protect your assets and workforce with precision targeting and quick notifications.
               </p>
             </div>
 
