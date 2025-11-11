@@ -2,7 +2,6 @@
 
 import { Shield, Target, Award, Clock, Globe, TrendingUp, Users, Heart } from 'lucide-react'
 import Link from 'next/link'
-import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
 import PublicPageHeader from '@/components/public/PublicPageHeader'
 import PublicPageContent, { ContentSection, SectionTitle, Card, GradientCard } from '@/components/public/PublicPageContent'
 
@@ -38,7 +37,6 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <WorkInProgressBanner />
       <PublicPageHeader 
         title="About Us"
         subtitle="Building intelligent emergency alert technology that combines physics-based tsunami simulation, multi-source seismic data, and automated escalation workflows."

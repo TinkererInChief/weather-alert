@@ -11,14 +11,12 @@ import TrustSection from '@/components/homepage/TrustSection'
 import PricingTeaser from '@/components/homepage/PricingTeaser'
 import CTASection from '@/components/homepage/CTASection'
 import HomeFooter from '@/components/homepage/HomeFooter'
-import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
 
 export const dynamic = 'force-dynamic'
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-white">
-      <WorkInProgressBanner />
+    <main className="min-h-screen bg-white">
       <HeroSection />
       <BenefitsSection />
       <FeaturesSection />
@@ -30,6 +28,6 @@ export default function HomePage() {
       <PricingTeaser />
       <CTASection />
       <HomeFooter />
-    </div>
+    </main>
   )
 }

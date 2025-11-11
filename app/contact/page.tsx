@@ -3,7 +3,6 @@
 import { Shield, Mail, Phone, MapPin, Clock, Send } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
-import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
 import PublicPageHeader from '@/components/public/PublicPageHeader'
 import PublicPageContent, { ContentSection, SectionTitle, Card, GradientCard } from '@/components/public/PublicPageContent'
 
@@ -23,14 +22,23 @@ export default function ContactPage() {
     e.preventDefault()
     setIsSubmitting(true)
     
+    const form = e.currentTarget
+    
     try {
-      // Log form data (in production, you'd send this to an API endpoint)
-      console.log('Contact form submitted:', formData)
+      // Submit to Netlify Forms
+      const formData = new FormData(form)
       
-      // Simulate submission
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const response = await fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams(formData as any).toString()
+      })
       
-      setSubmitted(true)
+      if (response.ok) {
+        setSubmitted(true)
+      } else {
+        throw new Error('Form submission failed')
+      }
     } catch (error) {
       console.error('Form submission error:', error)
       alert('There was an error sending your message. Please try again.')
@@ -48,7 +56,21 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <WorkInProgressBanner />
+      {/* Hidden form for Netlify to detect at build time */}
+      <form name="contact" data-netlify="true" hidden>
+        <input type="text" name="name" />
+        <input type="email" name="email" />
+        <input type="text" name="company" />
+        <input type="tel" name="phone" />
+        <select name="subject">
+          <option value="General Inquiry">General Inquiry</option>
+          <option value="Product Demo">Product Demo</option>
+          <option value="Technical Support">Technical Support</option>
+          <option value="Partnership">Partnership</option>
+        </select>
+        <textarea name="message"></textarea>
+      </form>
+
       <PublicPageHeader 
         title="Contact Us"
         subtitle="Get in touch with our team for demos, support, or enterprise solutions. We're here to help protect your organization."
@@ -136,9 +158,13 @@ export default function ContactPage() {
               <>
                 <h2 className="text-2xl font-semibold text-slate-900 mb-6">Send us a Message</h2>
                 <form 
+                  name="contact"
+                  method="POST"
+                  data-netlify="true"
                   onSubmit={handleSubmit} 
                   className="space-y-6"
                 >
+                  <input type="hidden" name="form-name" value="contact" />
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-2">

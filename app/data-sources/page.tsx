@@ -1,8 +1,7 @@
 'use client'
 
-import { Shield, Globe, Satellite, Radio, AlertTriangle } from 'lucide-react'
+import { Shield, ExternalLink, FileText, AlertTriangle, CheckCircle, Globe, Satellite } from 'lucide-react'
 import Link from 'next/link'
-import WorkInProgressBanner from '@/components/common/WorkInProgressBanner'
 import PublicPageHeader from '@/components/public/PublicPageHeader'
 import PublicPageContent, { ContentSection, SectionTitle, Card, GradientCard } from '@/components/public/PublicPageContent'
 
@@ -113,7 +112,6 @@ export default function DataSourcesPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <WorkInProgressBanner />
       <PublicPageHeader 
         title="Data Sources & Attribution"
         subtitle="Our emergency alert system aggregates data from 7 trusted government sources worldwide. Below is our complete compliance summary for each provider."
