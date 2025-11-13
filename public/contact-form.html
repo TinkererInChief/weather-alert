@@ -4,21 +4,26 @@
   <title>Contact Form - Netlify Detection</title>
 </head>
 <body>
-  <!-- Static form for Netlify build detection -->
-  <form name="contact" data-netlify="true" method="POST" action="/contact">
+  <!-- Static form for Netlify build detection - must match React form exactly -->
+  <form name="contact" netlify netlify-honeypot="bot-field" method="POST" action="/contact">
     <input type="hidden" name="form-name" value="contact" />
+    <p hidden>
+      <label>Don't fill this out if you're human: <input name="bot-field" /></label>
+    </p>
     <input type="text" name="name" placeholder="Full Name" required />
     <input type="email" name="email" placeholder="Email Address" required />
     <input type="text" name="company" placeholder="Company" />
     <input type="tel" name="phone" placeholder="Phone Number" />
     <select name="subject" required>
-      <option value="">Select Subject</option>
-      <option value="General Inquiry">General Inquiry</option>
-      <option value="Product Demo">Product Demo</option>
-      <option value="Technical Support">Technical Support</option>
-      <option value="Partnership">Partnership</option>
+      <option value="">Select a subject</option>
+      <option value="demo">Request a Demo</option>
+      <option value="pricing">Pricing Information</option>
+      <option value="enterprise">Enterprise Solutions</option>
+      <option value="support">Technical Support</option>
+      <option value="partnership">Partnership Opportunities</option>
+      <option value="other">Other</option>
     </select>
-    <textarea name="message" placeholder="Your message" required></textarea>
+    <textarea name="message" placeholder="Tell us about your emergency alert needs..." required></textarea>
     <button type="submit">Send Message</button>
   </form>
 </body>
