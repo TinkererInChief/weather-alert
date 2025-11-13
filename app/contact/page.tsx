@@ -28,7 +28,7 @@ export default function ContactPage() {
     
     try {
       const body = new URLSearchParams(new FormData(form) as any).toString()
-      const response = await fetch('/', {
+      const response = await fetch('/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
