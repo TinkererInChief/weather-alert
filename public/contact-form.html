@@ -1,30 +1,180 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Contact Form - Netlify Detection</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contact Us | Emergency Alert</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #0f172a;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --primary: #0ea5e9;
+      --primary-2: #22d3ee;
+      --accent: #ef4444;
+      --ring: rgba(14,165,233,.35);
+      --border: rgba(148,163,184,.25);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background:
+        radial-gradient(1200px 600px at 10% -20%, rgba(34,211,238,.12), transparent 40%),
+        radial-gradient(800px 400px at 90% 0%, rgba(14,165,233,.12), transparent 35%),
+        linear-gradient(180deg, #0b1220 0%, #0b1220 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 20px 56px; }
+    .header { text-align: center; margin: 28px 0 24px; }
+    .title { font-size: 28px; font-weight: 700; letter-spacing: .2px; margin: 0 0 8px; }
+    .subtitle { color: var(--muted); font-size: 15px; margin: 0; }
+
+    .grid { display: grid; grid-template-columns: 1fr; gap: 24px; align-items: start; }
+    @media (min-width: 960px) { .grid { grid-template-columns: 1.1fr .9fr; gap: 28px; } }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(2,6,23,.6) 0%, rgba(2,6,23,.4) 100%);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(2,6,23,.35);
+      overflow: hidden;
+    }
+    .panel .in { padding: 22px; }
+
+    .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: rgba(14,165,233,.12); color: var(--primary); font-weight: 600; font-size: 12px; border: 1px solid rgba(14,165,233,.25); }
+    .list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 12px; }
+    .li { display: flex; gap: 10px; align-items: flex-start; }
+    .dot { width: 8px; height: 8px; margin-top: 7px; border-radius: 50%; background: var(--primary-2); box-shadow: 0 0 0 3px rgba(34,211,238,.15); }
+    .li h4 { margin: 0; font-size: 15px; }
+    .li p { margin: 4px 0 0; color: var(--muted); font-size: 14px; line-height: 1.45; }
+
+    .form h3 { margin: 0 0 8px; font-size: 18px; }
+    .form p.desc { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+
+    form { display: grid; gap: 14px; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 720px) { .row.two { grid-template-columns: 1fr 1fr; } }
+
+    label { display: block; font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+    .field { width: 100%; padding: 12px 13px; border: 1px solid var(--border); border-radius: 12px; background: rgba(15,23,42,.6); color: var(--text); outline: none; transition: box-shadow .2s, border-color .2s, background .2s; }
+    .field::placeholder { color: #64748b; }
+    .field:focus { border-color: var(--primary); box-shadow: 0 0 0 4px var(--ring); background: rgba(15,23,42,.8); }
+    select.field { appearance: none; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="%23a8c5ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 8 10 12 14 8"/></svg>'); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+    textarea.field { resize: vertical; min-height: 120px; }
+
+    .btn { cursor: pointer; border: 0; border-radius: 12px; padding: 12px 14px; font-weight: 700; color: white; background: linear-gradient(90deg, var(--accent), #dc2626); box-shadow: 0 6px 16px rgba(239,68,68,.35); transition: transform .05s ease, filter .15s ease; }
+    .btn:hover { filter: brightness(1.04); }
+    .btn:active { transform: translateY(1px); }
+
+    .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  </style>
 </head>
 <body>
-  <!-- Static form for Netlify build detection - must match React form exactly -->
-  <form name="contact" data-netlify="true" data-netlify-honeypot="bot-field" method="POST" action="/form-success.html">
-    <input type="hidden" name="form-name" value="contact" />
-    <p hidden>
-      <label>Don't fill this out if you're human: <input name="bot-field" /></label>
-    </p>
-    <input type="text" name="name" placeholder="Full Name" required />
-    <input type="email" name="email" placeholder="Email Address" required />
-    <input type="text" name="company" placeholder="Company" />
-    <input type="tel" name="phone" placeholder="Phone Number" />
-    <select name="subject" required>
-      <option value="">Select a subject</option>
-      <option value="demo">Request a Demo</option>
-      <option value="pricing">Pricing Information</option>
-      <option value="enterprise">Enterprise Solutions</option>
-      <option value="support">Technical Support</option>
-      <option value="partnership">Partnership Opportunities</option>
-      <option value="other">Other</option>
-    </select>
-    <textarea name="message" placeholder="Tell us about your emergency alert needs..." required></textarea>
-    <button type="submit">Send Message</button>
-  </form>
+  <div class="wrap">
+    <div class="header">
+      <div class="pill">Emergency Alert · Contact</div>
+      <h1 class="title">Get in touch</h1>
+      <p class="subtitle">We’ll respond within 24 hours. Production-ready. Built to protect fleets and crews.</p>
+    </div>
+
+    <div class="grid">
+      <!-- Left panel: value props -->
+      <section class="panel">
+        <div class="in">
+          <div class="pill">Why teams choose us</div>
+          <ul class="list">
+            <li class="li">
+              <span class="dot"></span>
+              <div>
+                <h4>Multi‑source tsunami intelligence</h4>
+                <p>DART buoys, seismic networks and ionospheric signals for sub‑minute detection.</p>
+              </div>
+            </li>
+            <li class="li">
+              <span class="dot"></span>
+              <div>
+                <h4>Vessel‑specific, actionable alerts</h4>
+                <p>Wave height, ETA and recommended actions per vessel. Confidence scored.</p>
+              </div>
+            </li>
+            <li class="li">
+              <span class="dot"></span>
+              <div>
+                <h4>Enterprise‑ready</h4>
+                <p>Escalation policies, audit trails and global coverage—designed for operations.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Right panel: form (Netlify-detected) -->
+      <section class="panel form">
+        <div class="in">
+          <h3>Send us a message</h3>
+          <p class="desc">Fill out the form and our team will reach out shortly.</p>
+          <!-- Netlify build detection form: DO NOT change names/attributes -->
+          <form name="contact" data-netlify="true" data-netlify-honeypot="bot-field" method="POST" action="/form-success.html">
+            <input type="hidden" name="form-name" value="contact" />
+            <p hidden>
+              <label>Don’t fill this out if you’re human: <input name="bot-field" /></label>
+            </p>
+
+            <div class="row two">
+              <div>
+                <label for="name">Full name *</label>
+                <input id="name" class="field" type="text" name="name" placeholder="Jane Smith" required />
+              </div>
+              <div>
+                <label for="email">Email address *</label>
+                <input id="email" class="field" type="email" name="email" placeholder="jane@company.com" required />
+              </div>
+            </div>
+
+            <div class="row two">
+              <div>
+                <label for="company">Company</label>
+                <input id="company" class="field" type="text" name="company" placeholder="Acme Shipping" />
+              </div>
+              <div>
+                <label for="phone">Phone number</label>
+                <input id="phone" class="field" type="tel" name="phone" placeholder="+1 415 555 0123" />
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="subject">Subject *</label>
+                <select id="subject" class="field" name="subject" required>
+                  <option value="">Select a subject</option>
+                  <option value="demo">Request a Demo</option>
+                  <option value="pricing">Pricing Information</option>
+                  <option value="enterprise">Enterprise Solutions</option>
+                  <option value="support">Technical Support</option>
+                  <option value="partnership">Partnership Opportunities</option>
+                  <option value="other">Other</option>
+                </select>
+                <div class="note">We’ll use this to route your message to the right team.</div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div>
+                <label for="message">Message *</label>
+                <textarea id="message" class="field" name="message" placeholder="Tell us about your fleet, ports and alerting needs…" required></textarea>
+              </div>
+            </div>
+
+            <div class="row">
+              <button class="btn" type="submit">Send Message</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
 </body>
 </html>
