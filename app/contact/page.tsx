@@ -20,34 +20,8 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const handleSubmit = () => {
     setIsSubmitting(true)
-    
-    const form = e.currentTarget
-    
-    try {
-      const body = new URLSearchParams(new FormData(form) as any).toString()
-      const response = await fetch('/?no-cache=1', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body
-      })
-
-      if (response.ok) {
-        setSubmitted(true)
-      } else {
-        // Fallback to native submit so Netlify can capture even if AJAX path is intercepted
-        try { form.submit() } catch {}
-        return
-      }
-    } catch (error) {
-      console.error('Form submission error:', error)
-      // Final fallback
-      try { form.submit() } catch {}
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -148,7 +122,7 @@ export default function ContactPage() {
                 <form 
                   name="contact"
                   method="POST"
-                  action="/contact"
+                  action="/form-success.html"
                   acceptCharset="utf-8"
                   data-netlify="true"
                   data-netlify-honeypot="bot-field"
