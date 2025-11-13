@@ -28,20 +28,23 @@ export default function ContactPage() {
     
     try {
       const body = new URLSearchParams(new FormData(form) as any).toString()
-      const response = await fetch('/contact', {
+      const response = await fetch('/?no-cache=1', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body
       })
-      
+
       if (response.ok) {
         setSubmitted(true)
       } else {
-        throw new Error('Form submission failed')
+        // Fallback to native submit so Netlify can capture even if AJAX path is intercepted
+        try { form.submit() } catch {}
+        return
       }
     } catch (error) {
       console.error('Form submission error:', error)
-      alert('There was an error sending your message. Please try again.')
+      // Final fallback
+      try { form.submit() } catch {}
     } finally {
       setIsSubmitting(false)
     }
@@ -145,6 +148,8 @@ export default function ContactPage() {
                 <form 
                   name="contact"
                   method="POST"
+                  action="/contact"
+                  acceptCharset="utf-8"
                   data-netlify="true"
                   data-netlify-honeypot="bot-field"
                   onSubmit={handleSubmit} 
