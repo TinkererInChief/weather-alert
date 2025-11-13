@@ -70,9 +70,31 @@
     .btn:active { transform: translateY(1px); }
 
     .note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+
+    /* Header bar */
+    .topbar { max-width: 1120px; margin: 18px auto 8px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; color: var(--text); text-decoration: none; }
+    .logo { width: 32px; height: 32px; border-radius: 10px; background: radial-gradient(60% 80% at 30% 20%, rgba(255,255,255,.35), transparent 60%), linear-gradient(145deg, #ef4444, #dc2626); box-shadow: 0 6px 16px rgba(239,68,68,.35); display: grid; place-items: center; font-weight: 800; }
+    .logo span { font-size: 14px; color: #fff; }
+    .brand-text { display: flex; flex-direction: column; line-height: 1; }
+    .brand-title { font-weight: 700; font-size: 14px; }
+    .brand-sub { font-size: 11px; color: var(--muted); }
+    .back { color: var(--text); text-decoration: none; font-weight: 600; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: rgba(148,163,184,.10); }
+    .back:hover { filter: brightness(1.05); }
   </style>
 </head>
 <body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Go to home">
+      <div class="logo"><span>E</span></div>
+      <div class="brand-text">
+        <span class="brand-title">Emergency Alert</span>
+        <span class="brand-sub">Command Center</span>
+      </div>
+    </a>
+    <a class="back" href="/">← Back to Home</a>
+  </header>
+
   <div class="wrap">
     <div class="header">
       <div class="pill">Emergency Alert · Contact</div>
