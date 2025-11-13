@@ -21,7 +21,7 @@ export default withAuth(
         const { pathname, searchParams } = req.nextUrl
 
         // Always allow public static media files (defense-in-depth)
-        if (/\.(mp4|webm|mov|m4v|mp3|wav|ogg|svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map)$/i.test(pathname)) {
+        if (/\.(mp4|webm|mov|m4v|mp3|wav|ogg|svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|html)$/i.test(pathname)) {
           return true
         }
 
@@ -52,6 +52,8 @@ export default withAuth(
             pathname === '/security-policy' ||
             pathname === '/compliance' ||
             pathname === '/contact' ||
+            pathname === '/contact-form.html' ||
+            pathname === '/form-success.html' ||
             pathname === '/about' ||
             pathname === '/help' ||
             pathname === '/status' ||
@@ -77,6 +79,6 @@ export const config = {
      * - public folder
      * - audio files (for earcons)
      */
-    '/((?!_next/|favicon.ico|audio/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|mp3|wav|ogg|mp4|webm|mov|m4v)$).*)',
+    '/((?!_next/|favicon.ico|audio/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|mp3|wav|ogg|mp4|webm|mov|m4v|html)$).*)',
   ],
 }
