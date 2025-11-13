@@ -18,3 +18,18 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Ensure contact form is always served and handled as static HTML
+[[redirects]]
+  from = "/contact"
+  to = "/contact-form.html"
+  status = 200
+  force = true
+
+# Route POST submissions to the static form page so Netlify Forms can capture
+[[redirects]]
+  from = "/contact"
+  to = "/contact-form.html"
+  status = 303
+  force = true
+  conditions = { Method = ["POST"] }

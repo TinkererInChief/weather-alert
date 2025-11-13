@@ -70,15 +70,6 @@ export default withAuth(
 )
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     * - audio files (for earcons)
-     */
-    '/((?!_next/|favicon.ico|audio/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|txt|css|js|map|mp3|wav|ogg|mp4|webm|mov|m4v|html)$).*)',
-  ],
+  // Only protect dashboard routes; public pages and static assets bypass middleware
+  matcher: ['/dashboard/:path*'],
 }
