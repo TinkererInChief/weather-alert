@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Maximize2 } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 type VideoModalProps = {
@@ -129,13 +129,7 @@ export default function VideoModal({ isOpen, onClose, videoSrc }: VideoModalProp
                 </div>
               )}
 
-              {/* Maximize icon indicator (bottom left) */}
-              <div className="absolute bottom-5 left-5 z-20 opacity-0 group-hover/video:opacity-100 transition-all duration-300">
-                <div className="bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10 flex items-center gap-2">
-                  <Maximize2 className="h-4 w-4 text-white/70" />
-                  <span className="text-xs text-white/70 font-medium">Full Screen Mode</span>
-                </div>
-              </div>
+              
             </div>
           </div>
         </div>
